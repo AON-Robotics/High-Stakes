@@ -1,8 +1,6 @@
-#ifndef AON_COMPETITION_OPERATOR_CONTROL_HPP_
-#define AON_COMPETITION_OPERATOR_CONTROL_HPP_
+#pragma once
 
 #include <cmath>
-#include <float.h>
 #include "../constants.hpp"
 #include "../globals.hpp"
 
@@ -21,11 +19,11 @@
 namespace aon::operator_control {
 
 // ============================================================================
-//    ___         _       _
-//   | _ \_ _ ___| |_ ___| |_ _  _ _ __  ___ ___
-//   |  _/ '_/ _ \  _/ _ \  _| || | '_ \/ -_|_-<
-//   |_| |_| \___/\__\___/\__|\_, | .__/\___/__/
-//                            |__/|_|
+//    _  _     _                 ___             _   _
+//   | || |___| |_ __  ___ _ _  | __|  _ _ _  __| |_(_)___ _ _  ___
+//   | __ / -_) | '_ \/ -_) '_| | _| || | ' \/ _|  _| / _ \ ' \(_-<
+//   |_||_\___|_| .__/\___|_|   |_| \_,_|_||_\__|\__|_\___/_||_/__/
+//              |_|
 // ============================================================================
 
 /**
@@ -43,86 +41,11 @@ namespace aon::operator_control {
  * <a href="https://www.desmos.com/calculator/uhjyivyj4r">Demonstration of
  * scaling function in Desmos.</a>
  *
- * \return Processed value with limits of -1 to 1
+ * \return double
  *
  * \warning Make sure that the input x is between -1 and 1!!!
  */
-inline double AnalogInputScaling(const double x, const double t);
-
-/**
- * \brief Creates deadzone around `c` percent of user input.
- *
- * \details Moving forward in a straight line might be difficult if the sideways
- * motion (strafing) is also in the same joystick. Creating a deadzone might
- * help the driver have straighter lines while still having decent control over
- * the strafing motion. Note that creating a deadzone of `c` percent also
- * reduces the maximum output value by `c` percent.
- *
- * \param x The controller's user input between -1 and 1
- * \param c Deadzone size
- *
- * <a href="https://www.desmos.com/calculator/vjoehfxgw4">Demonstration of
- * deadzone function in Desmos.</a>
- *
- * \return Processed value with limits of -1 to 1
- *
- * \warning Make sure that the input x is between -1 and 1!!!
- */
-inline double Deadzone(const double x, const double c);
-
-/**
- * \brief Applies the helper functions to the driver joystick inputs
- *
- * \details Applies the AnalogInputScaling and the Deadzone helper functions to
- * the desired joystick measurement. The variable will be manipulated to end up
- * between -1 and 1
- *
- * \param x Motion magnitude from -127 to 127
- * \param t AnalogInputScaling sensitivity
- * \param c Deadzone deadzone size
- *
- * \return Preprocessed driver joystick input
- */
-inline double PreprocessJoysticks(double x, const double t = DBL_EPSILON,
-                                  const double c = 0.0);
-
-/**
- * \brief Operator Control configuration for Enrique Báez
- */
-inline void _OpControlEnrique();
-
-/**
- * \brief Operator Control configuration for Gabriel Manes
- */
-inline void _OpControlManes();
-
-/**
- * \brief Default Operator Control configuration
- */
-inline void _OpControlDefault();
-
-/**
- *\brief Main function for operator control.
- *
- * \details Selection of operator control driver is done here.
- *
- * \param driver Who is driving the robot?
- *
- * \see aon::operator_control::Drivers
- *
- */
-inline void Run(const Drivers driver = kDefault);
-};  // namespace aon::operator_control
-
-// ============================================================================
-//    _  _     _                 ___             _   _
-//   | || |___| |_ __  ___ _ _  | __|  _ _ _  __| |_(_)___ _ _  ___
-//   | __ / -_) | '_ \/ -_) '_| | _| || | ' \/ _|  _| / _ \ ' \(_-<
-//   |_||_\___|_| .__/\___|_|   |_| \_,_|_||_\__|\__|_\___/_||_/__/
-//              |_|
-// ============================================================================
-inline double aon::operator_control::AnalogInputScaling(const double x,
-                                                        const double t) {
+inline double AnalogInputScaling(const double x, const double t) {
   const double z = 127.0 * x;
   const double a = ::std::exp(-::std::fabs(t) / 10.0);
   const double b = ::std::exp((::std::fabs(z) - 127.0) / 10.0);
@@ -130,195 +53,230 @@ inline double aon::operator_control::AnalogInputScaling(const double x,
   return (a + b * (1 - a)) * z / 127.0;
 }
 
-inline double aon::operator_control::Deadzone(const double x, const double c) {
-  const double sign = (x > 0.0) ? 1.0 : (x < 0.0) ? -1.0 : 0.0;
-  const double clamped_c = std::clamp(c, 0.0, 1.0);
-  return sign * std::max(0.0, std::fabs(x) - clamped_c);
-}
-
-inline double aon::operator_control::PreprocessJoysticks(double x,
-                                                         const double t,
-                                                         const double c) {
-  x /= 127.0;
-  x = AnalogInputScaling(x, t);
-  x = Deadzone(x, c);
-
-  return x;
-}
-
 // ============================================================================
-//    ___      _                 ___         _           _
-//   |   \ _ _(_)_ _____ _ _    / __|___ _ _| |_ _ _ ___| |___
-//   | |) | '_| \ V / -_) '_|  | (__/ _ \ ' \  _| '_/ _ \ (_-<
-//   |___/|_| |_|\_/\___|_|     \___\___/_||_\__|_| \___/_/__/
+//    ___      _
+//   |   \ _ _(_)_ _____ _ _ ___
+//   | |) | '_| \ V / -_) '_(_-<
+//   |___/|_| |_|\_/\___|_| /__/
 //
 // ============================================================================
 
-
-
-inline void aon::operator_control::_OpControlEnrique() {
-
-// #if USING_15_INCH_ROBOT
-
-// #else
-
-// #endif
-
+/// Enrique's Operator Control configuration
+inline void _OpControlEnrique() {
+#if USING_15_INCH_ROBOT
+#endif
 }
 
-inline void aon::operator_control::_OpControlManes() {
+/// Manes's Operator Control configuration
+inline void _OpControlManes() {
+#if USING_15_INCH_ROBOT
 
- #if USING_15_INCH_ROBOT
-  pros::lcd::print(1, "Angles rotated: %lf", encoder_back.get_position());
-  double Forward = main_controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);    //Forward
-  double Rotate = main_controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);  //Rotate
+  const double forwards = AnalogInputScaling(
+      main_controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y) / 127.0, 10);
+  const double sideways = AnalogInputScaling(
+      main_controller.get_analog(::pros::E_CONTROLLER_ANALOG_LEFT_X) / 127.0,
+      10);
+  const double rotation = AnalogInputScaling(
+      main_controller.get_analog(::pros::E_CONTROLLER_ANALOG_RIGHT_X) / 127.0,
+      20);
 
-  // Forward = PreprocessJoysticks(Forward, 2, 0.0);
+  drive_front_left.moveVelocity(
+      static_cast<int>(drive_front_left.getGearing()) *
+      std::clamp(forwards + sideways + rotation, -1.0, 1.0));
+  drive_front_right.moveVelocity(
+      static_cast<int>(drive_front_right.getGearing()) *
+      std::clamp(forwards - sideways - rotation, -1.0, 1.0));
+  drive_back_left.moveVelocity(
+      static_cast<int>(drive_back_left.getGearing()) *
+      std::clamp(forwards - sideways + rotation, -1.0, 1.0));
+  drive_back_right.moveVelocity(
+      static_cast<int>(drive_front_right.getGearing()) *
+      std::clamp(forwards + sideways - rotation, -1.0, 1.0));
 
-  // Rotate = PreprocessJoysticks(Rotate, 7, 0);
-
-  // Forward or Backward (Left Joystick)
-  left_side.moveVoltage(12000 * (Forward / 127));
-  right_side.moveVoltage(12000 * (Forward / 127));
-  
-    // Turning (Right Joystick)
-      // Turn right
-  if (Rotate > 0){
-    left_side.moveVoltage(12000 * (Rotate / 127));
-    right_side.moveVoltage(12000 * (-Rotate / 127));
+  /////////// FLYWHEEL ///////////
+  if (main_controller.get_digital_new_press(DIGITAL_A)) {
+    flywheel_on = true;
+  } else if (main_controller.get_digital_new_press(DIGITAL_B)) {
+    flywheel_on = false;
   }
-      // Turn left
-  else if (Rotate < 0){
-    left_side.moveVoltage(12000 * (Rotate / 127));
-    right_side.moveVoltage(12000 * (-Rotate / 127));
-  }
-  // Intake (X is positive, B is negative)
-  int pos_intake = main_controller.get_digital(DIGITAL_A);
-  int neg_intake = main_controller.get_digital(DIGITAL_B);
 
-  if(pos_intake) intake.moveVoltage(12000 * pos_intake);
-  else if(neg_intake) intake.moveVoltage(-12000 * neg_intake);
-  else intake.moveVoltage(0);
-
-  if (main_controller.get_digital(DIGITAL_X))
-  {
-    encoder_back.reset();
-    encoder_back.reset_position();
+  if (main_controller.get_digital_new_press(DIGITAL_UP) && flywheel_on) {
+    flywheel_rpm += flywheel_rpm_increment;
+  } else if (main_controller.get_digital_new_press(DIGITAL_DOWN) &&
+             flywheel_on) {
+    flywheel_rpm -= flywheel_rpm_increment;
   }
-  
+  flywheel_rpm = ::std::clamp(flywheel_rpm, 0.0, 600.0);
+
+  char buff[20];
+  std::sprintf(buff, "%f", flywheel_rpm);
+  main_controller.set_text(2, 0, buff);
+
+  // Enable Flywheel TBH Controller
+  if (flywheel_on) {
+    flywheel_tbh_error = flywheel_rpm - flywheel.getActualVelocity();
+    flywheel_tbh_output += flywheel_tbh_gain * flywheel_tbh_error;
+    flywheel_tbh_output = ::std::clamp(flywheel_tbh_output, 0., 12000.);
+
+    pros::lcd::print(0, "Flywheel = %0.2f rpm", flywheel.getActualVelocity());
+
+    if (::std::signbit(flywheel_tbh_error) !=
+        ::std::signbit(flywheel_tbh_last_error)) {
+      flywheel_tbh_output = 0.5 * (flywheel_tbh_output + flywheel_tbh);
+      flywheel_tbh = flywheel_tbh_output;
+      flywheel_tbh_last_error = flywheel_tbh_error;
+    }
+
+    flywheel.moveVoltage(flywheel_tbh_output);
+    pros::lcd::print(0, "error = %0.2f", flywheel_tbh_error);
+    pros::lcd::print(1, "rpm = %0.2f", flywheel_rpm);
+    pros::lcd::print(2, "actualvelocity = %0.2f", flywheel.getActualVelocity());
+    pros::lcd::print(3, "output = %0.2f", flywheel_tbh_output);
+    pros::lcd::print(4, "tbh = %0.2f", flywheel_tbh);
+
+  } else {
+    flywheel.moveVoltage(0);
+  }
+  //////////// INTAKE ////////////
+
+  if (main_controller.get_digital(DIGITAL_R1)) {
+    intake.moveVoltage(12000);
+  } else if (main_controller.get_digital(DIGITAL_R2)) {
+    intake.moveVoltage(-12000);
+  } else {
+    intake.moveVoltage(0);
+  }
+  //////////// INDEXER ////////////
+  if (main_controller.get_digital(DIGITAL_L1)) {
+    indexer.moveVoltage(8000);
+  } else if (main_controller.get_digital(DIGITAL_L2)) {
+    indexer.moveVoltage(-8000);
+  } else {
+    indexer.moveVoltage(0);
+  }
 
 #else
-  //pros::lcd::print(0, "X Position: %3lf", gps.get_status().x);
-  //pros::lcd::print(0, "Y Position: %3lf", gps.get_status().y);
+  //////////// DRIVE ////////////
+  const double forwards = AnalogInputScaling(
+      main_controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y) / 127.0, 2);
+  const double sideways = AnalogInputScaling(
+      main_controller.get_analog(::pros::E_CONTROLLER_ANALOG_LEFT_X) / 127.0,
+      2);
+  const double rotation = AnalogInputScaling(
+      main_controller.get_analog(::pros::E_CONTROLLER_ANALOG_RIGHT_X) / 127.0,
+      7);
 
-    //Tank
-    // double Forward = main_controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y)/127.0;    //Forward
-    // double Rotate = main_controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X)/127.0;    //Rotate
-    // right_side.moveVoltage(12000 * Rotate);
-    // left_side.moveVoltage(12000 * Rotate);
+  drive_front_left.moveVelocity(
+      static_cast<int>(drive_front_left.getGearing()) *
+      std::clamp(forwards + sideways + rotation, -1.0, 1.0));
+  drive_front_right.moveVelocity(
+      static_cast<int>(drive_front_right.getGearing()) *
+      std::clamp(forwards - sideways - rotation, -1.0, 1.0));
+  drive_back_left.moveVelocity(
+      static_cast<int>(drive_back_left.getGearing()) *
+      std::clamp(forwards - sideways + rotation, -1.0, 1.0));
+  drive_back_right.moveVelocity(
+      static_cast<int>(drive_front_right.getGearing()) *
+      std::clamp(forwards + sideways - rotation, -1.0, 1.0));
 
-    //Normal
-    double Forw = main_controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);   //Forward
-    double Rotar = main_controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);  //Rotate
-
-    Forw = PreprocessJoysticks(Forw, 2, 0.0);
-
-    Rotar = PreprocessJoysticks(Rotar, 7, 0);
-
-    left_side.moveVelocity(
-      static_cast<int>(left_side.getGearing()) *
-      std::clamp(Forw + Rotar, -1.0, 1.0));
-    right_side.moveVelocity(
-      static_cast<int>(right_side.getGearing()) *
-      std::clamp(Forw - Rotar, -1.0, 1.0));
-
-    if (main_controller.get_digital_new_press(DIGITAL_L1)) {
-    if (!catapult_toggle) {
-      catapult_toggle = true;
-    } else if (proximity_sensor.get_value()) {
-      catapult_toggle = false;
-    }
-    catapult_seen = false;
+  //////////// PUNCHER ////////////
+  if (main_controller.get_digital(DIGITAL_L1)) {
+    puncher.moveVoltage(12000);
+  } else if (main_controller.get_digital(DIGITAL_L2)) {
+    puncher.moveVoltage(-12000);
+  } else {
+    puncher.moveVoltage(0);
   }
 
-  if (catapult_toggle && !proximity_sensor.get_value() && !catapult_seen) {
-    catapult.moveVelocity(100);
-  } else if (!catapult_toggle && proximity_sensor.get_value())
-    catapult.moveVelocity(100);
+  //////////// Expansion ////////////
+  if (main_controller.get_digital(DIGITAL_LEFT) &&
+      main_controller.get_digital(DIGITAL_RIGHT) &&
+      main_controller.get_digital(DIGITAL_Y))
+    expansion.set_value(1);
   else
-    catapult.moveVelocity(0);
+    expansion.set_value(0);
 
-  if (proximity_sensor.get_new_press()) catapult_seen = true;
-
-
-
-   /* if(main_controller.get_digital(DIGITAL_Y))
-    {
-        intake.moveVoltage(12000);
-    }*/
-
-     if(main_controller.get_digital(DIGITAL_Y) && !main_controller.get_digital(DIGITAL_A))
-  {
-    expansion = !expansion;
-    if(expansion)
-    {
-      valve_sole_eit.set_value(true);
-    }
-    else if(!expansion)
-    {
-      valve_sole_eit.set_value(false);
-    }
-    pros::delay(500);
+  //////////// FLYWHEEL ////////////
+  if (main_controller.get_digital_new_press(DIGITAL_A)) {
+    flywheel_on = true;
+  } else if (main_controller.get_digital_new_press(DIGITAL_B)) {
+    flywheel_on = false;
   }
 
-     if(main_controller.get_digital(DIGITAL_A) && !main_controller.get_digital(DIGITAL_Y))
-  {
-    expansion = !expansion;
-    if(expansion)
-    {
-      solenoid_valve_eit.set_value(true);
+  if (main_controller.get_digital_new_press(DIGITAL_UP) && flywheel_on) {
+    flywheel_rpm += flywheel_rpm_increment;
+  } else if (main_controller.get_digital_new_press(DIGITAL_DOWN) &&
+             flywheel_on) {
+    flywheel_rpm -= flywheel_rpm_increment;
+  }
+  flywheel_rpm = ::std::clamp(flywheel_rpm, 0.0, 600.0);
+
+  char buff[20];
+  std::sprintf(buff, "%f", flywheel_rpm);
+  main_controller.set_text(2, 0, buff);
+
+  // Enable Flywheel TBH Controller
+  if (flywheel_on) {
+    flywheel_tbh_error = flywheel_rpm - flywheel.getActualVelocity();
+    flywheel_tbh_output += flywheel_tbh_gain * flywheel_tbh_error;
+    flywheel_tbh_output = ::std::clamp(flywheel_tbh_output, 0., 12000.);
+
+    pros::lcd::print(0, "Flywheel = %0.2f rpm", flywheel.getActualVelocity());
+
+    if (::std::signbit(flywheel_tbh_error) !=
+        ::std::signbit(flywheel_tbh_last_error)) {
+      flywheel_tbh_output = 0.5 * (flywheel_tbh_output + flywheel_tbh);
+      flywheel_tbh = flywheel_tbh_output;
+      flywheel_tbh_last_error = flywheel_tbh_error;
     }
-    else if(!expansion)
-    {
-      solenoid_valve_eit.set_value(false);
-    }
-    pros::delay(500);
+
+    flywheel.moveVoltage(flywheel_tbh_output);
+    pros::lcd::print(0, "error = %0.2f", flywheel_tbh_error);
+    pros::lcd::print(1, "rpm = %0.2f", flywheel_rpm);
+    pros::lcd::print(2, "actualvelocity = %0.2f", flywheel.getActualVelocity());
+    pros::lcd::print(3, "output = %0.2f", flywheel_tbh_output);
+    pros::lcd::print(4, "tbh = %0.2f", flywheel_tbh);
+
+  } else {
+    flywheel.moveVoltage(0);
   }
 
+  //////////// INTAKE ////////////
 
-    /*if (main_controller.get_digital(DIGITAL_L1))
-    {
-        catapult.moveVoltage(8000);
-
-        //Time to reset its prosition (varies with voltage)
-        pros::delay(200);
-    }
-    else
-    {
-      catapult.moveVoltage(0);
-    }*/
-
-    // Intake
-    if(main_controller.get_digital(DIGITAL_R1)) intake.moveVoltage(12000);
-    else if(main_controller.get_digital(DIGITAL_R2)) intake.moveVoltage(-12000);
-    else intake.moveVoltage(0);
-    
+  if (main_controller.get_digital(DIGITAL_R1)) {
+    intake.moveVoltage(12000);
+  } else if (main_controller.get_digital(DIGITAL_R2)) {
+    intake.moveVoltage(-12000);
+  } else {
+    intake.moveVoltage(0);
+  }
 
 #endif
-
 }
 
-inline void aon::operator_control::_OpControlDefault() { _OpControlManes(); }
+/// Default Operator Control configuration
+inline void _OpControlDefault() { _OpControlManes(); }
 
 // ============================================================================
-//    ___          _
-//   | _ ) ___  __| |_  _
-//   | _ \/ _ \/ _` | || |
-//   |___/\___/\__,_|\_, |
-//                   |__/
+//    __  __      _        ___             _   _
+//   |  \/  |__ _(_)_ _   | __|  _ _ _  __| |_(_)___ _ _
+//   | |\/| / _` | | ' \  | _| || | ' \/ _|  _| / _ \ ' \
+//   |_|  |_\__,_|_|_||_| |_| \_,_|_||_\__|\__|_\___/_||_|
+//
 // ============================================================================
 
-inline void aon::operator_control::Run(const Drivers driver) {
+/**
+ *\brief Main function for operator control.
+ *
+ * \details Control configurations for the different drivers are manipulated
+ * here.
+ *
+ * \param driver Who is driving the robot?
+ *
+ * \see aon::operator_control::Drivers
+ *
+ */
+inline void Run(const Drivers driver) {
   switch (driver) {
     case kEnrique:
       _OpControlEnrique();
@@ -334,4 +292,77 @@ inline void aon::operator_control::Run(const Drivers driver) {
   }
 }
 
-#endif  // AON_COMPETITION_OPERATOR_CONTROL_HPP_
+// ============================================================================
+//    _____       _
+//   |_   _|__ __| |_ ___
+//     | |/ -_|_-<  _(_-<
+//     |_|\___/__/\__/__/
+//
+// ============================================================================
+
+/**
+ * \brief Tests for the operator_control namespace
+ *
+ * \details Tests helper methods and input scaling. These tests are pretty
+ * manual for now, but hopefully next year we'll have automated tests with a
+ * solid framework.
+ *
+ */
+namespace test {
+inline bool TestAnalogInputScaling() {
+  // (-1, -1), (0, 0) and (1, 1) MUST be in the curve for all values of `t`
+  for (int t = 0; t < 1000; t++) {
+    if (AnalogInputScaling(1.0, t) != 1.0) return false;
+    if (AnalogInputScaling(0, t) != 0) return false;
+    if (AnalogInputScaling(-1.0, t) != -1.0) return false;
+  }
+
+  // For t = 0, function must be linear with a slope of 1 and Y intercept of 0
+  for (double x = -1.0; x <= 1.0; x += 1.0 / (1 << 10))
+    if (AnalogInputScaling(x, 0) != x) return false;
+
+  // Test a couple of values for t = 1, 2, 3, 4, and 5
+  const double values[5][16] = {
+      // t = 1
+      {-1.0, -0.7993598934745575, -0.665907684410978, -0.5432575923824988,
+       -0.4223082603458672, -0.3016191456359972, -0.18096821992325748,
+       -0.060322539673251165, 0.060322539673251165, 0.18096821992325748,
+       0.3016191456359972, 0.4223082603458672, 0.5432575923824988,
+       0.665907684410978, 0.7993598934745575, 1.0},
+      // t = 2
+      {-1.0, -0.7384582066030775, -0.6048984343306752, -0.4919149387807351,
+       -0.382171114502365, -0.2729229619248319, -0.16374755317798959,
+       -0.05458213618483686, 0.05458213618483686, 0.16374755317798959,
+       0.2729229619248319, 0.382171114502365, 0.4919149387807351,
+       0.6048984343306752, 0.7384582066030775, 1.0},
+      // t = 3
+      {-1.0, -0.6833520815002528, -0.5496949820117037, -0.44545818466060066,
+       -0.34585352308999784, -0.24695758114813546, -0.14816564954334369,
+       -0.04938800431389544, 0.04938800431389544, 0.14816564954334369,
+       0.24695758114813546, 0.34585352308999784, 0.44545818466060066,
+       0.5496949820117037, 0.6833520815002528, 1.0},
+      // t = 4
+      {-1.0, -0.6334899975442465, -0.49974483274873444, -0.4034223752122067,
+       -0.3129920074471465, -0.22346313304782897, -0.1340665600904855,
+       -0.044688159442854515, 0.044688159442854515, 0.1340665600904855,
+       0.22346313304782897, 0.3129920074471465, 0.4034223752122067,
+       0.49974483274873444, 0.6334899975442465, 1.0},
+      // t = 5
+      {-1.0, -0.5883729182396015, -0.4545480686591184, -0.3653868019258703,
+       -0.28325767848012057, -0.20220447729056773, -0.12130917639330331,
+       -0.04043556394457229, 0.04043556394457229, 0.12130917639330331,
+       0.20220447729056773, 0.28325767848012057, 0.3653868019258703,
+       0.4545480686591184, 0.5883729182396015, 1.0}};
+
+  // Output values are so accurate that != is enough.
+  for (int t = 0; t < 5; t++) {
+    for (int i = 0; i <= 15; i++) {
+      const double x = (2 * i - 15.0) / 15.0;
+      if (values[t][i] != AnalogInputScaling(x, t + 1)) return false;
+    }
+  }
+
+  return true;
+}
+}  // namespace test
+}  // namespace aon::operator_control

@@ -1,0 +1,36 @@
+name: Code_Linter
+
+on:
+  # Only run when a PR is updated with a new commit
+  pull_request:
+    types: [synchronize]
+    branches: [main]
+  
+  # Also run when main branch is updated
+  push:
+    branches: [main]
+
+jobs:
+  CPPLint:
+    runs-on: self-hosted
+
+    steps:
+    - name: Checkout GitHub Repository's Code
+      uses: actions/checkout@v2
+
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.10'
+
+    - name: Retrieve CPPLint from Gist (https://gist.github.com/M4rqu1705/763d00415359d548f832e04d39736d5f)
+      run: wget https://gist.githubusercontent.com/M4rqu1705/763d00415359d548f832e04d39736d5f/raw/cd7cadea0e104b752b0fe47058c0417c9ffdbaf3/cpplint.py
+    
+    - name: Run CPPLint
+      run: python ./cpplint.py
+          --verbose=3
+          --recursive
+          --extensions=h,hpp,c,cpp
+          --filter=-legal/copyright,-runtime/printf
+          --root=include
+          ./include/aon

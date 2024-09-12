@@ -271,17 +271,13 @@ inline void Initialize() {
 #if GYRO_ENABLED
   prev_gyro = 0.0;
 #endif
-  encoder_left.reset();
-  encoder_right.reset();
-  encoder_back.reset();
-
   encoder_left.set_position(0);
   encoder_right.set_position(0);
   encoder_back.set_position(0);
 
-  encoder_left.reset_position();
-  encoder_right.reset_position();
-  encoder_back.reset_position();
+  encoder_left.reset();
+  encoder_right.reset();
+  encoder_back.reset();
 
   ResetInitial();
 }
