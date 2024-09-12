@@ -1,0 +1,14 @@
+# Use the Doxyfile in this exact directory as base for MCSS
+@INCLUDE              = Doxyfile
+
+# Suggested config from https://mcss.mosra.cz/documentation/doxygen/#basic-usage
+GENERATE_HTML         = NO
+GENERATE_LATEX        = NO
+GENERATE_XML          = YES
+XML_PROGRAMLISTING    = NO
+
+# Additional configs customizing M.CSS features that help improve quality of generated website
+M_FAVICON             = ./images/AON_Robotics_logo.png
+M_SEARCH_EXTERNAL_URL = "https://pros.cs.purdue.edu/v5/search.html?q={query}&check_keywords=yes&area=default#"
+M_SHOW_UNDOCUMENTED   = YES
+M_THEME_COLOR         = "#339966"

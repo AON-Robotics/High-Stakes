@@ -1,0 +1,50 @@
+# Language and character encoding
+OUTPUT_LANGUAGE         = English
+DOXYFILE_ENCODING       = UTF-8
+
+# Overall project info
+PROJECT_NAME            = "AON Robotics Tipping Point"
+PROJECT_BRIEF           = "Added documentation workflow with Docker and Doxygen with M.CSS for style"
+PROJECT_NUMBER          = 0.0.5
+
+# Variables that affect some of the headers and website's styles
+MAIN_PROJECT_URL        = "https://github.com/AON-Robotics/2021-Tipping-Point"
+PROJECT_LOGO            = ./images/AON_Robotics_logo.png
+
+# C++ code processing config
+ENABLE_PREPROCESSING    = YES
+EXTRACT_ALL             = YES
+EXTRACT_PRIVATE         = YES
+EXTRACT_STATIC          = YES
+MARKDOWN_SUPPORT        = YES
+FULL_PATH_NAMES         = NO
+MACRO_EXPANSION         = NO
+TAB_SIZE                = 2
+SHOW_INCLUDE_FILES      = YES
+
+
+# Project structure 
+EXCLUDE_PATTERNS        = "json.hpp"
+FILE_PATTERNS           = "*.hpp", "*.h", "*.md"
+IMAGE_PATH              = ./images
+INPUT                   = ../include/aon
+OUTPUT_DIRECTORY        = ./output
+RECURSIVE               = YES
+STRIP_FROM_PATH         = /root/
+
+# Additional files
+HTML_EXTRA_FILES        = "../include/aon/controls/trapezoid-profile/Introduction to Motion Profile.pdf"
+HTML_EXTRA_FILES        += "../include/aon/tools/gui-image-generator/config.py"
+HTML_EXTRA_FILES        += "../include/aon/controls/path-planning/CubicHermiteSplines.m"
+HTML_EXTRA_FILES        += "../include/aon/controls/path-planning/QuinticHermiteSplines.m"
+HTML_EXTRA_FILES        += "../include/aon/controls/pid/PID Controller.pdf"
+
+# Log warnings
+QUIET                   = NO
+WARNINGS                = YES
+WARN_IF_UNDOCUMENTED    = YES
+WARN_IF_DOC_ERROR       = YES
+WARN_IF_INCOMPLETE_DOC  = YES
+WARN_NO_PARAMDOC        = YES
+WARN_AS_ERROR           = NO
+WARN_LOGFILE            = "./output/warnings.txt"
