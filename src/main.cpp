@@ -23,7 +23,7 @@ void autonomous() {
 void opcontrol() {
 
     while (true) {
-
+      aon::programming_skills();
       aon::operator_control::Run(aon::operator_control::kManes);
       aon::odometry::Update();
       pros::delay(10);
