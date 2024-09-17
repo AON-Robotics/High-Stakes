@@ -92,6 +92,24 @@ inline void programming_skills() {
   // expansion.set_value(1);
 }
 
+  void tempRoutine() {  // temporary routne to test GUI
+
+  // aon::PID x_pid = aon::PID(10, 0, 0.75);
+  // aon::PID y_pid = aon::PID(10, 0, 0.75);
+  // aon::PID heading_pid = aon::PID(0.15, 0, 0.0099);
+
+  // MoveDrivePID(x_pid, y_pid, heading_pid, 10, 0, 0, 3);
+  // x_pid.Reset();
+  // y_pid.Reset();
+  // heading_pid.Reset();
+}
+
+  int tempRoutine_wrapper() {  // fixing gui return type Temp
+    // aon::odometry::Debug();
+    tempRoutine();
+    return 0;
+  }
+
 #else
 void MoveDrivePID(aon::PID x_pid, aon::PID y_pid, aon::PID heading_pid,
                   double set_x, double set_y, double set_heading,

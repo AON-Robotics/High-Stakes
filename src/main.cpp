@@ -4,7 +4,7 @@ void initialize() {
   aon::logging::Initialize();
   aon::ConfigureMotors();
   aon::odometry::Initialize();
-  pros::Task gui_task(aon::gui::Initialize);
+  // pros::Task gui_task(aon::gui::Initialize);
 
 
 }
@@ -15,7 +15,7 @@ void competition_initialize() {}
 
 void autonomous() { 
  
- aon::AutonomousReader->ExecuteFunction("autonomous");
+//  aon::AutonomousReader->ExecuteFunction("autonomous");
 
 
  }

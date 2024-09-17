@@ -10,42 +10,53 @@
 
 namespace aon {
 
+#define SAMPLE_SIZE 50
+
 #if USING_15_INCH_ROBOT
 
-void MoveDrivePID(aon::PID f_pid, aon::Vector targetPos, double timeout,
-                  double sign = 1.) {
-  aon::Vector initialPos = aon::odometry::GetPosition();
+void MoveDrivePID(aon::PID f_pid, aon::Vector targetPos, double timeLimit, double sign = 1) {
+
+  double avg_x = 0;
+  double avg_y = 0;
+  
+  // Get the average of the readings from the GPS
+  for (int i = 0; i < SAMPLE_SIZE; i++)
+  {
+    avg_x += gps.get_status().x;
+    avg_y += gps.get_status().y;
+  }
+
+  avg_x /= SAMPLE_SIZE; avg_y /= SAMPLE_SIZE;
+  // End average
+
+
+  // Define the initialPos using the GPS instead of odometry (later should be both)
+  aon::Vector initialPos = Vector().SetPosition(avg_x, avg_y);
+  // aon::Vector initialPos = aon::odometry::GetPosition();
 
   const double start_time = pros::micros() / 1E6;
-#define t (pros::micros() / 1E6 - start_time)
+  #define time (pros::micros() / 1E6 - start_time) //every time the variable is called it is recalculated automatically
 
-  const double t_minus_i = (targetPos - initialPos).GetMagnitude();
-  while (t < timeout) {
+  //Target position minus initial position
+  const double targetDiplacement = (targetPos - initialPos).GetMagnitude();
+  while (time < timeLimit) {
     aon::odometry::Update();
 
-    f_pid.Output(t_minus_i,
-                 (aon::odometry::GetPos() - initialPos).GetMagnitude());
+    double currentDisplacement = (aon::odometry::GetPos() - initialPos).GetMagnitude();
 
-    pros::lcd::print(0, "%f",
-                     (aon::odometry::GetPos() - initialPos).GetMagnitude());
+    double output = f_pid.Output(targetDiplacement, currentDisplacement);
 
-    drive_front_left.moveVelocity(sign *
-                                  std::clamp(f_pid.GetResult(), -100., 100.));
-    drive_front_right.moveVelocity(sign *
-                                   std::clamp(f_pid.GetResult(), -100., 100.));
-    drive_back_left.moveVelocity(sign *
-                                 std::clamp(f_pid.GetResult(), -100., 100.));
-    drive_back_right.moveVelocity(sign *
-                                  std::clamp(f_pid.GetResult(), -100., 100.));
+    pros::lcd::print(0, "%f", currentDisplacement);
+
+    driveLeft.moveVelocity(sign * std::clamp(output, -100., 100.));
+    driveRight.moveVelocity(sign * std::clamp(output, -100., 100.));
 
     pros::delay(10);
   }
 
-  drive_front_left.moveVelocity(0);
-  drive_front_right.moveVelocity(0);
-  drive_back_left.moveVelocity(0);
-  drive_back_right.moveVelocity(0);
-#undef t
+  driveLeft.moveVelocity(0);
+  driveRight.moveVelocity(0);
+#undef time
 }
 
 inline void first_routine() {
@@ -79,6 +90,31 @@ inline void programming_skills() {
   f_id.Reset();*/
 
   // expansion.set_value(1);
+
+}
+  int first_routine_wrapper() {  // fixing gui return type Temp
+  // aon::odometry::Debug();
+  first_routine();
+  return 0;
+  
+}
+
+void tempRoutine() {  // temporary routne to test GUI
+
+  // aon::PID x_pid = aon::PID(10, 0, 0.75);
+  // aon::PID y_pid = aon::PID(10, 0, 0.75);
+  // aon::PID heading_pid = aon::PID(0.15, 0, 0.0099);
+
+  // MoveDrivePID(x_pid, y_pid, heading_pid, 10, 0, 0, 3);
+  // x_pid.Reset();
+  // y_pid.Reset();
+  // heading_pid.Reset();
+}
+
+int tempRoutine_wrapper() {  // fixing gui return type Temp
+  // aon::odometry::Debug();
+  tempRoutine();
+  return 0;
 }
 
 #else
