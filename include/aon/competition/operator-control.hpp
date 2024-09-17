@@ -71,72 +71,13 @@ inline void _OpControlEnrique() {
 inline void _OpControlManes() {
 #if USING_15_INCH_ROBOT
 
-  const double forwards = AnalogInputScaling(
-      main_controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y) / 127.0, 10);
-  const double sideways = AnalogInputScaling(
-      main_controller.get_analog(::pros::E_CONTROLLER_ANALOG_LEFT_X) / 127.0,
-      10);
-  const double rotation = AnalogInputScaling(
-      main_controller.get_analog(::pros::E_CONTROLLER_ANALOG_RIGHT_X) / 127.0,
-      20);
+  //////////// DRIVE ////////////
+  const double leftInput = AnalogInputScaling(main_controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y) / 127.0, 10);
+  const double rightInput = AnalogInputScaling(main_controller.get_analog(::pros::E_CONTROLLER_ANALOG_RIGHT_Y) / 127.0, 10);
 
-  drive_front_left.moveVelocity(
-      static_cast<int>(drive_front_left.getGearing()) *
-      std::clamp(forwards + sideways + rotation, -1.0, 1.0));
-  drive_front_right.moveVelocity(
-      static_cast<int>(drive_front_right.getGearing()) *
-      std::clamp(forwards - sideways - rotation, -1.0, 1.0));
-  drive_back_left.moveVelocity(
-      static_cast<int>(drive_back_left.getGearing()) *
-      std::clamp(forwards - sideways + rotation, -1.0, 1.0));
-  drive_back_right.moveVelocity(
-      static_cast<int>(drive_front_right.getGearing()) *
-      std::clamp(forwards + sideways - rotation, -1.0, 1.0));
+  driveLeft.moveVelocity(static_cast<int>(driveLeft.getGearing()) * std::clamp(leftInput, -1.0, 1.0));
+  driveRight.moveVelocity(static_cast<int>(driveRight.getGearing()) * std::clamp(rightInput, -1.0, 1.0));
 
-  /////////// FLYWHEEL ///////////
-  if (main_controller.get_digital_new_press(DIGITAL_A)) {
-    flywheel_on = true;
-  } else if (main_controller.get_digital_new_press(DIGITAL_B)) {
-    flywheel_on = false;
-  }
-
-  if (main_controller.get_digital_new_press(DIGITAL_UP) && flywheel_on) {
-    flywheel_rpm += flywheel_rpm_increment;
-  } else if (main_controller.get_digital_new_press(DIGITAL_DOWN) &&
-             flywheel_on) {
-    flywheel_rpm -= flywheel_rpm_increment;
-  }
-  flywheel_rpm = ::std::clamp(flywheel_rpm, 0.0, 600.0);
-
-  char buff[20];
-  std::sprintf(buff, "%f", flywheel_rpm);
-  main_controller.set_text(2, 0, buff);
-
-  // Enable Flywheel TBH Controller
-  if (flywheel_on) {
-    flywheel_tbh_error = flywheel_rpm - flywheel.getActualVelocity();
-    flywheel_tbh_output += flywheel_tbh_gain * flywheel_tbh_error;
-    flywheel_tbh_output = ::std::clamp(flywheel_tbh_output, 0., 12000.);
-
-    pros::lcd::print(0, "Flywheel = %0.2f rpm", flywheel.getActualVelocity());
-
-    if (::std::signbit(flywheel_tbh_error) !=
-        ::std::signbit(flywheel_tbh_last_error)) {
-      flywheel_tbh_output = 0.5 * (flywheel_tbh_output + flywheel_tbh);
-      flywheel_tbh = flywheel_tbh_output;
-      flywheel_tbh_last_error = flywheel_tbh_error;
-    }
-
-    flywheel.moveVoltage(flywheel_tbh_output);
-    pros::lcd::print(0, "error = %0.2f", flywheel_tbh_error);
-    pros::lcd::print(1, "rpm = %0.2f", flywheel_rpm);
-    pros::lcd::print(2, "actualvelocity = %0.2f", flywheel.getActualVelocity());
-    pros::lcd::print(3, "output = %0.2f", flywheel_tbh_output);
-    pros::lcd::print(4, "tbh = %0.2f", flywheel_tbh);
-
-  } else {
-    flywheel.moveVoltage(0);
-  }
   //////////// INTAKE ////////////
 
   if (main_controller.get_digital(DIGITAL_R1)) {
@@ -146,100 +87,14 @@ inline void _OpControlManes() {
   } else {
     intake.moveVoltage(0);
   }
-  //////////// INDEXER ////////////
-  if (main_controller.get_digital(DIGITAL_L1)) {
-    indexer.moveVoltage(8000);
-  } else if (main_controller.get_digital(DIGITAL_L2)) {
-    indexer.moveVoltage(-8000);
-  } else {
-    indexer.moveVoltage(0);
-  }
 
 #else
   //////////// DRIVE ////////////
-  const double forwards = AnalogInputScaling(
-      main_controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y) / 127.0, 2);
-  const double sideways = AnalogInputScaling(
-      main_controller.get_analog(::pros::E_CONTROLLER_ANALOG_LEFT_X) / 127.0,
-      2);
-  const double rotation = AnalogInputScaling(
-      main_controller.get_analog(::pros::E_CONTROLLER_ANALOG_RIGHT_X) / 127.0,
-      7);
+  const double leftInput = AnalogInputScaling(main_controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y) / 127.0, 10);
+  const double rightInput = AnalogInputScaling(main_controller.get_analog(::pros::E_CONTROLLER_ANALOG_RIGHT_Y) / 127.0, 10);
 
-  drive_front_left.moveVelocity(
-      static_cast<int>(drive_front_left.getGearing()) *
-      std::clamp(forwards + sideways + rotation, -1.0, 1.0));
-  drive_front_right.moveVelocity(
-      static_cast<int>(drive_front_right.getGearing()) *
-      std::clamp(forwards - sideways - rotation, -1.0, 1.0));
-  drive_back_left.moveVelocity(
-      static_cast<int>(drive_back_left.getGearing()) *
-      std::clamp(forwards - sideways + rotation, -1.0, 1.0));
-  drive_back_right.moveVelocity(
-      static_cast<int>(drive_front_right.getGearing()) *
-      std::clamp(forwards + sideways - rotation, -1.0, 1.0));
-
-  //////////// PUNCHER ////////////
-  if (main_controller.get_digital(DIGITAL_L1)) {
-    puncher.moveVoltage(12000);
-  } else if (main_controller.get_digital(DIGITAL_L2)) {
-    puncher.moveVoltage(-12000);
-  } else {
-    puncher.moveVoltage(0);
-  }
-
-  //////////// Expansion ////////////
-  if (main_controller.get_digital(DIGITAL_LEFT) &&
-      main_controller.get_digital(DIGITAL_RIGHT) &&
-      main_controller.get_digital(DIGITAL_Y))
-    expansion.set_value(1);
-  else
-    expansion.set_value(0);
-
-  //////////// FLYWHEEL ////////////
-  if (main_controller.get_digital_new_press(DIGITAL_A)) {
-    flywheel_on = true;
-  } else if (main_controller.get_digital_new_press(DIGITAL_B)) {
-    flywheel_on = false;
-  }
-
-  if (main_controller.get_digital_new_press(DIGITAL_UP) && flywheel_on) {
-    flywheel_rpm += flywheel_rpm_increment;
-  } else if (main_controller.get_digital_new_press(DIGITAL_DOWN) &&
-             flywheel_on) {
-    flywheel_rpm -= flywheel_rpm_increment;
-  }
-  flywheel_rpm = ::std::clamp(flywheel_rpm, 0.0, 600.0);
-
-  char buff[20];
-  std::sprintf(buff, "%f", flywheel_rpm);
-  main_controller.set_text(2, 0, buff);
-
-  // Enable Flywheel TBH Controller
-  if (flywheel_on) {
-    flywheel_tbh_error = flywheel_rpm - flywheel.getActualVelocity();
-    flywheel_tbh_output += flywheel_tbh_gain * flywheel_tbh_error;
-    flywheel_tbh_output = ::std::clamp(flywheel_tbh_output, 0., 12000.);
-
-    pros::lcd::print(0, "Flywheel = %0.2f rpm", flywheel.getActualVelocity());
-
-    if (::std::signbit(flywheel_tbh_error) !=
-        ::std::signbit(flywheel_tbh_last_error)) {
-      flywheel_tbh_output = 0.5 * (flywheel_tbh_output + flywheel_tbh);
-      flywheel_tbh = flywheel_tbh_output;
-      flywheel_tbh_last_error = flywheel_tbh_error;
-    }
-
-    flywheel.moveVoltage(flywheel_tbh_output);
-    pros::lcd::print(0, "error = %0.2f", flywheel_tbh_error);
-    pros::lcd::print(1, "rpm = %0.2f", flywheel_rpm);
-    pros::lcd::print(2, "actualvelocity = %0.2f", flywheel.getActualVelocity());
-    pros::lcd::print(3, "output = %0.2f", flywheel_tbh_output);
-    pros::lcd::print(4, "tbh = %0.2f", flywheel_tbh);
-
-  } else {
-    flywheel.moveVoltage(0);
-  }
+  driveLeft.moveVelocity(static_cast<int>(driveLeft.getGearing()) * std::clamp(leftInput, -1.0, 1.0));
+  driveRight.moveVelocity(static_cast<int>(driveRight.getGearing()) * std::clamp(rightInput, -1.0, 1.0));
 
   //////////// INTAKE ////////////
 
@@ -308,6 +163,8 @@ inline void Run(const Drivers driver) {
  * solid framework.
  *
  */
+
+//These tests are for SPIN-UP ROBOT SPECIFICALLY
 namespace test {
 inline bool TestAnalogInputScaling() {
   // (-1, -1), (0, 0) and (1, 1) MUST be in the curve for all values of `t`

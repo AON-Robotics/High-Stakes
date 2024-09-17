@@ -31,8 +31,8 @@
  *       - GYRO_FILTER_LENGTH ( = 5)
  *    2. Have available the `vector.hpp` header file
  *    3. Have available pros and okapilib
- *    4. Have available the `globals.hpp` header file with `encoder_left`,
- * `encoder_right`, and `encoder_back` objects instantiated and `gyroscope` if
+ *    4. Have available the `globals.hpp` header file with `encoderLeft`,
+ * `encoderRight`, and `encoderBack` objects instantiated and `gyroscope` if
  * the GYRO_ENABLED is true.
  *
  *  \par Instructions
@@ -98,11 +98,11 @@ pros::Mutex y_mutex;
 pros::Mutex orientation_mutex;
 
 //> Encoder left struct instance
-STRUCT_encoder encoder_left_data;
+STRUCT_encoder encoderLeft_data;
 //> Encoder right struct instance
-STRUCT_encoder encoder_right_data;
+STRUCT_encoder encoderRight_data;
 //> Encoder back struct instance
-STRUCT_encoder encoder_back_data;
+STRUCT_encoder encoderBack_data;
 
 // ============================================================================
 //     ___     _   _                __       ___      _   _
@@ -214,28 +214,28 @@ inline void SetRadians(const double radians) {
  * when using encoders.
  */
 inline void ResetCurrent(const double x, const double y, const double theta) {
-  const double kCurrentL = encoder_left.get_position() / 100.0;
-  const double kCurrentR = encoder_right.get_position() / 100.0;
-  const double kCurrentB = encoder_back.get_position() / 100.0;
+  const double kCurrentL = encoderLeft.get_position() / 100.0;
+  const double kCurrentR = encoderRight.get_position() / 100.0;
+  const double kCurrentB = encoderBack.get_position() / 100.0;
   const double kConversionFactor =
       M_PI * TRACKING_WHEEL_DIAMETER / DEGREES_PER_REVOLUTION;
 
   // Reset encoder's struct variables
-  encoder_left_data = {kCurrentL,
+  encoderLeft_data = {kCurrentL,
                        kCurrentL,
                        0.0,
                        kCurrentL * kConversionFactor,
                        kCurrentL * kConversionFactor,
                        0.0};
 
-  encoder_right_data = {kCurrentR,
+  encoderRight_data = {kCurrentR,
                         kCurrentR,
                         0,
                         kCurrentR * kConversionFactor,
                         kCurrentR * kConversionFactor,
                         0.0};
 
-  encoder_back_data = {kCurrentB,
+  encoderBack_data = {kCurrentB,
                        kCurrentB,
                        0,
                        kCurrentB * kConversionFactor,
@@ -271,13 +271,13 @@ inline void Initialize() {
 #if GYRO_ENABLED
   prev_gyro = 0.0;
 #endif
-  encoder_left.set_position(0);
-  encoder_right.set_position(0);
-  encoder_back.set_position(0);
+  encoderLeft.set_position(0);
+  encoderRight.set_position(0);
+  encoderBack.set_position(0);
 
-  encoder_left.reset();
-  encoder_right.reset();
-  encoder_back.reset();
+  encoderLeft.reset();
+  encoderRight.reset();
+  encoderBack.reset();
 
   ResetInitial();
 }
@@ -289,50 +289,50 @@ inline void Initialize() {
  * */
 
 inline void Update() {
-  const double kCurrentL = encoder_left.get_position() / 100.0;
-  const double kCurrentR = encoder_right.get_position() / 100.0;
-  const double kCurrentB = encoder_back.get_position() / 100.0;
+  const double kCurrentL = encoderLeft.get_position() / 100.0;
+  const double kCurrentR = encoderRight.get_position() / 100.0;
+  const double kCurrentB = encoderBack.get_position() / 100.0;
   const double kConversionFactor =
       M_PI * TRACKING_WHEEL_DIAMETER / DEGREES_PER_REVOLUTION;
 
   // Update difference between readings
-  encoder_left_data.delta = kCurrentL - encoder_left_data.previous_value;
-  encoder_right_data.delta = kCurrentR - encoder_right_data.previous_value;
-  encoder_back_data.delta = kCurrentB - encoder_back_data.previous_value;
+  encoderLeft_data.delta = kCurrentL - encoderLeft_data.previous_value;
+  encoderRight_data.delta = kCurrentR - encoderRight_data.previous_value;
+  encoderBack_data.delta = kCurrentB - encoderBack_data.previous_value;
 
-  encoder_left_data.delta_distance =
-      kConversionFactor * encoder_left_data.delta;
-  encoder_right_data.delta_distance =
-      kConversionFactor * encoder_right_data.delta;
-  encoder_back_data.delta_distance =
-      kConversionFactor * encoder_back_data.delta;
+  encoderLeft_data.delta_distance =
+      kConversionFactor * encoderLeft_data.delta;
+  encoderRight_data.delta_distance =
+      kConversionFactor * encoderRight_data.delta;
+  encoderBack_data.delta_distance =
+      kConversionFactor * encoderBack_data.delta;
 
   // "Shift back" the encoder readings ...
-  encoder_left_data.previous_value = encoder_left_data.current_value;
-  encoder_right_data.previous_value = encoder_right_data.current_value;
-  encoder_back_data.previous_value = encoder_back_data.current_value;
+  encoderLeft_data.previous_value = encoderLeft_data.current_value;
+  encoderRight_data.previous_value = encoderRight_data.current_value;
+  encoderBack_data.previous_value = encoderBack_data.current_value;
 
-  encoder_left_data.previous_distance = encoder_left_data.current_distance;
-  encoder_right_data.previous_distance = encoder_right_data.current_distance;
-  encoder_back_data.previous_distance = encoder_back_data.current_distance;
+  encoderLeft_data.previous_distance = encoderLeft_data.current_distance;
+  encoderRight_data.previous_distance = encoderRight_data.current_distance;
+  encoderBack_data.previous_distance = encoderBack_data.current_distance;
 
   // so they can now be updated
-  encoder_left_data.current_value = kCurrentL;
-  encoder_right_data.current_value = kCurrentR;
-  encoder_back_data.current_value = kCurrentB;
+  encoderLeft_data.current_value = kCurrentL;
+  encoderRight_data.current_value = kCurrentR;
+  encoderBack_data.current_value = kCurrentB;
 
-  encoder_left_data.current_distance =
-      kConversionFactor * encoder_left_data.current_value;
-  encoder_right_data.current_distance =
-      kConversionFactor * encoder_right_data.current_value;
-  encoder_back_data.current_distance =
-      kConversionFactor * encoder_back_data.current_value;
+  encoderLeft_data.current_distance =
+      kConversionFactor * encoderLeft_data.current_value;
+  encoderRight_data.current_distance =
+      kConversionFactor * encoderRight_data.current_value;
+  encoderBack_data.current_distance =
+      kConversionFactor * encoderBack_data.current_value;
 
   // BEGIN WITH ODOMETRY CALCULATIONS
   // 🚨⚠ WARNING ⚠🚨: ALL ANGLES ARE IN RADIANS
 
   delta_theta =
-      (encoder_left_data.delta_distance - encoder_right_data.delta_distance) /
+      (encoderLeft_data.delta_distance - encoderRight_data.delta_distance) /
       (DISTANCE_LEFT_TRACKING_WHEEL_CENTER +
        DISTANCE_RIGHT_TRACKING_WHEEL_CENTER);
 
@@ -347,17 +347,17 @@ inline void Update() {
 #endif
 
   if (delta_theta) {
-    const double kRR = encoder_right_data.delta_distance / delta_theta +
+    const double kRR = encoderRight_data.delta_distance / delta_theta +
                        DISTANCE_RIGHT_TRACKING_WHEEL_CENTER;
-    const double kRS = encoder_back_data.delta_distance / delta_theta +
+    const double kRS = encoderBack_data.delta_distance / delta_theta +
                        DISTANCE_BACK_TRACKING_WHEEL_CENTER;
 
     delta_d_local.SetY(2.0 * std::sin(delta_theta / 2.0) * kRR);
     delta_d_local.SetX(2.0 * std::sin(delta_theta / 2.0) * kRS);
 
   } else {
-    delta_d_local.SetX(encoder_back_data.delta_distance);
-    delta_d_local.SetY(encoder_right_data.delta_distance);
+    delta_d_local.SetX(encoderBack_data.delta_distance);
+    delta_d_local.SetY(encoderRight_data.delta_distance);
     delta_theta = 0.0;
   }
 
@@ -400,11 +400,11 @@ inline void Debug() {
 #endif
 
     pros::lcd::print(4, "Enc L: %.2f degrees",
-                     encoder_left.get_position() / 100.0);
+                     encoderLeft.get_position() / 100.0);
     pros::lcd::print(5, "Enc R: %.2f degrees",
-                     encoder_right.get_position() / 100.0);
+                     encoderRight.get_position() / 100.0);
     pros::lcd::print(6, "Enc B: %.2f degrees",
-                     encoder_back.get_position() / 100.0);
+                     encoderBack.get_position() / 100.0);
 
     odometry::Update();
     pros::delay(10);

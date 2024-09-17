@@ -10,24 +10,23 @@
 
 namespace aon {
 
-#define SAMPLE 50
+#define SAMPLE_SIZE 50
 
 #if USING_15_INCH_ROBOT
 
-void MoveDrivePID(aon::PID f_pid, aon::Vector targetPos, double timeout,
-                  double sign = 1.) {
+void MoveDrivePID(aon::PID f_pid, aon::Vector targetPos, double timeLimit, double sign = 1) {
 
   double avg_x = 0;
   double avg_y = 0;
   
   // Get the average of the readings from the GPS
-  for (int i = 0; i < SAMPLE; i++)
+  for (int i = 0; i < SAMPLE_SIZE; i++)
   {
     avg_x += gps.get_status().x;
     avg_y += gps.get_status().y;
   }
 
-  avg_x /= SAMPLE; avg_y /= SAMPLE;
+  avg_x /= SAMPLE_SIZE; avg_y /= SAMPLE_SIZE;
   // End average
 
 
@@ -36,11 +35,11 @@ void MoveDrivePID(aon::PID f_pid, aon::Vector targetPos, double timeout,
   // aon::Vector initialPos = aon::odometry::GetPosition();
 
   const double start_time = pros::micros() / 1E6;
-  #define t (pros::micros() / 1E6 - start_time)
+  #define time (pros::micros() / 1E6 - start_time) //every time the variable is called it is recalculated automatically
 
-  //Target position minus initial position (Target Displacement)
+  //Target position minus initial position
   const double targetDiplacement = (targetPos - initialPos).GetMagnitude();
-  while (t < timeout) {
+  while (time < timeLimit) {
     aon::odometry::Update();
 
     double currentDisplacement = (aon::odometry::GetPos() - initialPos).GetMagnitude();
@@ -49,19 +48,15 @@ void MoveDrivePID(aon::PID f_pid, aon::Vector targetPos, double timeout,
 
     pros::lcd::print(0, "%f", currentDisplacement);
 
-    drive_front_left.moveVelocity(sign * std::clamp(output, -100., 100.));
-    drive_front_right.moveVelocity(sign * std::clamp(output, -100., 100.));
-    drive_back_left.moveVelocity(sign * std::clamp(output, -100., 100.));
-    drive_back_right.moveVelocity(sign * std::clamp(output, -100., 100.));
+    driveLeft.moveVelocity(sign * std::clamp(output, -100., 100.));
+    driveRight.moveVelocity(sign * std::clamp(output, -100., 100.));
 
     pros::delay(10);
   }
 
-  drive_front_left.moveVelocity(0);
-  drive_front_right.moveVelocity(0);
-  drive_back_left.moveVelocity(0);
-  drive_back_right.moveVelocity(0);
-#undef t
+  driveLeft.moveVelocity(0);
+  driveRight.moveVelocity(0);
+#undef time
 }
 
 inline void first_routine() {

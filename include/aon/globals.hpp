@@ -6,30 +6,26 @@
 #include "./constants.hpp"
 
 #if USING_15_INCH_ROBOT
-// Set up motors and sensors for 15 inch robot
-okapi::MotorGroup drive_front_left = okapi::MotorGroup({-18, 19});
-okapi::MotorGroup drive_back_left = okapi::MotorGroup({16, -17});
-okapi::MotorGroup drive_front_right = okapi::MotorGroup({-11, 12});
-okapi::MotorGroup drive_back_right = okapi::MotorGroup({-13, 14});
+// Motor groups for drivetrain
+okapi::MotorGroup driveLeft = okapi::MotorGroup({11, 12});
+okapi::MotorGroup driveRight = okapi::MotorGroup({-19, -20});
 
-okapi::Motor intake = okapi::Motor(-20);
-okapi::MotorGroup flywheel = okapi::MotorGroup({-2, 3});
-okapi::Motor indexer = okapi::Motor(-8);
+// Rotation sensors for odometry
+pros::Rotation encoderLeft(1, true);
+pros::Rotation encoderRight(10, true);
+pros::Rotation encoderBack(18, false);
 
-pros::Rotation encoder_left(9, true);
-pros::Rotation encoder_right(1, false);
-pros::Rotation encoder_back(10, true);
+// TEMPORARY PORT THERE IS NO INTAKE INSTALLED YET
+okapi::Motor intake = okapi::Motor(2);
 
-pros::Gps gps(20);
-
-pros::ADIDigitalIn proximity_sensor('A');
-pros::ADIDigitalOut expansion('B');
+// TEMPORARY PORT THERE IS NO GPS INSTALLED YET
+pros::Gps gps(3);
 
 #else
 // Set up motors and sensors for 18 inch robot3)
-okapi::MotorGroup drive_front_left = okapi::MotorGroup({-12, 11});
+okapi::MotorGroup driveLeft = okapi::MotorGroup({-12, 11});
 okapi::MotorGroup drive_back_left = okapi::MotorGroup({-13, 14});
-okapi::MotorGroup drive_front_right = okapi::MotorGroup({19, -20});
+okapi::MotorGroup driveRight = okapi::MotorGroup({19, -20});
 okapi::MotorGroup drive_back_right = okapi::MotorGroup({18, -17});
 
 okapi::MotorGroup intake = okapi::MotorGroup({5, 3});  // needs updates
@@ -84,31 +80,15 @@ namespace aon {
 inline void ConfigureMotors() {
 #if USING_15_INCH_ROBOT
   // Configure motors for 15 inch robot
-  drive_front_left.setBrakeMode(okapi::AbstractMotor::brakeMode::coast);
-  drive_front_left.setGearing(okapi::AbstractMotor::gearset::blue);
-  drive_front_left.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
-  drive_front_left.tarePosition();
+  driveLeft.setBrakeMode(okapi::AbstractMotor::brakeMode::coast);
+  driveLeft.setGearing(okapi::AbstractMotor::gearset::blue);
+  driveLeft.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
+  driveLeft.tarePosition();
 
-  drive_front_right.setBrakeMode(okapi::AbstractMotor::brakeMode::coast);
-  drive_front_right.setGearing(okapi::AbstractMotor::gearset::blue);
-  drive_front_right.setEncoderUnits(
-      okapi::AbstractMotor::encoderUnits::degrees);
-  drive_front_right.tarePosition();
-
-  drive_back_left.setBrakeMode(okapi::AbstractMotor::brakeMode::coast);
-  drive_back_left.setGearing(okapi::AbstractMotor::gearset::blue);
-  drive_back_left.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
-  drive_back_left.tarePosition();
-
-  drive_back_right.setBrakeMode(okapi::AbstractMotor::brakeMode::coast);
-  drive_back_right.setGearing(okapi::AbstractMotor::gearset::blue);
-  drive_back_right.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
-  drive_back_right.tarePosition();
-
-  flywheel.setBrakeMode(okapi::AbstractMotor::brakeMode::coast);
-  flywheel.setGearing(okapi::AbstractMotor::gearset::blue);
-  flywheel.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
-  flywheel.tarePosition();
+  driveRight.setBrakeMode(okapi::AbstractMotor::brakeMode::coast);
+  driveRight.setGearing(okapi::AbstractMotor::gearset::blue);
+  driveRight.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
+  driveRight.tarePosition();
 
   intake.setBrakeMode(okapi::AbstractMotor::brakeMode::coast);
   intake.setGearing(okapi::AbstractMotor::gearset::blue);
@@ -117,36 +97,15 @@ inline void ConfigureMotors() {
 
 #else
   // Configure motors for 18 inch robot
-  drive_front_left.setBrakeMode(okapi::AbstractMotor::brakeMode::coast);
-  drive_front_left.setGearing(okapi::AbstractMotor::gearset::green);
-  drive_front_left.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
-  drive_front_left.tarePosition();
+  driveLeft.setBrakeMode(okapi::AbstractMotor::brakeMode::coast);
+  driveLeft.setGearing(okapi::AbstractMotor::gearset::green);
+  driveLeft.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
+  driveLeft.tarePosition();
 
-  drive_front_right.setBrakeMode(okapi::AbstractMotor::brakeMode::coast);
-  drive_front_right.setGearing(okapi::AbstractMotor::gearset::green);
-  drive_front_right.setEncoderUnits(
-      okapi::AbstractMotor::encoderUnits::degrees);
-  drive_front_right.tarePosition();
-
-  drive_back_left.setBrakeMode(okapi::AbstractMotor::brakeMode::coast);
-  drive_back_left.setGearing(okapi::AbstractMotor::gearset::green);
-  drive_back_left.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
-  drive_back_left.tarePosition();
-
-  drive_back_right.setBrakeMode(okapi::AbstractMotor::brakeMode::coast);
-  drive_back_right.setGearing(okapi::AbstractMotor::gearset::green);
-  drive_back_right.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
-  drive_back_right.tarePosition();
-
-  flywheel.setBrakeMode(okapi::AbstractMotor::brakeMode::coast);
-  flywheel.setGearing(okapi::AbstractMotor::gearset::blue);
-  flywheel.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
-  flywheel.tarePosition();
-
-  puncher.setBrakeMode(okapi::AbstractMotor::brakeMode::hold);
-  puncher.setGearing(okapi::AbstractMotor::gearset::red);
-  puncher.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
-  puncher.tarePosition();
+  driveRight.setBrakeMode(okapi::AbstractMotor::brakeMode::coast);
+  driveRight.setGearing(okapi::AbstractMotor::gearset::green);
+  driveRight.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
+  driveRight.tarePosition();
 
   intake.setBrakeMode(okapi::AbstractMotor::brakeMode::coast);
   intake.setGearing(okapi::AbstractMotor::gearset::blue);
