@@ -20,6 +20,8 @@ pros::Rotation encoder_left(9, true);
 pros::Rotation encoder_right(1, false);
 pros::Rotation encoder_back(10, true);
 
+pros::Gps gps(20);
+
 pros::ADIDigitalIn proximity_sensor('A');
 pros::ADIDigitalOut expansion('B');
 
