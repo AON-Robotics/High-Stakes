@@ -72,11 +72,11 @@ inline void _OpControlManes() {
 #if USING_15_INCH_ROBOT
 
   //////////// DRIVE ////////////
-  const double leftInput = AnalogInputScaling(main_controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y) / 127.0, 10);
-  const double rightInput = AnalogInputScaling(main_controller.get_analog(::pros::E_CONTROLLER_ANALOG_RIGHT_Y) / 127.0, 10);
+  const double vertical = AnalogInputScaling(main_controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y) / 127.0, 20);
+  const double turn = AnalogInputScaling(main_controller.get_analog(::pros::E_CONTROLLER_ANALOG_RIGHT_X) / 127.0, 20);
 
-  driveLeft.moveVelocity(static_cast<int>(driveLeft.getGearing()) * std::clamp(leftInput, -1.0, 1.0));
-  driveRight.moveVelocity(static_cast<int>(driveRight.getGearing()) * std::clamp(rightInput, -1.0, 1.0));
+  driveLeft.moveVelocity(static_cast<int>(driveLeft.getGearing()) * std::clamp(vertical + turn, -1.0, 1.0));
+  driveRight.moveVelocity(static_cast<int>(driveLeft.getGearing()) * std::clamp(vertical - turn, -1.0, 1.0));
 
   //////////// INTAKE ////////////
 
