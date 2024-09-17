@@ -409,15 +409,14 @@ static void HandleButtonPress() {
           // AUT1
           DrawNABlock(blocks_x[0], blocks_y[3], blocks_x[1], blocks_y[4],
                       lower_block_1_text_x, lower_block_text_y);
-          AutonomousReader->AddFunction("autonomous", aon::tempRoutine_wrapper);
+          // AutonomousReader->AddFunction("autonomous", aon::tempRoutine_wrapper);
           pros::delay(200);
 
         } else if (TouchStatus.x < blocks_x[2]) {
           // AUT2
           DrawNABlock(blocks_x[1], blocks_y[3], blocks_x[2], blocks_y[4],
                       lower_block_2_text_x, lower_block_text_y);
-          AutonomousReader->AddFunction("autonomous",
-                                        aon::first_routine_wrapper);  //
+          // AutonomousReader->AddFunction("autonomous", aon::first_routine_wrapper);  //
 
           pros::delay(200);
 
