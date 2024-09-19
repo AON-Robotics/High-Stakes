@@ -14,25 +14,25 @@ namespace aon {
 
 #if USING_15_INCH_ROBOT
 
-void MoveDrivePID(aon::PID f_pid, aon::Vector targetPos, double timeLimit, double sign = 1) {
+void MoveDrivePID(aon::PID pid, aon::Vector targetPos, double timeLimit, double sign = 1) {
 
   double avg_x = 0;
   double avg_y = 0;
   
   // Get the average of the readings from the GPS
-  for (int i = 0; i < SAMPLE_SIZE; i++)
-  {
-    avg_x += gps.get_status().x;
-    avg_y += gps.get_status().y;
-  }
+  // for (int i = 0; i < SAMPLE_SIZE; i++)
+  // {
+  //   avg_x += gps.get_status().x;
+  //   avg_y += gps.get_status().y;
+  // }
 
-  avg_x /= SAMPLE_SIZE; avg_y /= SAMPLE_SIZE;
+  // avg_x /= SAMPLE_SIZE; avg_y /= SAMPLE_SIZE;
   // End average
 
 
   // Define the initialPos using the GPS instead of odometry (later should be both)
-  aon::Vector initialPos = Vector().SetPosition(avg_x, avg_y);
-  // aon::Vector initialPos = aon::odometry::GetPosition();
+  // aon::Vector initialPos = Vector().SetPosition(avg_x, avg_y);
+  aon::Vector initialPos = aon::odometry::GetPosition();
 
   const double start_time = pros::micros() / 1E6;
   #define time (pros::micros() / 1E6 - start_time) //every time the variable is called it is recalculated automatically
@@ -42,9 +42,9 @@ void MoveDrivePID(aon::PID f_pid, aon::Vector targetPos, double timeLimit, doubl
   while (time < timeLimit) {
     aon::odometry::Update();
 
-    double currentDisplacement = (aon::odometry::GetPos() - initialPos).GetMagnitude();
+    double currentDisplacement = (aon::odometry::GetPosition() - initialPos).GetMagnitude();
 
-    double output = f_pid.Output(targetDiplacement, currentDisplacement);
+    double output = pid.Output(targetDiplacement, currentDisplacement);
 
     pros::lcd::print(0, "%f", currentDisplacement);
 
@@ -60,18 +60,18 @@ void MoveDrivePID(aon::PID f_pid, aon::Vector targetPos, double timeLimit, doubl
 }
 
 inline void first_routine() {
-  aon::PID f_pid = aon::PID(10, 0, 0);
+  aon::PID pid = aon::PID(10, 0, 0);
   aon::Vector target = aon::Vector().SetPosition(6.0, 0);
-  aon::MoveDrivePID(f_pid, target, 4);
-  f_pid.Reset();
+  aon::MoveDrivePID(pid, target, 4);
+  pid.Reset();
 
   intake.moveVelocity(90);
   pros::delay(500);
   intake.moveVelocity(0);
 
   target = aon::Vector().SetPosition(0, 0);
-  aon::MoveDrivePID(f_pid, target, 3, -1);
-  f_pid.Reset();
+  aon::MoveDrivePID(pid, target, 3, -1);
+  pid.Reset();
 }
 
 inline void programming_skills() {
@@ -80,10 +80,10 @@ inline void programming_skills() {
   // drive_right.moveVelocity(-100);
   pros::delay(1500);
   // drive_right.moveVelocity(0);
-  aon::PID f_pid = aon::PID(10, 0, 0);
-  aon::Vector target = aon::Vector().SetPosition(-2.0, 0);
-  aon::MoveDrivePID(f_pid, target, 2);
-  f_pid.Reset();
+  // aon::PID pid = aon::PID(10, 0, 0);
+  // aon::Vector target = aon::Vector().SetPosition(-2.0, 0);
+  // aon::MoveDrivePID(pid, target, 2);
+  // pid.Reset();
 
   /*target = aon::Vector().SetPosition(0, 0);
   aon::MoveDrivePID(f_pid, target, 3, -1);
@@ -113,7 +113,10 @@ void tempRoutine() {  // temporary routne to test GUI
 
 int tempRoutine_wrapper() {  // fixing gui return type Temp
   // aon::odometry::Debug();
-  tempRoutine();
+  // tempRoutine();
+  aon::programming_skills();
+  // driveLeft.moveVoltage(12000);
+  // driveRight.moveVoltage(12000);
   return 0;
 }
 

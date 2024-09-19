@@ -14,7 +14,7 @@ namespace aon {
 
 #if USING_15_INCH_ROBOT
 
-void MoveDrivePID(aon::PID f_pid, aon::Vector targetPos, double timeLimit, double sign = 1) {
+void MoveDrivePID(aon::PID pid, aon::Vector targetPos, double timeLimit, double sign = 1) {
 
   double avg_x = 0;
   double avg_y = 0;
@@ -44,7 +44,7 @@ void MoveDrivePID(aon::PID f_pid, aon::Vector targetPos, double timeLimit, doubl
 
     double currentDisplacement = (aon::odometry::GetPos() - initialPos).GetMagnitude();
 
-    double output = f_pid.Output(targetDiplacement, currentDisplacement);
+    double output = pid.Output(targetDiplacement, currentDisplacement);
 
     pros::lcd::print(0, "%f", currentDisplacement);
 
