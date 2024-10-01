@@ -9,6 +9,7 @@
 
 #include "../gui-image-generator/gui-images.hpp"
 #include "../../competition/autonomous-routines.hpp"
+#include "../../competition/operator-control.hpp"
 
 namespace aon {
 // Function reader pointer
@@ -372,6 +373,7 @@ static void HandleButtonPress() {
           // AUT1
           DrawNABlock(blocks_x[0], blocks_y[3], blocks_x[1], blocks_y[4],
                       lower_block_1_text_x, lower_block_text_y);
+          AutonomousReader->AddFunction("autonomous", aon::combinationPIDRoutine);  //
           pros::delay(200);
 
         } else if (TouchStatus.x < blocks_x[2]) {
@@ -409,14 +411,14 @@ static void HandleButtonPress() {
           // AUT1
           DrawNABlock(blocks_x[0], blocks_y[3], blocks_x[1], blocks_y[4],
                       lower_block_1_text_x, lower_block_text_y);
-          AutonomousReader->AddFunction("autonomous", aon::tempRoutine_wrapper);
+          AutonomousReader->AddFunction("autonomous", aon::proportionalFavoredRoutine);
           pros::delay(200);
 
         } else if (TouchStatus.x < blocks_x[2]) {
           // AUT2
           DrawNABlock(blocks_x[1], blocks_y[3], blocks_x[2], blocks_y[4],
                       lower_block_2_text_x, lower_block_text_y);
-          // AutonomousReader->AddFunction("autonomous", aon::first_routine_wrapper);  //
+          AutonomousReader->AddFunction("autonomous", aon::integralFavoredRoutine);  //
 
           pros::delay(200);
 
@@ -424,6 +426,7 @@ static void HandleButtonPress() {
           // AUT3
           DrawNABlock(blocks_x[2], blocks_y[3], blocks_x[3], blocks_y[4],
                       lower_block_3_text_x, lower_block_text_y);
+          AutonomousReader->AddFunction("autonomous", aon::derivativeFavoredRoutine);  //
           pros::delay(200);
         }
       }
@@ -441,6 +444,15 @@ static void HandleButtonPress() {
         DrawPressedBlock(blocks_x[0], blocks_y[0], menu_block_x, menu_block_y);
         CurrentScreen = kMainMenu;
         pros::delay(200);
+      } else if (TouchStatus.y > blocks_y[3]) {
+        if (TouchStatus.x < blocks_x[1]) {
+          // AUT1
+          DrawNABlock(blocks_x[0], blocks_y[3], blocks_x[1], blocks_y[4],
+                      lower_block_1_text_x, lower_block_text_y);
+          aon::operator_control::Run(aon::operator_control::kManes);
+          pros::delay(200);
+
+        }
       }
       break;
 

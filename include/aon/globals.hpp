@@ -20,6 +20,10 @@ okapi::Motor intake = okapi::Motor(2);
 
 // TEMPORARY PORT THERE IS NO GPS INSTALLED YET
 pros::Gps gps(3);
+ 
+#if GYRO_ENABLED
+pros::Imu gyroscope(2);
+#endif
 
 #else
 // Set up motors and sensors for 18 inch robot3)
@@ -81,17 +85,17 @@ inline void ConfigureMotors() {
 #if USING_15_INCH_ROBOT
   // Configure motors for 15 inch robot
   driveLeft.setBrakeMode(okapi::AbstractMotor::brakeMode::coast);
-  driveLeft.setGearing(okapi::AbstractMotor::gearset::blue);
+  driveLeft.setGearing(okapi::AbstractMotor::gearset::green);
   driveLeft.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
   driveLeft.tarePosition();
 
   driveRight.setBrakeMode(okapi::AbstractMotor::brakeMode::coast);
-  driveRight.setGearing(okapi::AbstractMotor::gearset::blue);
+  driveRight.setGearing(okapi::AbstractMotor::gearset::green);
   driveRight.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
   driveRight.tarePosition();
 
   intake.setBrakeMode(okapi::AbstractMotor::brakeMode::coast);
-  intake.setGearing(okapi::AbstractMotor::gearset::blue);
+  intake.setGearing(okapi::AbstractMotor::gearset::green);
   intake.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
   intake.tarePosition();
 

@@ -44,7 +44,7 @@ class PID {
    * \see https://andymath.com/wp-content/uploads/2019/08/Trapezoidal-Rule.jpg
    */
   void calculate_integral() {
-    double delta_integral = (kT / 2.0) * (error + last_error);
+    double delta_integral = ((error + last_error) / 2.0) * kT;
 
     if (error > -start_integral && error < start_integral) {
       if (last_error != 0) {  // If we're NOT in our first iteration
