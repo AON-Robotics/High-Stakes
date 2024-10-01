@@ -120,7 +120,7 @@ void MoveTurnPID(PID pid, double angle, double sign = 1){
 
   const double targetAngle = angle;//getAngleBetweenVectors(target, startPos);
 
-  double timeLimit = getTimetoTurnDeg(targetAngle); // THIS IS NOT YET IMPLEMENTED, WILL NOT WORK
+  double timeLimit = getTimetoTurnDeg(targetAngle);
 
   const double startTime = pros::micros() / 1E6;
   #define time (pros::micros() / 1E6) - startTime
@@ -149,12 +149,10 @@ void MoveTurnPID(PID pid, double angle, double sign = 1){
 
 //Use this one to test for moving the desired angle (90 in this case)
 void turn90(PID pid, int amt = 1, double sign = 1){
-  // pid = PID(0.01, pid.GetKI(), pid.GetKD());
   const double startAngle = gyroscope.get_heading(); // Angle relative to the start
 
   const double targetAngle = 90;
 
-  // double timeLimit = 10; // Temporary while we implement the formula for the turning time
   double timeLimit = getTimetoTurnRad(M_PI / 2); 
   for(int i = 0; i < amt; i++){
     const double startTime = pros::micros() / 1E6;
