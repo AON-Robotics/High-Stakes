@@ -1,6 +1,7 @@
 #pragma once
 
-#include <cmath>
+// #include <cmath>
+#include "math.h"
 #include <algorithm>
 #include "../constants.hpp"
 #include "../globals.hpp"
@@ -64,17 +65,17 @@ inline double getTimetoTurnDeg(const double &degrees) { return getTimetoTurnRad(
 
 void MoveDrivePID(aon::PID pid, aon::Vector targetPos, double sign = 1) {
 
-  // double avg_x = 0;
-  // double avg_y = 0;
+  double avg_x = 0;
+  double avg_y = 0;
   
   // Get the average of the readings from the GPS
-  // for (int i = 0; i < SAMPLE_SIZE; i++)
-  // {
-  //   avg_x += gps.get_status().x;
-  //   avg_y += gps.get_status().y;
-  // }
+  for (int i = 0; i < SAMPLE_SIZE; i++)
+  {
+    avg_x += gps.get_status().x;
+    avg_y += gps.get_status().y;
+  }
 
-  // avg_x /= SAMPLE_SIZE; avg_y /= SAMPLE_SIZE;
+  avg_x /= SAMPLE_SIZE; avg_y /= SAMPLE_SIZE;
   // End average
 
 
@@ -147,11 +148,19 @@ void MoveTurnPID(PID pid, double angle, double sign = 1){
   #undef time
 }
 
-//Use this one to test for moving the desired angle (90 in this case)
-void turn90(PID pid, int amt = 1, double sign = 1){
+//Use this one to test for moving the desired angle
+void turn90(PID pid, int amt = 1, double sign = 1, double desired_x, double desired_y, double actual_x, double actual_y){
   const double startAngle = gyroscope.get_heading(); // Angle relative to the start
 
-  const double targetAngle = 90;
+  // Desired positions adjusted coordinates (as if we were at the origin)
+  double adjusted_x = desired_x - actual_x;
+  double adjusted_y = desired_y - actual_y;
+
+  /*
+  * Finds the angle with respect to the x-axis.
+    Max = 180 deg, Min = -180 deg
+  */   
+  double targetAngle = atan2(adjusted_y, adjusted_x);
 
   double timeLimit = getTimetoTurnRad(M_PI / 2); 
   for(int i = 0; i < amt; i++){
