@@ -40,10 +40,7 @@ inline double getTimetoTarget(const double &distance){
  * TODO: Test and Corroborate
  */
 inline double getTimetoTurnRad(const double &radians){
-  //This is the approximate length of the arc drawn by the turn, the radius should be from center to drive wheel not tracking wheel
-  //To correct, measure and add the value and remove the multiplication by 2.
-  // double arcLength = radians * DISTANCE_BACK_TRACKING_WHEEL_CENTER * 2; //Of the turn (inches)
-  double arcLength = radians * AVG_DRIVETRAIN_RADIUS; //Of the turn (inches)
+  double arcLength = radians * AVG_DRIVETRAIN_RADIUS; // Of the turn (inches)
   double circumference = DRIVE_WHEEL_DIAMETER * M_PI; // of the drive wheel (inches)
   double RPS = (int)driveRight.getGearing() / 60; // (revolutions per seconds)
   RPS /= 2; // We are using half power to turn
@@ -115,7 +112,6 @@ double getAngleBetweenVectors(Vector v1, Vector v2){
 
 // Intends to turn the robot
 void MoveTurnPID(PID pid, double angle, double sign = 1){
-  pid = PID(pid.GetKP()/10, pid.GetKI(), pid.GetKD());
   const double startAngle = gyroscope.get_heading(); // Angle relative to the start
 
   const double targetAngle = angle;//getAngleBetweenVectors(target, startPos);
@@ -151,28 +147,26 @@ void MoveTurnPID(PID pid, double angle, double sign = 1){
 void turn90(PID pid, int amt = 1, double sign = 1){
   const double startAngle = gyroscope.get_heading(); // Angle relative to the start
 
-  const double targetAngle = 90;
+  const double targetAngle = 90 * amt;
 
-  double timeLimit = getTimetoTurnRad(M_PI / 2); 
-  for(int i = 0; i < amt; i++){
-    const double startTime = pros::micros() / 1E6;
-    #define time (pros::micros() / 1E6) - startTime
+  double timeLimit = getTimetoTurnRad(amt * M_PI / 2); 
+  const double startTime = pros::micros() / 1E6;
+  #define time (pros::micros() / 1E6) - startTime
 
-    while(time < timeLimit){
-      aon::odometry::Update();
+  while(time < timeLimit){
+    // aon::odometry::Update();
 
-      double traveledAngle = gyroscope.get_heading() - startAngle;
+    double traveledAngle = gyroscope.get_heading() - startAngle;
 
-      double output = pid.Output(targetAngle, traveledAngle);
+    double output = pid.Output(targetAngle, traveledAngle);
 
-      pros::lcd::print(0, "%f", traveledAngle);
+    pros::lcd::print(0, "%f", traveledAngle);
 
-      // Taking clockwise rotation as positive (to change this just flip the negative on the sign below)
-      driveLeft.moveVelocity(sign * std::clamp(output * (int)driveLeft.getGearing(), -50.0, 50.0));
-      driveRight.moveVelocity(-sign * std::clamp(output * (int)driveRight.getGearing(), -50.0, 50.0));
+    // Taking clockwise rotation as positive (to change this just flip the negative on the sign below)
+    driveLeft.moveVelocity(sign * std::clamp(output * (int)driveLeft.getGearing(), -50.0, 50.0));
+    driveRight.moveVelocity(-sign * std::clamp(output * (int)driveRight.getGearing(), -50.0, 50.0));
 
-      pros::delay(10);
-    }
+    pros::delay(10);
   }
 
   driveLeft.moveVelocity(0);
@@ -199,7 +193,7 @@ inline void first_routine(double kP, double kI, double kD) {
   aon::MoveDrivePID(pid, target, -1);
 
   pros::delay(500);
-  aon::turn90(pid);
+  // aon::turn90(pid);
 
 
   pid.Reset();
@@ -207,9 +201,10 @@ inline void first_routine(double kP, double kI, double kD) {
 
 inline void turnTest(double kP, double kI, double kD) {
   PID pid = PID(kP, kI, kD);
-
-  turn90(pid);
-  pros::delay(5000);
+  gyroscope.reset(true);
+  aon::turn90(pid, 1, 1);
+  pros::delay(500);
+  // gyroscope.reset(true);
   pid.Reset();
 }
 
@@ -278,8 +273,26 @@ int derivativeFavoredRoutine(){
 }
 
 int combinationPIDRoutine(){
+  PID drivePID = PID(0.1, 0, 0);
+  PID turnPID = PID(0.01, 0, 0);
+  const int dist = 12;
+  //Draws a square with the robot
+  for(int i = 0; i < 4; i++){
+    odometry::ResetInitial();
+    MoveDrivePID(drivePID, Vector().SetPosition(dist, 0));
+    drivePID.Reset();
+    turnPID.Reset();
+
+    gyroscope.reset(true);
+    MoveTurnPID(turnPID, 90);
+    drivePID.Reset();
+    turnPID.Reset();
+
+    pros::delay(500);
+  }
+
   // first_routine(0.1, 0, 0);
-  turnTest(0.01, 0, 0);
+  // turnTest(0.01, 0, 0);
   return 0;
 }
 
