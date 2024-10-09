@@ -110,9 +110,19 @@ double getAngleBetweenVectors(Vector v1, Vector v2){
   return acos(v1.Dot(v2) / (v1.GetMagnitude() * v2.GetMagnitude()));
 }
 
-// Intends to turn the robot
-void MoveTurnPID(PID pid, double angle, double sign = 1){
+/**
+ * \brief Turns the robot by a given angle (default clockwise)
+ * 
+ * \param pid The PID to be used for the turn
+ * \param angle The angle to make the robot turn in \b degrees
+ * \param sign 1 when turning clockwise and -1 when turning counter-clockwise
+ */
+void MoveTurnPID(PID pid, double angle, int sign = 1){
+  pid.Reset();
+  gyroscope.reset(true);
   const double startAngle = gyroscope.get_heading(); // Angle relative to the start
+
+  if(sign == -1) { angle = 360 - angle; }
 
   const double targetAngle = angle;//getAngleBetweenVectors(target, startPos);
 
@@ -126,7 +136,7 @@ void MoveTurnPID(PID pid, double angle, double sign = 1){
 
     double traveledAngle = gyroscope.get_heading() - startAngle;
 
-    double output = pid.Output(targetAngle, traveledAngle);
+    double output = std::abs(pid.Output(targetAngle, traveledAngle));
 
     pros::lcd::print(0, "%f", traveledAngle);
 
@@ -143,11 +153,19 @@ void MoveTurnPID(PID pid, double angle, double sign = 1){
   #undef time
 }
 
-//Use this one to test for moving the desired angle (90 in this case)
+/**
+ * \brief Turns the robot clockwise by 90
+ * 
+ * \param pid The PID to be used for the turn
+ * \param amt The angle to make the robot turn in \b degrees
+ * \param sign 1 when turning clockwise and -1 when turning counter-clockwise
+ */
 void turn90(PID pid, int amt = 1, double sign = 1){
   const double startAngle = gyroscope.get_heading(); // Angle relative to the start
 
-  const double targetAngle = 90 * amt;
+  double targetAngle = 90 * amt;
+  
+  if(sign == -1) { targetAngle = 360 - targetAngle; }
 
   double timeLimit = getTimetoTurnRad(amt * M_PI / 2); 
   const double startTime = pros::micros() / 1E6;
@@ -158,7 +176,7 @@ void turn90(PID pid, int amt = 1, double sign = 1){
 
     double traveledAngle = gyroscope.get_heading() - startAngle;
 
-    double output = pid.Output(targetAngle, traveledAngle);
+    double output = std::abs(pid.Output(targetAngle, traveledAngle));
 
     pros::lcd::print(0, "%f", traveledAngle);
 
@@ -201,8 +219,8 @@ inline void first_routine(double kP, double kI, double kD) {
 
 inline void turnTest(double kP, double kI, double kD) {
   PID pid = PID(kP, kI, kD);
-  gyroscope.reset(true);
-  aon::turn90(pid, 1, 1);
+  // gyroscope.reset(true);
+  aon::MoveTurnPID(pid, 90, 1);
   pros::delay(500);
   // gyroscope.reset(true);
   pid.Reset();
@@ -272,7 +290,7 @@ int derivativeFavoredRoutine(){
   return 0;
 }
 
-int combinationPIDRoutine(){
+void squareRoutine(){
   PID drivePID = PID(0.1, 0, 0);
   PID turnPID = PID(0.01, 0, 0);
   const int dist = 12;
@@ -290,9 +308,12 @@ int combinationPIDRoutine(){
 
     pros::delay(500);
   }
+}
 
+int combinationPIDRoutine(){
+  // squareRoutine();
   // first_routine(0.1, 0, 0);
-  // turnTest(0.01, 0, 0);
+  turnTest(0.01, 0, 0);
   return 0;
 }
 
