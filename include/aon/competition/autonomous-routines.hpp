@@ -105,10 +105,6 @@ void MoveDrivePID(aon::PID pid, aon::Vector targetPos, double sign = 1) {
 #undef time
 }
 
-//Temporarily here, move to vector.hpp later
-double getAngleBetweenVectors(Vector v1, Vector v2){ 
-  return acos(v1.Dot(v2) / (v1.GetMagnitude() * v2.GetMagnitude()));
-}
 
 /**
  * \brief Turns the robot by a given angle (default clockwise)
@@ -124,7 +120,7 @@ void MoveTurnPID(PID pid, double angle, int sign = 1){
 
   if(sign == -1) { angle = 360 - angle; }
 
-  const double targetAngle = angle;//getAngleBetweenVectors(target, startPos);
+  const double targetAngle = angle;//startPos.getAngleTo(target);
 
   double timeLimit = getTimetoTurnDeg(targetAngle);
 

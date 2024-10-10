@@ -629,6 +629,17 @@ int main(){
   double Dot(Vector rhs) { return (GetX() * rhs.GetX() + GetY() * rhs.GetY()); }
 
   /**
+   * \brief Uses dot product identity to calculate the angle form target object to parameter
+   * 
+   * \param v The vector whose angle relative to the target vector we want to find
+   * 
+   * \returns The angle from the target vector to the parameter one in \b degrees
+   * 
+   * \note The acos() function returns an angle in \b radians, conversion to \b degrees is necessary
+   */
+  double getAngleTo(Vector v){ return (acos(this->Dot(v) / (this->GetMagnitude() * v.GetMagnitude())) * 180 / M_PI);}
+
+  /**
    * \brief Term by term addition of vector components.
    *
    * \param rhs Right hand side
