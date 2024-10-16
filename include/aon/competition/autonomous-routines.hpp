@@ -113,12 +113,12 @@ void MoveDrivePID(aon::PID pid, aon::Vector targetPos, double sign = 1) {
  * \param angle The angle to make the robot turn in \b degrees
  * \param sign 1 when turning clockwise and -1 when turning counter-clockwise
  */
-void MoveTurnPID(PID pid, double angle, int sign = 1){
+void MoveTurnPID(PID pid, double angle, double sign = 1.0){
   pid.Reset();
   gyroscope.reset(true);
   const double startAngle = gyroscope.get_heading(); // Angle relative to the start
 
-  if(sign == -1) { angle = 360 - angle; }
+  if(sign == -1) { angle = 360.0 - angle + CLOCKWISE_ROTATION_DEGREES_OFFSET; }
 
   const double targetAngle = angle;//startPos.getAngleTo(target);
 
@@ -132,7 +132,7 @@ void MoveTurnPID(PID pid, double angle, int sign = 1){
 
     double traveledAngle = gyroscope.get_heading() - startAngle;
 
-    double output = std::abs(pid.Output(targetAngle, traveledAngle));
+    double output = std::abs(pid.Output(targetAngle, traveledAngle)); //Use the absolute value of the output because if not, counter-clockwise turning is weird (error)
 
     pros::lcd::print(0, "%f", traveledAngle);
 
@@ -215,10 +215,14 @@ inline void first_routine(double kP, double kI, double kD) {
 
 inline void turnTest(double kP, double kI, double kD) {
   PID pid = PID(kP, kI, kD);
-  // gyroscope.reset(true);
-  aon::MoveTurnPID(pid, 90, 1);
-  pros::delay(500);
-  // gyroscope.reset(true);
+  for(int i = 0; i < 4; i++){
+    aon::MoveTurnPID(pid, 90, 1);
+    pros::delay(500);
+  }
+  // aon::MoveTurnPID(pid, 90, -1);
+  // pros::delay(500);
+  // aon::MoveTurnPID(pid, 45, -1);
+  // pros::delay(500);
   pid.Reset();
 }
 
