@@ -37,7 +37,6 @@ inline double getTimetoTarget(const double &distance){
  * 
  * \returns The approximate time necessary to reach the target (overestimation) in \b seconds
  * 
- * TODO: Test and Corroborate
  */
 inline double getTimetoTurnRad(const double &radians){
   double arcLength = radians * AVG_DRIVETRAIN_RADIUS; // Of the turn (inches)
@@ -59,6 +58,15 @@ inline double getTimetoTurnRad(const double &radians){
  */
 inline double getTimetoTurnDeg(const double &degrees) { return getTimetoTurnRad(degrees * M_PI / 180); }
 
+/**
+ * \brief Moves the robot toward a given position (default forward)
+ * 
+ * \param pid The PID used for the driving
+ * \param targetPos A vector representing the position towards which we want to go
+ * \param sign Determines the direction of the movement, 1 is front and -1 is backwards
+ * 
+ */
+
 void MoveDrivePID(aon::PID pid, aon::Vector targetPos, double sign = 1) {
 
   // double avg_x = 0;
@@ -77,6 +85,7 @@ void MoveDrivePID(aon::PID pid, aon::Vector targetPos, double sign = 1) {
 
   // Define the initialPos using the GPS instead of odometry (later should be both)
   // aon::Vector initialPos = Vector().SetPosition(avg_x, avg_y);
+  pid.Reset();
   aon::Vector initialPos = aon::odometry::GetPosition();
 
   const double timeLimit = getTimetoTarget(std::abs((targetPos - initialPos).GetMagnitude()));
@@ -100,11 +109,67 @@ void MoveDrivePID(aon::PID pid, aon::Vector targetPos, double sign = 1) {
     pros::delay(10);
   }
 
+  // Stop the movement
   driveLeft.moveVelocity(0);
   driveRight.moveVelocity(0);
 #undef time
 }
 
+/**
+ * \brief Moves the robot toward a given position (default forward)
+ * 
+ * \param pid The PID used for the driving
+ * \param dist The distance to be moved
+ * \param sign Determines the direction of the movement, 1 is front and -1 is backwards
+ * 
+ * TODO: Test this function first, I adapted it from the one above which uses vectors
+ */
+
+void MoveDrivePID(aon::PID pid, const double &dist, double sign = 1) {
+
+  // double avg_x = 0;
+  // double avg_y = 0;
+  
+  // Get the average of the readings from the GPS
+  // for (int i = 0; i < SAMPLE_SIZE; i++)
+  // {
+  //   avg_x += gps.get_status().x;
+  //   avg_y += gps.get_status().y;
+  // }
+
+  // avg_x /= SAMPLE_SIZE; avg_y /= SAMPLE_SIZE;
+  // End average
+
+
+  // Define the initialPos using the GPS instead of odometry (later should be both)
+  // aon::Vector initialPos = Vector().SetPosition(avg_x, avg_y);
+  pid.Reset();
+  aon::Vector initialPos = aon::odometry::GetPosition();
+
+  const double timeLimit = getTimetoTarget(dist);
+  const double start_time = pros::micros() / 1E6;
+  #define time (pros::micros() / 1E6) - start_time //every time the variable is called it is recalculated automatically
+
+  while (time < timeLimit) {
+    aon::odometry::Update();
+
+    double currentDisplacement = (aon::odometry::GetPosition() - initialPos).GetMagnitude();
+
+    double output = pid.Output(dist, currentDisplacement);
+
+    pros::lcd::print(0, "%f", currentDisplacement);
+
+    driveLeft.moveVelocity(sign * std::clamp(output * (int)driveLeft.getGearing(), -100.0, 100.0));
+    driveRight.moveVelocity(sign * std::clamp(output * (int)driveLeft.getGearing(), -100.0, 100.0));
+
+    pros::delay(10);
+  }
+
+  // Stop the motors
+  driveLeft.moveVelocity(0);
+  driveRight.moveVelocity(0);
+#undef time
+}
 
 /**
  * \brief Turns the robot by a given angle (default clockwise)
