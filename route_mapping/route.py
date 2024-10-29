@@ -1,8 +1,5 @@
 import heapq
 import math
-import matplotlib as plt
-import matplotlib as patches
-from matplotlib.animation import FuncAnimation
 
 def distance_from_nodes(node1, node2):
     x1, y1 = node1
@@ -18,20 +15,17 @@ def weight(current_node, neighbor, rings_count):
 def dijkstra(start, goal, nodes, rings_count):
     queue = []
     heapq.heappush(queue, (0, start))
-    distances = {node: float('inf') for node in nodes}
+    distances = {node: float('inf') for node in nodes} 
     distances[start] = 0
     previous_nodes = {node: None for node in nodes}
 
     while queue:
         current_distance, current_node = heapq.heappop(queue)
-
         if current_node == goal:
             break
-
         for neighbor in get_neighbors(current_node, nodes):
             current_weight = weight(current_node, neighbor, rings_count)
             total_distance = current_distance + current_weight
-
             if total_distance < distances[neighbor]:
                 distances[neighbor] = total_distance
                 previous_nodes[neighbor] = current_node
@@ -53,12 +47,13 @@ def get_neighbors(node, nodes, grid_size=0.1):
         for dy in [-grid_size, 0, grid_size]:
             if dx == 0 and dy == 0:
                 continue
-            neighbor = (x + dx, y + dy)
+            neighbor = (round(x + dx, 2), round(y + dy, 2))  
             if neighbor in nodes:
                 neighbors.append(neighbor)
+    'print(f"Node: {node} | Neighbors: {neighbors}")'
     return neighbors
 
-def generate_nodes(grid_size = 0.1):
+def generate_nodes(grid_size=0.1):
     Field_Max = 1.8
     Field_Min = -1.8
     nodes = []
@@ -66,12 +61,23 @@ def generate_nodes(grid_size = 0.1):
     while x <= Field_Max:
         y = Field_Min
         while y <= Field_Max:
-                nodes.append((round(x, 2)), round(y, 2))
-                y += grid_size
-                x += grid_size
-                
-        return nodes
-    
-    
-            
-    
+            nodes.append((round(x, 2), round(y, 2)))
+            y += grid_size
+        x += grid_size
+    return nodes
+
+def main():
+    nodes = generate_nodes()
+    start = (-1.6, -1.6)
+    goal = (-1.6, 0)
+    rings_count = {
+        (1.3, 1.4): ['ring1'],
+        (1.2, 1.0): ['ring1', 'ring2'],
+        (1.4, 0.6): ['ring1']
+    }
+    path, total_distance = dijkstra(start, goal, nodes, rings_count)
+    print("\nShortest path:", path)
+    print("Total distance:", total_distance)
+
+if __name__ == "__main__":
+    main()
