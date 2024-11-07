@@ -355,6 +355,34 @@ int derivativeFavoredRoutine(){
   return 0;
 }
 
+int initialReset()
+{
+  //3 seconds
+  odometry::ResetInitial();
+  return 1;
+}
+
+int move(double dist)
+{
+  //Const time
+  MoveDrivePID(drivePID, Vector().SetPosition(dist, 0), dist/abs(dist));
+  drivePID.Reset();
+  turnPID.Reset();
+  // pros::delay(500);
+  return 1;
+}
+
+int turn(double rot)
+{
+  // gyroscope.reset(true);
+  // pros::delay(3000);
+  MoveTurnPID(turnPID, rot);
+  drivePID.Reset();
+  turnPID.Reset();
+  pros::delay(500);
+  return 1;
+}
+
 void squareRoutine(){
   PID drivePID = PID(0.1, 0, 0);
   PID turnPID = PID(0.01, 0, 0);

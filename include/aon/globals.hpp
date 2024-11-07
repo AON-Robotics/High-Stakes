@@ -4,6 +4,7 @@
 #include "../api.h"
 #include "../okapi/api.hpp"
 #include "./constants.hpp"
+#include "controls/pid/pid.hpp"
 
 #if USING_15_INCH_ROBOT
 // Motor groups for drivetrain
@@ -20,6 +21,9 @@ okapi::Motor intake = okapi::Motor(2);
 
 // TEMPORARY PORT THERE IS NO GPS INSTALLED YET
 pros::Gps gps(3);
+
+aon::PID drivePID = aon::PID(0.1, 0, 0);
+aon::PID turnPID = aon::PID(0.01, 0, 0);
  
 #if GYRO_ENABLED
 pros::Imu gyroscope(2);
