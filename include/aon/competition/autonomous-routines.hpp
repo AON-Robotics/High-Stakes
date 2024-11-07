@@ -119,7 +119,7 @@ void MoveDrivePID(aon::PID pid, aon::Vector targetPos, double sign = 1) {
  * \brief Moves the robot toward a given position (default forward)
  * 
  * \param pid The PID used for the driving
- * \param dist The distance to be moved
+ * \param dist The distance to be moved in \b inches
  * \param sign Determines the direction of the movement, 1 is front and -1 is backwards
  * 
  * TODO: Test this function first, I adapted it from the one above which uses vectors
@@ -180,7 +180,7 @@ void MoveDrivePID(aon::PID pid, const double &dist, double sign = 1) {
  */
 void MoveTurnPID(PID pid, double angle, double sign = 1.0){
   pid.Reset();
-  gyroscope.reset(true);
+  gyroscope.tare(); // .tare() or .reset(true) depending on the time issue
   const double startAngle = gyroscope.get_heading(); // Angle relative to the start
 
   if(sign == -1) { angle = 360.0 - angle + CLOCKWISE_ROTATION_DEGREES_OFFSET; }
@@ -363,13 +363,13 @@ void squareRoutine(){
   for(int i = 0; i < 4; i++){
     odometry::ResetInitial();
     MoveDrivePID(drivePID, Vector().SetPosition(dist, 0));
-    drivePID.Reset();
-    turnPID.Reset();
+    // drivePID.Reset();
+    // turnPID.Reset();
 
-    gyroscope.reset(true);
+    // gyroscope.reset(true);
     MoveTurnPID(turnPID, 90);
-    drivePID.Reset();
-    turnPID.Reset();
+    // drivePID.Reset();
+    // turnPID.Reset();
 
     pros::delay(500);
   }
