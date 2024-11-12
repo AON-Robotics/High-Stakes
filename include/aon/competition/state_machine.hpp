@@ -61,25 +61,25 @@ class State
             int state3 = 0;
             int state4 = 0;
 
-            while (!state1)
-            {
+            // while (!state1)
+            // {
                 state1 = function1();              
-            }
+            // }
             // pros::delay(500);
-            while (!state2)
-            {
+            // while (!state2)
+            // {
                 state2 = function2();              
-            }
+            // }
             // pros::delay(500);
-            while (!state3)
-            {
+            // while (!state3)
+            // {
                 state3 = function3();              
-            }
+            // }
             // pros::delay(500);
-            while (!state4)
-            {
+            // while (!state4)
+            // {
                 state4 = function4();              
-            }
+            // }
             // pros::delay(500);
 
             // if(function1) if(function2) if(function3) function4;

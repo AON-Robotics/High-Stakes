@@ -120,12 +120,12 @@ void MoveDrivePID(aon::PID pid, aon::Vector targetPos, double sign = 1) {
  * 
  * \param pid The PID used for the driving
  * \param dist The distance to be moved in \b inches
- * \param sign Determines the direction of the movement, 1 is front and -1 is backwards
  * 
- * TODO: Test this function first, I adapted it from the one above which uses vectors
  */
 
-void MoveDrivePID(aon::PID pid, const double &dist, double sign = 1) {
+void MoveDrivePID(aon::PID pid, double dist) {
+  int sign = dist / abs(dist);
+  dist = abs(dist);
 
   // double avg_x = 0;
   // double avg_y = 0;
@@ -359,13 +359,14 @@ int initialReset()
 {
   //3 seconds
   odometry::ResetInitial();
+  gyroscope.reset(true);
   return 1;
 }
 
 int move(double dist)
 {
   //Const time
-  MoveDrivePID(drivePID, Vector().SetPosition(dist, 0), dist/abs(dist));
+  MoveDrivePID(drivePID, dist);
   drivePID.Reset();
   turnPID.Reset();
   // pros::delay(500);
