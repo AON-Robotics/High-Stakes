@@ -1,82 +1,87 @@
 import heapq
 import math
 
+PoI = {
+        'start': (0, 0),
+        'goal': (-1.6, -1.6),
+        'ring1': (0.6, 0.6),
+        'ring2': (0.6, 1.2),
+        'ring3': (1.4, 1.6),
+        'ring4': (1.8, 1.8),
+        'ring5': (0, 1.5),
+        'ring6': (-0.6, -0.6),
+        'ring7': (-0.6, -1.2),
+        'ring8': (-1.4, -1.6),
+        'ring9': (-1.8, -1.8),
+        'ring10': (0, 1.5),
+        'ring11': (0, -1.5),
+    }
+
+rings_count = {
+        'ring1': ['ring1'],
+        'ring2': ['ring1', 'ring2'],
+        'ring3': ['ring1', 'ring2'],
+        'ring4': ['ring1', 'ring2','ring3','ring4'],
+        'ring5': ['ring1', 'ring2'],
+        'ring6': ['ring1'],
+        'ring7': ['ring1','ring2'],
+        'ring8': ['ring1', 'ring2'],
+        'ring9': ['ring1', 'ring2','ring3','ring4'],
+        'ring10': ['ring1', 'ring2'],
+        'ring11': ['ring1', 'ring2']
+    }
+
+graph = {
+        'start': {'ring1': 1.2, 'ring2': 1.5},
+        'ring1': {'goal': 0.8, 'ring2': 0.5},
+        'ring2': {'goal': 0.7, 'ring3': 0.4},
+        'ring3': {'goal': 0.9}
+    }
+
 def distance_from_nodes(node1, node2):
-    x1, y1 = node1
-    x2, y2 = node2
+    x1, y1 = PoI[node1]
+    x2, y2 = PoI[node2]
     return math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
 
-def weight(current_node, neighbor, rings_count):
-    dist = distance_from_nodes(current_node, neighbor)
+def weight(current_node, neighbor):
+    base_distance = graph[current_node][neighbor]
     rings_at_neighbor = len(rings_count.get(neighbor, []))
-    priority_adjustment = 1 + rings_at_neighbor
-    return dist * priority_adjustment
+    priority_adjustment = 1 / (1 + rings_at_neighbor)  
+    return base_distance * priority_adjustment
 
-def dijkstra(start, goal, nodes, rings_count):
+def dijkstra(start, goal):
     queue = []
     heapq.heappush(queue, (0, start))
-    distances = {node: float('inf') for node in nodes} 
+    distances = {node: float('inf') for node in PoI}
     distances[start] = 0
-    previous_nodes = {node: None for node in nodes}
-
+    previous_nodes = {node: None for node in PoI}
+    
     while queue:
         current_distance, current_node = heapq.heappop(queue)
         if current_node == goal:
             break
-        for neighbor in get_neighbors(current_node, nodes):
-            current_weight = weight(current_node, neighbor, rings_count)
+        for neighbor in graph.get(current_node, {}):
+            current_weight = weight(current_node, neighbor)
             total_distance = current_distance + current_weight
             if total_distance < distances[neighbor]:
                 distances[neighbor] = total_distance
                 previous_nodes[neighbor] = current_node
                 heapq.heappush(queue, (total_distance, neighbor))
-
+    
     path = []
     current = goal
     while current:
         path.append(current)
         current = previous_nodes[current]
     path.reverse()
-
+    
     return path, distances[goal]
 
-def get_neighbors(node, nodes, grid_size=0.1):
-    neighbors = []
-    x, y = node
-    for dx in [-grid_size, 0, grid_size]:
-        for dy in [-grid_size, 0, grid_size]:
-            if dx == 0 and dy == 0:
-                continue
-            neighbor = (round(x + dx, 2), round(y + dy, 2))  
-            if neighbor in nodes:
-                neighbors.append(neighbor)
-    'print(f"Node: {node} | Neighbors: {neighbors}")'
-    return neighbors
-
-def generate_nodes(grid_size=0.1):
-    Field_Max = 1.8
-    Field_Min = -1.8
-    nodes = []
-    x = Field_Min
-    while x <= Field_Max:
-        y = Field_Min
-        while y <= Field_Max:
-            nodes.append((round(x, 2), round(y, 2)))
-            y += grid_size
-        x += grid_size
-    return nodes
-
 def main():
-    nodes = generate_nodes()
-    start = (-1.6, -1.6)
-    goal = (-1.6, 0)
-    rings_count = {
-        (1.3, 1.4): ['ring1'],
-        (1.2, 1.0): ['ring1', 'ring2'],
-        (1.4, 0.6): ['ring1']
-    }
-    path, total_distance = dijkstra(start, goal, nodes, rings_count)
-    print("\nShortest path:", path)
+    start = 'start'
+    goal = 'goal'
+    path, total_distance = dijkstra(start, goal)
+    print("Shortest path:", path)
     print("Total distance:", total_distance)
 
 if __name__ == "__main__":
