@@ -116,16 +116,15 @@ void MoveDrivePID(aon::PID pid, aon::Vector targetPos, double sign = 1) {
 }
 
 /**
- * \brief Moves the robot toward a given position (default forward)
+ * \brief Moves the robot a given distance (default forward)
  * 
  * \param pid The PID used for the driving
  * \param dist The distance to be moved in \b inches
- * 
  */
 
 void MoveDrivePID(aon::PID pid, double dist) {
-  int sign = dist / abs(dist);
-  dist = abs(dist);
+  const int sign = dist / abs(dist); // Getting the direction of the movement
+  dist = abs(dist); // Setting the magnitude to positive
 
   // double avg_x = 0;
   // double avg_y = 0;
@@ -176,9 +175,10 @@ void MoveDrivePID(aon::PID pid, double dist) {
  * 
  * \param pid The PID to be used for the turn
  * \param angle The angle to make the robot turn in \b degrees
- * \param sign 1 when turning clockwise and -1 when turning counter-clockwise
  */
-void MoveTurnPID(PID pid, double angle, double sign = 1.0){
+void MoveTurnPID(PID pid, double angle){
+  const int sign = angle/abs(angle); // Getting the direction of the movement
+  angle = abs(angle); // Setting the magnitude to positive
   pid.Reset();
   gyroscope.tare(); // .tare() or .reset(true) depending on the time issue
   const double startAngle = gyroscope.get_heading(); // Angle relative to the start
@@ -281,7 +281,7 @@ inline void first_routine(double kP, double kI, double kD) {
 inline void turnTest(double kP, double kI, double kD) {
   PID pid = PID(kP, kI, kD);
   for(int i = 0; i < 4; i++){
-    aon::MoveTurnPID(pid, 90, 1);
+    aon::MoveTurnPID(pid, 90);
     pros::delay(500);
   }
   // aon::MoveTurnPID(pid, 90, -1);
