@@ -104,12 +104,29 @@ void primary_routine_init()
     // Create the State object directly, no pointers required
     State position_one(0, 0.2, 0.2, 
         [](){ return initialReset(); },
-        [](){ return move(12); }, 
-        [](){ return turn(90); },
-        [](){ return move(-12); });
+        [](){ return move(84); }, 
+        [](){ return turn(-90); },
+        [](){ return move(-60); });
 
     // Add the state to the state_space queue
     state_space.push(position_one);
+
+    State position_two(0, 0.2, 0.2, 
+        [](){ return initialReset(); },
+        [](){ return turn(-90); },
+        [](){ return move(84); }, 
+        [](){ return move(0); });
+
+    // Add the state to the state_space queue
+    state_space.push(position_two);
+
+    State position_three(0, 0.2, 0.2, 
+        [](){ return initialReset(); },
+        [](){ return turn(90); },
+        [](){ return move(60); }, 
+        [](){ return turn(90); });
+
+    state_space.push(position_three);    
 }
 
 void primary_routine_runner()

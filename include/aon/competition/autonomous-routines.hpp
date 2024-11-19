@@ -184,8 +184,9 @@ void MoveTurnPID(PID pid, double angle){
   const double startAngle = gyroscope.get_heading(); // Angle relative to the start
 
   if(sign == -1) { angle = 360.0 - angle + CLOCKWISE_ROTATION_DEGREES_OFFSET; }
+  if(sign == 1) { angle -= CLOCKWISE_ROTATION_DEGREES_OFFSET; }
 
-  const double targetAngle = angle;//startPos.getAngleTo(target);
+  const double targetAngle = angle;
 
   double timeLimit = getTimetoTurnDeg(targetAngle);
 
@@ -380,7 +381,7 @@ int turn(double rot)
   MoveTurnPID(turnPID, rot);
   drivePID.Reset();
   turnPID.Reset();
-  pros::delay(500);
+  // pros::delay(500);
   return 1;
 }
 
