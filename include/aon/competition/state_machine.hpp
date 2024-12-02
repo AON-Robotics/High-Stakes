@@ -17,11 +17,13 @@ namespace aon {
 
 #if USING_15_INCH_ROBOT
 
+double pos_x, pos_y, heading;
+
 class State
 {
     private:
         int s_id;
-        double x, y;
+        // double x, y;
         // string action;
         int (*function1)();
         int (*function2)();
@@ -30,11 +32,11 @@ class State
 
     public:
         // Constructor without functions
-        State(int s_id, double x, double y/*, string action*/)
+        State(int s_id/*, double x, double y, string action*/)
         {
             this->s_id = s_id;
-            this->x = x;
-            this->y = y;
+            // this->x = x;
+            // this->y = y;
             this->function1 = nullptr;
             this->function2 = nullptr;
             this->function3 = nullptr;
@@ -42,11 +44,11 @@ class State
         }
 
         // Constructor with function pointers
-        State(int s_id, double x, double y, int (*function1)(), int (*function2)(), int (*function3)(), int (*function4)())
+        State(int s_id,/* double x, double y,*/ int (*function1)(), int (*function2)(), int (*function3)(), int (*function4)())
         {
             this->s_id = s_id;
-            this->x = x;
-            this->y = y;
+            // this->x = x;
+            // this->y = y;
             // this->action = action;  // Uncomment if needed
             this->function1 = function1;
             this->function2 = function2;
@@ -56,33 +58,10 @@ class State
 
         void runFunctions() const
         {
-            int state1 = 0;
-            int state2 = 0;
-            int state3 = 0;
-            int state4 = 0;
-
-            while (!state1)
-            {
-                state1 = function1();              
-            }
-            // pros::delay(500);
-            while (!state2)
-            {
-                state2 = function2();              
-            }
-            // pros::delay(500);
-            while (!state3)
-            {
-                state3 = function3();              
-            }
-            // pros::delay(500);
-            while (!state4)
-            {
-                state4 = function4();              
-            }
-            // pros::delay(500);
-
-            // if(function1) if(function2) if(function3) function4;
+            function1();
+            function2();
+            function3();
+            function4();
         }
 };
 
@@ -102,7 +81,7 @@ std::queue<State> state_space;
 void primary_routine_init()
 {
     // Create the State object directly, no pointers required
-    State position_one(0, 0.2, 0.2, 
+    State position_one(0, 
         [](){ return initialReset(); },
         [](){ return move(12); }, 
         [](){ return turn(90); },

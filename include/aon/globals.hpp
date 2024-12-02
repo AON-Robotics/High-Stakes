@@ -8,22 +8,24 @@
 
 #if USING_15_INCH_ROBOT
 // Motor groups for drivetrain
-okapi::MotorGroup driveLeft = okapi::MotorGroup({11, 12});
-okapi::MotorGroup driveRight = okapi::MotorGroup({-19, -20});
+okapi::MotorGroup driveLeft = okapi::MotorGroup({10, -9, 8});
+okapi::MotorGroup driveRight = okapi::MotorGroup({-20, 19, -18});
+
+okapi::MotorGroup intake = okapi::MotorGroup({-17, -11, -2});
 
 // Rotation sensors for odometry
 pros::Rotation encoderLeft(1, true);
 pros::Rotation encoderRight(10, true);
 pros::Rotation encoderBack(18, false);
 
-// TEMPORARY PORT THERE IS NO INTAKE INSTALLED YET
-okapi::Motor intake = okapi::Motor(2);
-
 // TEMPORARY PORT THERE IS NO GPS INSTALLED YET
-pros::Gps gps(3);
+pros::Gps gps(3, -0.127, -0.1397);
 
 aon::PID drivePID = aon::PID(0.1, 0, 0);
 aon::PID turnPID = aon::PID(0.01, 0, 0);
+
+pros::ADIDigitalOut piston ('A');
+bool piston_on = false;
  
 #if GYRO_ENABLED
 pros::Imu gyroscope(2);

@@ -12,6 +12,10 @@ namespace aon {
 
 #define SAMPLE_SIZE 50
 
+double initial_pos_x;
+double initial_pos_y;
+double initial_heading;
+
 #if USING_15_INCH_ROBOT
 
 /**
@@ -359,6 +363,7 @@ int initialReset()
 {
   //3 seconds
   odometry::ResetInitial();
+
   return 1;
 }
 

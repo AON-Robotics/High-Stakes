@@ -6,8 +6,6 @@ void initialize() {
   aon::ConfigureMotors();
   aon::odometry::Initialize();
   pros::Task gui_task(aon::gui::Initialize);
-
-
 }
 
 void disabled() {}
