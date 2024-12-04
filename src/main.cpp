@@ -18,7 +18,7 @@ void autonomous() {
   // while (true) {
     aon::AutonomousReader->ExecuteFunction("autonomous");
     // aon::programming_skills();
-    aon::operator_control::Run(aon::operator_control::kManes);
+    // aon::operator_control::Run(aon::operator_control::kManes);
     // aon::odometry::Update();
     pros::delay(10);
     //aon::odometry::Debug();
@@ -31,12 +31,11 @@ void opcontrol() {
     while (true) {
       // aon::AutonomousReader->ExecuteFunction("autonomous");
       // aon::primary_routine_wrapper();
-      // aon::Visual_Sensor();
       // aon::squareRoutine();
       // aon::programming_skills();
-      // aon::operator_control::Run(aon::operator_control::kManes);
+      aon::operator_control::Run(aon::operator_control::kManes);
       // aon::odometry::Update();
-      rail_state_machine();
+      // rail_state_machine();
       pros::delay(10);
       //aon::odometry::Debug();
     }
