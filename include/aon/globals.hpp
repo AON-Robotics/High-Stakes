@@ -12,6 +12,8 @@ okapi::MotorGroup driveLeft = okapi::MotorGroup({10, -9, 8});
 okapi::MotorGroup driveRight = okapi::MotorGroup({-20, 19, -18});
 
 okapi::MotorGroup intake = okapi::MotorGroup({-17, -11, -2});
+okapi::Motor gate = okapi::Motor(-2);
+okapi::MotorGroup rail = okapi::MotorGroup({-17, -11});
 
 // Rotation sensors for odometry
 pros::Rotation encoderLeft(1, true);
@@ -23,6 +25,10 @@ pros::Gps gps(3, -0.127, -0.1397);
 
 aon::PID drivePID = aon::PID(0.1, 0, 0);
 aon::PID turnPID = aon::PID(0.01, 0, 0);
+
+pros::ADIDigitalIn limit_switch ('C');
+pros::ADIDigitalIn dist_sensor ('B');
+bool rail_on = false;
 
 pros::ADIDigitalOut piston ('A');
 bool piston_on = false;
