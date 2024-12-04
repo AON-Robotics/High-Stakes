@@ -12,87 +12,317 @@ namespace aon {
 
 #define SAMPLE_SIZE 50
 
+double initial_pos_x;
+double initial_pos_y;
+double initial_heading;
+
+double dist, rot;
+
 #if USING_15_INCH_ROBOT
 
-void MoveDrivePID(aon::PID pid, aon::Vector targetPos, double timeLimit, double sign = 1) {
+/**
+ * \brief Calculates time for the robot to reach a given distance
+ * 
+ * \param distance Distance from the robot to the target (remains constant) in \b inches
+ * \returns The approximate time necessary to reach the target (overestimation) in \b seconds
+ */
+inline double getTimetoTarget(const double &distance){
+  double circumference = DRIVE_WHEEL_DIAMETER * M_PI; // of the drive wheel (inches)
+  double RPS = (int)driveRight.getGearing() / 60; // (revolutions per seconds)
+  double velocity = RPS * circumference; // Calculated speed (in / s)
+  double time = 2 * distance / velocity; // Calculated time (seconds)
+  return time;
+}
 
-  double avg_x = 0;
-  double avg_y = 0;
+/**
+ * \brief Calculates time for the robot to turn an angle
+ * 
+ * \param radians Angle remaining from the robot's current angle to the target (remains constant) in \b radians
+ * 
+ * \details The arc length formula is used as s = theta * radius (theta in radians)
+ * 
+ * \returns The approximate time necessary to reach the target (overestimation) in \b seconds
+ * 
+ */
+inline double getTimetoTurnRad(const double &radians){
+  double arcLength = radians * AVG_DRIVETRAIN_RADIUS; // Of the turn (inches)
+  double circumference = DRIVE_WHEEL_DIAMETER * M_PI; // of the drive wheel (inches)
+  double RPS = (int)driveRight.getGearing() / 60; // (revolutions per seconds)
+  RPS /= 2; // We are using half power to turn
+  double velocity = RPS * circumference; // Calculated speed (in / s)
+  double time = 2 * arcLength / velocity; // Calculated time (seconds)
+  return time;
+}
+
+/**
+ * \brief Calculates time for the robot to turn an angle
+ * 
+ * \param degrees Angle remaining from the robot's current angle to the target (remains constant) in \b degrees
+ * 
+ * \returns The approximate time necessary to reach the target (overestimation) in \b seconds
+ * 
+ */
+inline double getTimetoTurnDeg(const double &degrees) { return getTimetoTurnRad(degrees * M_PI / 180); }
+
+/**
+ * \brief Moves the robot toward a given position (default forward)
+ * 
+ * \param pid The PID used for the driving
+ * \param targetPos A vector representing the position towards which we want to go
+ * \param sign Determines the direction of the movement, 1 is front and -1 is backwards
+ * 
+ */
+
+void MoveDrivePID(aon::PID pid, aon::Vector targetPos, double sign = 1) {
+
+  // double avg_x = 0;
+  // double avg_y = 0;
   
   // Get the average of the readings from the GPS
-  for (int i = 0; i < SAMPLE_SIZE; i++)
-  {
-    avg_x += gps.get_status().x;
-    avg_y += gps.get_status().y;
-  }
+  // for (int i = 0; i < SAMPLE_SIZE; i++)
+  // {
+  //   avg_x += gps.get_status().x;
+  //   avg_y += gps.get_status().y;
+  // }
 
-  avg_x /= SAMPLE_SIZE; avg_y /= SAMPLE_SIZE;
+  // avg_x /= SAMPLE_SIZE; avg_y /= SAMPLE_SIZE;
   // End average
 
 
   // Define the initialPos using the GPS instead of odometry (later should be both)
-  aon::Vector initialPos = Vector().SetPosition(avg_x, avg_y);
-  // aon::Vector initialPos = aon::odometry::GetPosition();
+  // aon::Vector initialPos = Vector().SetPosition(avg_x, avg_y);
+  pid.Reset();
+  aon::Vector initialPos = aon::odometry::GetPosition();
 
+  const double timeLimit = getTimetoTarget(std::abs((targetPos - initialPos).GetMagnitude()));
   const double start_time = pros::micros() / 1E6;
-  #define time (pros::micros() / 1E6 - start_time) //every time the variable is called it is recalculated automatically
+  #define time (pros::micros() / 1E6) - start_time //every time the variable is called it is recalculated automatically
 
   //Target position minus initial position
   const double targetDiplacement = (targetPos - initialPos).GetMagnitude();
   while (time < timeLimit) {
     aon::odometry::Update();
 
-    double currentDisplacement = (aon::odometry::GetPos() - initialPos).GetMagnitude();
+    double currentDisplacement = (aon::odometry::GetPosition() - initialPos).GetMagnitude();
 
     double output = pid.Output(targetDiplacement, currentDisplacement);
 
     pros::lcd::print(0, "%f", currentDisplacement);
 
-    driveLeft.moveVelocity(sign * std::clamp(output, -100., 100.));
-    driveRight.moveVelocity(sign * std::clamp(output, -100., 100.));
+    driveLeft.moveVelocity(sign * std::clamp(output * (int)driveLeft.getGearing(), -100.0, 100.0));
+    driveRight.moveVelocity(sign * std::clamp(output * (int)driveLeft.getGearing(), -100.0, 100.0));
+
+    pros::delay(10);
+  }
+
+  // Stop the movement
+  driveLeft.moveVelocity(0);
+  driveRight.moveVelocity(0);
+#undef time
+}
+
+/**
+ * \brief Moves the robot toward a given position (default forward)
+ * 
+ * \param pid The PID used for the driving
+ * \param dist The distance to be moved
+ * \param sign Determines the direction of the movement, 1 is front and -1 is backwards
+ * 
+ * TODO: Test this function first, I adapted it from the one above which uses vectors
+ */
+
+void MoveDrivePID(aon::PID pid, const double &dist, double sign = 1) {
+
+  // double avg_x = 0;
+  // double avg_y = 0;
+  
+  // Get the average of the readings from the GPS
+  // for (int i = 0; i < SAMPLE_SIZE; i++)
+  // {
+  //   avg_x += gps.get_status().x;
+  //   avg_y += gps.get_status().y;
+  // }
+
+  // avg_x /= SAMPLE_SIZE; avg_y /= SAMPLE_SIZE;
+  // End average
+
+
+  // Define the initialPos using the GPS instead of odometry (later should be both)
+  // aon::Vector initialPos = Vector().SetPosition(avg_x, avg_y);
+  pid.Reset();
+  aon::Vector initialPos = aon::odometry::GetPosition();
+
+  const double timeLimit = getTimetoTarget(dist);
+  const double start_time = pros::micros() / 1E6;
+  #define time (pros::micros() / 1E6) - start_time //every time the variable is called it is recalculated automatically
+
+  while (time < timeLimit) {
+    aon::odometry::Update();
+
+    double currentDisplacement = (aon::odometry::GetPosition() - initialPos).GetMagnitude();
+
+    double output = pid.Output(dist, currentDisplacement);
+
+    pros::lcd::print(0, "%f", currentDisplacement);
+
+    driveLeft.moveVelocity(sign * std::clamp(output * (int)driveLeft.getGearing(), -100.0, 100.0));
+    driveRight.moveVelocity(sign * std::clamp(output * (int)driveLeft.getGearing(), -100.0, 100.0));
+
+    pros::delay(10);
+  }
+
+  // Stop the motors
+  driveLeft.moveVelocity(0);
+  driveRight.moveVelocity(0);
+#undef time
+}
+
+/**
+ * \brief Turns the robot by a given angle (default clockwise)
+ * 
+ * \param pid The PID to be used for the turn
+ * \param angle The angle to make the robot turn in \b degrees
+ * \param sign 1 when turning clockwise and -1 when turning counter-clockwise
+ */
+void MoveTurnPID(PID pid, double angle, double sign = 1.0){
+  pid.Reset();
+  gyroscope.reset(true);
+  const double startAngle = gyroscope.get_heading(); // Angle relative to the start
+
+  if(sign == -1) { angle = 360.0 - angle + CLOCKWISE_ROTATION_DEGREES_OFFSET; }
+
+  const double targetAngle = angle;//startPos.getAngleTo(target);
+
+  double timeLimit = getTimetoTurnDeg(targetAngle);
+
+  const double startTime = pros::micros() / 1E6;
+  #define time (pros::micros() / 1E6) - startTime
+
+  while(time < timeLimit){
+    aon::odometry::Update();
+
+    double traveledAngle = gyroscope.get_heading() - startAngle;
+
+    double output = std::abs(pid.Output(targetAngle, traveledAngle)); //Use the absolute value of the output because if not, counter-clockwise turning is weird (error)
+
+    pros::lcd::print(0, "%f", traveledAngle);
+
+    // Taking clockwise rotation as positive (to change this just flip the negative on the sign below)
+    driveLeft.moveVelocity(sign * std::clamp(output * (int)driveLeft.getGearing(), -50.0, 50.0));
+    driveRight.moveVelocity(-sign * std::clamp(output * (int)driveRight.getGearing(), -50.0, 50.0));
 
     pros::delay(10);
   }
 
   driveLeft.moveVelocity(0);
   driveRight.moveVelocity(0);
-#undef time
+
+  #undef time
 }
 
-inline void first_routine() {
-  aon::PID f_pid = aon::PID(10, 0, 0);
-  aon::Vector target = aon::Vector().SetPosition(6.0, 0);
-  aon::MoveDrivePID(f_pid, target, 4);
-  f_pid.Reset();
+/**
+ * \brief Turns the robot clockwise by 90
+ * 
+ * \param pid The PID to be used for the turn
+ * \param amt The angle to make the robot turn in \b degrees
+ * \param sign 1 when turning clockwise and -1 when turning counter-clockwise
+ */
+void turn90(PID pid, int amt = 1, double sign = 1){
+  const double startAngle = gyroscope.get_heading(); // Angle relative to the start
+
+  double targetAngle = 90 * amt;
+  
+  if(sign == -1) { targetAngle = 360 - targetAngle; }
+
+  double timeLimit = getTimetoTurnRad(amt * M_PI / 2); 
+  const double startTime = pros::micros() / 1E6;
+  #define time (pros::micros() / 1E6) - startTime
+
+  while(time < timeLimit){
+    // aon::odometry::Update();
+
+    double traveledAngle = gyroscope.get_heading() - startAngle;
+
+    double output = std::abs(pid.Output(targetAngle, traveledAngle));
+
+    pros::lcd::print(0, "%f", traveledAngle);
+
+    // Taking clockwise rotation as positive (to change this just flip the negative on the sign below)
+    driveLeft.moveVelocity(sign * std::clamp(output * (int)driveLeft.getGearing(), -50.0, 50.0));
+    driveRight.moveVelocity(-sign * std::clamp(output * (int)driveRight.getGearing(), -50.0, 50.0));
+
+    pros::delay(10);
+  }
+
+  driveLeft.moveVelocity(0);
+  driveRight.moveVelocity(0);
+
+  #undef time
+}
+
+
+
+inline void first_routine(double kP, double kI, double kD) {
+  aon::PID pid = aon::PID(kP, kI, kD);
+  int dist = 36; // Inches
+  aon::Vector target = aon::Vector().SetPosition(dist, 0);
+  
+  aon::MoveDrivePID(pid, target);
+  pid.Reset();
 
   intake.moveVelocity(90);
   pros::delay(500);
   intake.moveVelocity(0);
 
   target = aon::Vector().SetPosition(0, 0);
-  aon::MoveDrivePID(f_pid, target, 3, -1);
-  f_pid.Reset();
+  aon::MoveDrivePID(pid, target, -1);
+
+  pros::delay(500);
+  // aon::turn90(pid);
+
+
+  pid.Reset();
+}
+
+inline void turnTest(double kP, double kI, double kD) {
+  PID pid = PID(kP, kI, kD);
+  for(int i = 0; i < 4; i++){
+    aon::MoveTurnPID(pid, 90, 1);
+    pros::delay(500);
+  }
+  // aon::MoveTurnPID(pid, 90, -1);
+  // pros::delay(500);
+  // aon::MoveTurnPID(pid, 45, -1);
+  // pros::delay(500);
+  pid.Reset();
 }
 
 inline void programming_skills() {
-  first_routine();
+  first_routine(10, 0, 0);
   // drive_left.moveVelocity(-100);
   // drive_right.moveVelocity(-100);
   pros::delay(1500);
   // drive_right.moveVelocity(0);
-  aon::PID f_pid = aon::PID(10, 0, 0);
-  aon::Vector target = aon::Vector().SetPosition(-2.0, 0);
-  aon::MoveDrivePID(f_pid, target, 2);
-  f_pid.Reset();
+  // aon::PID pid = aon::PID(10, 0, 0);
+  // aon::Vector target = aon::Vector().SetPosition(-2.0, 0);
+  // aon::MoveDrivePID(pid, target, 2);
+  // pid.Reset();
 
   /*target = aon::Vector().SetPosition(0, 0);
   aon::MoveDrivePID(f_pid, target, 3, -1);
   f_id.Reset();*/
 
   // expansion.set_value(1);
+
+}
+  int first_routine_wrapper() {  // fixing gui return type Temp
+  // aon::odometry::Debug();
+  first_routine(10, 0, 0);
+  return 0;
+  
 }
 
-  void tempRoutine() {  // temporary routne to test GUI
+void tempRoutine() {  // temporary routne to test GUI
 
   // aon::PID x_pid = aon::PID(10, 0, 0.75);
   // aon::PID y_pid = aon::PID(10, 0, 0.75);
@@ -104,11 +334,112 @@ inline void programming_skills() {
   // heading_pid.Reset();
 }
 
-  int tempRoutine_wrapper() {  // fixing gui return type Temp
-    // aon::odometry::Debug();
-    tempRoutine();
-    return 0;
+int tempRoutine_wrapper() {  // fixing gui return type Temp
+  // aon::odometry::Debug();
+  // tempRoutine();
+  aon::programming_skills();
+  // driveLeft.moveVoltage(12000);
+  // driveRight.moveVoltage(12000);
+  return 0;
+}
+
+// TESTING PHASE FOR PID
+
+int proportionalFavoredRoutine(){
+  first_routine(10, 0, 0);
+  return 0;
+}
+
+int integralFavoredRoutine(){
+  first_routine(0, 10, 0);
+  return 0;
+}
+
+// This one causes no movement because it depends on change of error (there is none)
+int derivativeFavoredRoutine(){
+  first_routine(0, 0, 10);
+  return 0;
+}
+
+std::pair<double, double> initialReset(double desired_x, double desired_y)
+{
+  //3 seconds
+  odometry::ResetInitial();
+
+  // Leave 500ms stationary to take the best results
+  // initial_pos_x = gps.get_status().x;
+  // initial_pos_y = gps.get_status().y;
+  // initial_heading = gps.get_heading();
+
+  double dist = sqrt(pow((desired_x - gps.get_status().x), 2) + pow((desired_y - gps.get_status().y), 2));
+
+  double angle_destination = atan2(desired_y - gps.get_status().y, desired_x - gps.get_status().x) * 180.0/M_PI;
+
+  angle_destination = fmod(-angle_destination+90, 360);
+  
+  double robot_heading = fmod(-gps.get_heading()+90, 360);
+
+  // Angle difference
+  double rot = angle_destination - robot_heading;
+
+  if (rot > 180) {
+    rot -= 360;
+  } 
+  else if (rot < -180) {
+    rot += 360;
   }
+
+  return std::make_pair(dist, rot);
+}
+
+int move()
+{
+  //Const time
+  MoveDrivePID(drivePID, Vector().SetPosition(dist, 0), dist/abs(dist));
+  drivePID.Reset();
+  turnPID.Reset();
+  // pros::delay(500);
+  return 1;
+}
+
+int turn()
+{
+  MoveTurnPID(turnPID, rot);
+  drivePID.Reset();
+  turnPID.Reset();
+  pros::delay(500);
+  return 1;
+}
+
+void squareRoutine(){
+  PID drivePID = PID(0.1, 0, 0);
+  PID turnPID = PID(0.01, 0, 0);
+  const int dist = 12;
+  //Draws a square with the robot
+  for(int i = 0; i < 4; i++){
+    odometry::ResetInitial();
+    MoveDrivePID(drivePID, Vector().SetPosition(dist, 0));
+    drivePID.Reset();
+    turnPID.Reset();
+
+    gyroscope.reset(true);
+    MoveTurnPID(turnPID, 90);
+    drivePID.Reset();
+    turnPID.Reset();
+
+    pros::delay(500);
+  }
+}
+
+int combinationPIDRoutine(){
+  // squareRoutine();
+  // first_routine(0.1, 0, 0);
+  turnTest(0.01, 0, 0);
+  return 0;
+}
+
+// END TEST FUNCTIONS
+
 
 #else
 void MoveDrivePID(aon::PID x_pid, aon::PID y_pid, aon::PID heading_pid,

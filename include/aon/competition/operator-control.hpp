@@ -88,6 +88,14 @@ inline void _OpControlManes() {
     intake.moveVoltage(0);
   }
 
+  if (main_controller.get_digital(DIGITAL_A)) {
+    piston_on = true;
+  } else {
+    piston_on = false;
+  }
+  piston.set_value(piston_on);
+
+
 #else
   //////////// DRIVE ////////////
   const double leftInput = AnalogInputScaling(main_controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y) / 127.0, 10);
