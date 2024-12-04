@@ -23,7 +23,7 @@ class State
 {
     private:
         int s_id;
-        // double x, y;
+        double x, y;
         // string action;
         int (*function1)();
         int (*function2)();
@@ -32,11 +32,11 @@ class State
 
     public:
         // Constructor without functions
-        State(int s_id/*, double x, double y, string action*/)
+        State(int s_id, double x, double y/*, string action*/)
         {
             this->s_id = s_id;
-            // this->x = x;
-            // this->y = y;
+            this->x = x;
+            this->y = y;
             this->function1 = nullptr;
             this->function2 = nullptr;
             this->function3 = nullptr;
@@ -44,7 +44,7 @@ class State
         }
 
         // Constructor with function pointers
-        State(int s_id,/* double x, double y,*/ int (*function1)(), int (*function2)(), int (*function3)(), int (*function4)())
+        State(int s_id, double x, double y, int (*function1)(), int (*function2)(), int (*function3)(), int (*function4)())
         {
             this->s_id = s_id;
             // this->x = x;
@@ -104,7 +104,7 @@ std::queue<State> state_space;
 void primary_routine_init()
 {
     // Create the State object directly, no pointers required
-    State position_one(0, 
+    State position_one(0, 0.2, 0.2,
         [](){ return initialReset(); },
         [](){ return move(84); }, 
         [](){ return turn(-90); },

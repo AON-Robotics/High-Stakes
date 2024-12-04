@@ -14,6 +14,10 @@ okapi::MotorGroup driveRight = okapi::MotorGroup({-20, 19, -18});
 okapi::MotorGroup intake = okapi::MotorGroup({-17, -11, -2});
 okapi::Motor gate = okapi::Motor(-2);
 okapi::MotorGroup rail = okapi::MotorGroup({-17, -11});
+//Vision sensor port 
+pros::Vision visual_sensor(14);
+pros::vision_signature_s_t Green_SIG= pros::vision_signature_s_t(pros::Vision::signature_from_utility(1, -4729, -3713, -4221, -3483, -2603, -3043, 4.600, 0));
+//vision::signature GR (1, -4729, -3713, -4221, -3483, -2603, -3043, 4.600, 0);
 
 // Rotation sensors for odometry
 pros::Rotation encoderLeft(1, true);
@@ -33,6 +37,7 @@ bool rail_on = false;
 pros::ADIDigitalOut piston ('A');
 bool piston_on = false;
  
+
 #if GYRO_ENABLED
 pros::Imu gyroscope(2);
 #endif

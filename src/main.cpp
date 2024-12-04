@@ -31,6 +31,7 @@ void opcontrol() {
     while (true) {
       // aon::AutonomousReader->ExecuteFunction("autonomous");
       // aon::primary_routine_wrapper();
+      // aon::Visual_Sensor();
       // aon::squareRoutine();
       // aon::programming_skills();
       // aon::operator_control::Run(aon::operator_control::kManes);

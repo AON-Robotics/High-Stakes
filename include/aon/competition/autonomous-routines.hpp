@@ -416,6 +416,19 @@ int combinationPIDRoutine(){
   return 0;
 }
 
+// void Visual_Sensor(){
+//   int cnt= visual_sensor.get_object_count();
+//   pros::vision_object_s_t return_obj= visual_sensor.get_by_sig(0,1);
+//   if( return_obj.width>5 && cnt>0){
+//     rail.moveVelocity(100);
+
+//   }
+//   else{
+//     rail.moveVelocity(200);
+//   }
+//   pros::delay(200);
+// }
+
 // END TEST FUNCTIONS
 
 
