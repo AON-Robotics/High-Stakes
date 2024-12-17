@@ -3,6 +3,7 @@
 #include <cmath>
 #include "../constants.hpp"
 #include "../globals.hpp"
+#include "intake_engine.hpp"
 
 /**
  * \brief Encapsulates functions and state for operator control.
@@ -80,13 +81,33 @@ inline void _OpControlManes() {
 
   //////////// INTAKE ////////////
 
-  if (main_controller.get_digital(DIGITAL_R1)) {
-    intake.moveVoltage(12000);
-  } else if (main_controller.get_digital(DIGITAL_R2)) {
-    intake.moveVoltage(-12000);
-  } else {
-    intake.moveVoltage(0);
+  if (main_controller.get_digital_new_press(DIGITAL_X))
+  {
+    if(conveyor_auto)
+    {
+      conveyor_auto = false;
+    }
+    else
+    {
+      conveyor_auto = true;
+    }
   }
+  
+  if (!conveyor_auto)
+  {
+    if (main_controller.get_digital(DIGITAL_R1)) {
+      intake.moveVoltage(12000);
+    } else if (main_controller.get_digital(DIGITAL_R2)) {
+      intake.moveVoltage(-12000);
+    } else {
+      intake.moveVoltage(0);
+    }
+  }
+  else
+  {
+    railing();
+  }
+  
 
   if (main_controller.get_digital(DIGITAL_A)) {
     piston_on = true;

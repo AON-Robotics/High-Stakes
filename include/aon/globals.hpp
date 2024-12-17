@@ -37,6 +37,8 @@ bool rail_on = false;
 pros::ADIDigitalOut piston ('A');
 bool piston_on = false;
  
+bool conveyor_auto = true;
+int state = 0;
 
 #if GYRO_ENABLED
 pros::Imu gyroscope(2);
