@@ -109,10 +109,17 @@ inline void _OpControlManes() {
   }
   
 
-  if (main_controller.get_digital(DIGITAL_A)) {
-    piston_on = true;
-  } else {
-    piston_on = false;
+  if (main_controller.get_digital_new_press(DIGITAL_A)) {
+    if (piston_on)
+    {
+      piston_on = false;
+    }
+    else
+    {
+      piston_on = true;
+    }
+    
+    
   }
   piston.set_value(piston_on);
 
