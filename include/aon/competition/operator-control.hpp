@@ -54,6 +54,16 @@ inline double AnalogInputScaling(const double x, const double t) {
   return (a + b * (1 - a)) * z / 127.0;
 }
 
+/**
+ * \brief Toggles the value of a bool
+ * 
+ * \param boolean The variable to be toggled
+ * 
+ */
+inline void toggle(bool &boolean) {
+  boolean = !boolean; 
+}
+
 // ============================================================================
 //    ___      _
 //   |   \ _ _(_)_ _____ _ _ ___
@@ -83,14 +93,7 @@ inline void _OpControlManes() {
 
   if (main_controller.get_digital_new_press(DIGITAL_X))
   {
-    if(conveyor_auto)
-    {
-      conveyor_auto = false;
-    }
-    else
-    {
-      conveyor_auto = true;
-    }
+    toggle(conveyor_auto);
   }
   
   if (!conveyor_auto)
@@ -109,17 +112,9 @@ inline void _OpControlManes() {
   }
   
 
-  if (main_controller.get_digital_new_press(DIGITAL_A)) {
-    if (piston_on)
-    {
-      piston_on = false;
-    }
-    else
-    {
-      piston_on = true;
-    }
-    
-    
+  if (main_controller.get_digital_new_press(DIGITAL_A)) 
+  { 
+    toggle(piston_on);
   }
   piston.set_value(piston_on);
 
