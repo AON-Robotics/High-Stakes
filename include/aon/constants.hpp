@@ -31,6 +31,8 @@
 #define AVG_DRIVETRAIN_RADIUS (DISTANCE_FRONT_LEFT_DRIVE_WHEEL_CENTER + DISTANCE_BACK_LEFT_DRIVE_WHEEL_CENTER + DISTANCE_FRONT_RIGHT_DRIVE_WHEEL_CENTER + DISTANCE_BACK_RIGHT_DRIVE_WHEEL_CENTER) / 4
 //This number may be dependent on the degrees being turn in which case it will not be a constant
 #define CLOCKWISE_ROTATION_DEGREES_OFFSET 4
+#define TILE_WIDTH 23.6220472441
+#define TILE_DIAG_LENGTH 33.4066195836 // Calculated with Pythagora's theorem
 
 #else
 

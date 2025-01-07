@@ -126,7 +126,7 @@ void MoveDrivePID(aon::PID pid, aon::Vector targetPos, double sign = 1) {
  * \param dist The distance to be moved in \b inches
  */
 
-void MoveDrivePID(aon::PID pid, double dist) {
+void MoveDrivePID(PID pid = drivePID, double dist) {
   const int sign = dist / abs(dist); // Getting the direction of the movement
   dist = abs(dist); // Setting the magnitude to positive
 
@@ -175,12 +175,47 @@ void MoveDrivePID(aon::PID pid, double dist) {
 }
 
 /**
+ * \brief Moves the robot straight accross a given amount of tiles
+ * 
+ * \param pid The PID to be used for movement
+ * \param amt The amount of tiles to be driven
+ * 
+ * \warning Robot should be aligned properly to achieve desired result
+ */
+void moveTilesStraight(PID pid = drivePID, int amt = 1) {
+  MoveDrivePID(pid, TILE_WIDTH * amt);
+}
+
+/**
+ * \brief Moves the robot straight accross a given amount of tiles
+ * 
+ * \param pid The PID to be used for movement
+ * 
+ * \warning Robot should be aligned properly to achieve desired result
+ */
+void moveHalfTile(PID pid = drivePID) {
+  MoveDrivePID(pid, TILE_WIDTH / 2);
+}
+
+/**
+ * \brief Moves the robot diagonally accross a given amount of tiles
+ * 
+ * \param pid The PID to be used for movement
+ * \param amt The amount of tiles to be driven
+ * 
+ * \warning Robot should be aligned properly to achieve desired result
+ */
+void moveTilesDiag(PID pid = drivePID, int amt = 1) {
+  MoveDrivePID(pid, TILE_DIAG_LENGTH * amt);
+}
+
+/**
  * \brief Turns the robot by a given angle (default clockwise)
  * 
  * \param pid The PID to be used for the turn
  * \param angle The angle to make the robot turn in \b degrees
  */
-void MoveTurnPID(PID pid, double angle){
+void MoveTurnPID(PID pid = turnPID, double angle){
   const int sign = angle/abs(angle); // Getting the direction of the movement
   angle = abs(angle); // Setting the magnitude to positive
   pid.Reset();
@@ -223,40 +258,18 @@ void MoveTurnPID(PID pid, double angle){
  * \brief Turns the robot clockwise by 90
  * 
  * \param pid The PID to be used for the turn
- * \param amt The angle to make the robot turn in \b degrees
+ * \param amt The amount of 90 degree turns to make
  * \param sign 1 when turning clockwise and -1 when turning counter-clockwise
  */
-void turn90(PID pid, int amt = 1, double sign = 1){
-  const double startAngle = gyroscope.get_heading(); // Angle relative to the start
-
-  double targetAngle = 90 * amt;
-  
-  if(sign == -1) { targetAngle = 360 - targetAngle; }
-
-  double timeLimit = getTimetoTurnRad(amt * M_PI / 2); 
-  const double startTime = pros::micros() / 1E6;
-  #define time (pros::micros() / 1E6) - startTime
-
-  while(time < timeLimit){
-    // aon::odometry::Update();
-
-    double traveledAngle = gyroscope.get_heading() - startAngle;
-
-    double output = std::abs(pid.Output(targetAngle, traveledAngle));
-
-    pros::lcd::print(0, "%f", traveledAngle);
-
-    // Taking clockwise rotation as positive (to change this just flip the negative on the sign below)
-    driveLeft.moveVelocity(sign * std::clamp(output * (int)driveLeft.getGearing(), -50.0, 50.0));
-    driveRight.moveVelocity(-sign * std::clamp(output * (int)driveRight.getGearing(), -50.0, 50.0));
-
-    pros::delay(10);
+void turn90(PID pid = turnPID, int amt = 1, int sign = 1){
+  if(sign >= 0) {
+    sign = 1;
+  }
+  else if (sign < 0){
+    sign = -1;
   }
 
-  driveLeft.moveVelocity(0);
-  driveRight.moveVelocity(0);
-
-  #undef time
+  MoveTurnPID(pid, 90 * amt * sign);
 }
 
 
@@ -321,7 +334,7 @@ inline void programming_skills() {
   
 }
 
-void tempRoutine() {  // temporary routne to test GUI
+void tempRoutine() {  // temporary routine to test GUI
 
   // aon::PID x_pid = aon::PID(10, 0, 0.75);
   // aon::PID y_pid = aon::PID(10, 0, 0.75);
@@ -360,6 +373,11 @@ int derivativeFavoredRoutine(){
   return 0;
 }
 
+/**
+ * \brief Resets odometry and gyro for error accumulation cleanse
+ * 
+ * \warning This function takes three (3) seconds to complete
+ */
 int initialReset()
 {
   //3 seconds
