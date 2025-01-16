@@ -61,8 +61,8 @@ void rail_state_machine ()
             else if (state == 2)
             {
                 gate.moveVelocity(0);
-                int cnt= visual_sensor.get_object_count();
-                pros::vision_object_s_t return_obj= visual_sensor.get_by_sig(0,1);
+                int cnt= vision_sensor.get_object_count();
+                pros::vision_object_s_t return_obj= vision_sensor.get_by_sig(0,1);
                 if(return_obj.width>50 && cnt>0){
                     rail.moveVelocity(100);
                 }
@@ -119,8 +119,8 @@ void railing()
     else if (state == 2)
     {
         gate.moveVelocity(0);
-        int cnt= visual_sensor.get_object_count();
-        pros::vision_object_s_t return_obj= visual_sensor.get_by_sig(0,1);
+        int cnt= vision_sensor.get_object_count();
+        pros::vision_object_s_t return_obj= vision_sensor.get_by_sig(0,1);
         if(return_obj.width>50 && cnt>0){
             rail.moveVelocity(100);
         }

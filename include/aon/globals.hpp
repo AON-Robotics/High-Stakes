@@ -6,26 +6,41 @@
 #include "./constants.hpp"
 #include "controls/pid/pid.hpp"
 
+/**
+ * \brief Toggles the value of a bool
+ * 
+ * \param boolean The variable to be toggled
+ * 
+ * \returns The updated boolean
+ */
+inline bool toggle(bool &boolean) {
+  boolean = !boolean;
+  return boolean;
+}
+
 #if USING_15_INCH_ROBOT
 // Motor groups for drivetrain
-okapi::MotorGroup driveLeft = okapi::MotorGroup({10, -9, 8});
-okapi::MotorGroup driveRight = okapi::MotorGroup({-20, 19, -18});
+okapi::MotorGroup driveLeft = okapi::MotorGroup({12, 18, -19});
+okapi::MotorGroup driveRight = okapi::MotorGroup({-15, 16, -17});
+okapi::MotorGroup driveFull = okapi::MotorGroup({12, 18, -19, -15, 16, -17});
 
-okapi::MotorGroup intake = okapi::MotorGroup({-17, -11, -2});
-okapi::Motor gate = okapi::Motor(-2);
-okapi::MotorGroup rail = okapi::MotorGroup({-17, -11});
-//Vision sensor port 
-pros::Vision visual_sensor(14);
-pros::vision_signature_s_t Green_SIG= pros::vision_signature_s_t(pros::Vision::signature_from_utility(1, -4729, -3713, -4221, -3483, -2603, -3043, 4.600, 0));
+
+okapi::MotorGroup intake = okapi::MotorGroup({13, 14});
+okapi::MotorGroup rail = okapi::MotorGroup({13});
+okapi::Motor gate = okapi::Motor(14);
+
+// Vision sensor port 
+pros::Vision vision_sensor(11); // NOT YET INSTALLED
+pros::vision_signature_s_t Green_SIG = pros::vision_signature_s_t(pros::Vision::signature_from_utility(1, -4729, -3713, -4221, -3483, -2603, -3043, 4.600, 0));
 //vision::signature GR (1, -4729, -3713, -4221, -3483, -2603, -3043, 4.600, 0);
 
-// Rotation sensors for odometry
-pros::Rotation encoderLeft(1, true);
-pros::Rotation encoderRight(10, true);
-pros::Rotation encoderBack(18, false);
+// Rotation sensors for odometry // NOT YET INSTALLED
+pros::Rotation encoderLeft(10, true);
+pros::Rotation encoderRight(9, true);
+pros::Rotation encoderBack(8, false);
 
-// TEMPORARY PORT THERE IS NO GPS INSTALLED YET
-pros::Gps gps(3, -0.127, -0.1397);
+// TEMPORARY PORT THERE IS NO GPS INSTALLED YET ON 15 INCH (18 INCH DOES HAVE IT INSTALLED)
+pros::Gps gps(7, -0.127, -0.1397);
 
 aon::PID drivePID = aon::PID(0.1, 0, 0);
 aon::PID turnPID = aon::PID(0.01, 0, 0);
@@ -34,14 +49,14 @@ pros::ADIDigitalIn limit_switch ('C');
 pros::ADIDigitalIn dist_sensor ('B');
 bool rail_on = false;
 
-pros::ADIDigitalOut piston ('A');
+pros::ADIDigitalOut piston ('H');
 bool piston_on = false;
  
 bool conveyor_auto = true;
-int state = 0;
+int state = 0; // for railing
 
 #if GYRO_ENABLED
-pros::Imu gyroscope(2);
+pros::Imu gyroscope(6);
 #endif
 
 #else

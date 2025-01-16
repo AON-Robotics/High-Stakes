@@ -3,18 +3,18 @@
 
 #define BRAIN_SCREEN_WIDTH 480
 #define BRAIN_SCREEN_HEIGHT 240
+#define DEGREES_PER_REVOLUTION 360.0
+#define TILE_WIDTH 23.6220472441
+#define TILE_DIAG_LENGTH 33.4066195836 // Calculated with the Pythagorean theorem
+#define SENSITIVITY_DECREASE 30 // 20 works good, currently undergoing testing
 
 // NOT using 15 inch robot = Using 18 inch robot
 #define USING_15_INCH_ROBOT true
 
 #if USING_15_INCH_ROBOT
 
-#define DRIVE_WHEEL_DIAMETER 2.75
+#define DRIVE_WHEEL_DIAMETER 3.25
 #define TRACKING_WHEEL_DIAMETER 1.9644
-#define DEGREES_PER_REVOLUTION 360.0
-#define INITIAL_ODOMETRY_X 0.0
-#define INITIAL_ODOMETRY_Y 0.0
-#define INITIAL_ODOMETRY_THETA 0.0
 #define DISTANCE_LEFT_TRACKING_WHEEL_CENTER 4.0
 #define DISTANCE_RIGHT_TRACKING_WHEEL_CENTER 4.0
 #define DISTANCE_BACK_TRACKING_WHEEL_CENTER 3.75
@@ -22,17 +22,20 @@
 #define GYRO_CONFIDENCE 1.0
 #define GYRO_FILTER_LENGTH 1
 
-#define DRIVE_WIDTH 12
-#define DRIVE_LENGTH 12
+#define DRIVE_WIDTH 12 //distance between front wheels
+#define DRIVE_LENGTH 12 //distance from back wheel to front wheel
 #define DISTANCE_FRONT_LEFT_DRIVE_WHEEL_CENTER 8.48528137424
 #define DISTANCE_BACK_LEFT_DRIVE_WHEEL_CENTER 8.48528137424
 #define DISTANCE_FRONT_RIGHT_DRIVE_WHEEL_CENTER 8.48528137424
 #define DISTANCE_BACK_RIGHT_DRIVE_WHEEL_CENTER 8.48528137424
 #define AVG_DRIVETRAIN_RADIUS (DISTANCE_FRONT_LEFT_DRIVE_WHEEL_CENTER + DISTANCE_BACK_LEFT_DRIVE_WHEEL_CENTER + DISTANCE_FRONT_RIGHT_DRIVE_WHEEL_CENTER + DISTANCE_BACK_RIGHT_DRIVE_WHEEL_CENTER) / 4
-//This number may be dependent on the degrees being turn in which case it will not be a constant
+// This number may be dependent on the degrees being turn in which case it will not be a constant
 #define CLOCKWISE_ROTATION_DEGREES_OFFSET 4
-#define TILE_WIDTH 23.6220472441
-#define TILE_DIAG_LENGTH 33.4066195836 // Calculated with Pythagora's theorem
+
+// Depend on the robot and the routine
+#define INITIAL_ODOMETRY_X 0.0
+#define INITIAL_ODOMETRY_Y 0.0
+#define INITIAL_ODOMETRY_THETA 0.0
 
 #else
 

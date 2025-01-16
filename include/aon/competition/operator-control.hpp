@@ -54,16 +54,6 @@ inline double AnalogInputScaling(const double x, const double t) {
   return (a + b * (1 - a)) * z / 127.0;
 }
 
-/**
- * \brief Toggles the value of a bool
- * 
- * \param boolean The variable to be toggled
- * 
- */
-inline void toggle(bool &boolean) {
-  boolean = !boolean; 
-}
-
 // ============================================================================
 //    ___      _
 //   |   \ _ _(_)_ _____ _ _ ___
@@ -83,8 +73,8 @@ inline void _OpControlManes() {
 #if USING_15_INCH_ROBOT
 
   //////////// DRIVE ////////////
-  const double vertical = AnalogInputScaling(main_controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y) / 127.0, 20);
-  const double turn = AnalogInputScaling(main_controller.get_analog(::pros::E_CONTROLLER_ANALOG_RIGHT_X) / 127.0, 20);
+  const double vertical = AnalogInputScaling(main_controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y) / 127.0, SENSITIVITY_DECREASE);
+  const double turn = AnalogInputScaling(main_controller.get_analog(::pros::E_CONTROLLER_ANALOG_RIGHT_X) / 127.0, SENSITIVITY_DECREASE);
 
   driveLeft.moveVelocity(static_cast<int>(driveLeft.getGearing()) * std::clamp(vertical + turn, -1.0, 1.0));
   driveRight.moveVelocity(static_cast<int>(driveRight.getGearing()) * std::clamp(vertical - turn, -1.0, 1.0));
@@ -98,12 +88,14 @@ inline void _OpControlManes() {
   
   if (!conveyor_auto)
   {
+    int intakeVelocity = 200;
+
     if (main_controller.get_digital(DIGITAL_R1)) {
-      intake.moveVoltage(12000);
+      intake.moveVelocity(intakeVelocity);
     } else if (main_controller.get_digital(DIGITAL_R2)) {
-      intake.moveVoltage(-12000);
+      intake.moveVelocity(-intakeVelocity);
     } else {
-      intake.moveVoltage(0);
+      intake.moveVelocity(0);
     }
   }
   else
@@ -114,9 +106,8 @@ inline void _OpControlManes() {
 
   if (main_controller.get_digital_new_press(DIGITAL_A)) 
   { 
-    toggle(piston_on);
+    piston.set_value(toggle(piston_on));
   }
-  piston.set_value(piston_on);
 
 
 #else

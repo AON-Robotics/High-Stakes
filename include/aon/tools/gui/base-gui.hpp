@@ -113,7 +113,7 @@ static void Initialize() {
     /// Draw current screen once
     if (!drawn) DrawCurrentScreen();
 
-    /// Read toush screen
+    /// Read touch screen
     TouchStatus = pros::screen::touch_status();
 
     /// Handle something that is touching the screen
