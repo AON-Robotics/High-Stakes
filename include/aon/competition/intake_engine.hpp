@@ -34,51 +34,46 @@
                 gate.moveVelocity(0);
                 rail.moveVelocity(0);
                 
-                if (dist_sensor.get_value())
-                {
+                if (Distance_Sensor.get() < 145){
                     state = 1;
-                }
-                
-            }
-
+            }    
+        }
 
             
-            // State 2: Wait for limit_switch activation
+            // State 2: Wait for VS 
             else if (state == 1)
             {   
                 gate.moveVelocity(100);
                 rail.moveVelocity(100);
-                if(limit_switch.get_value()){
-                    
+
+                pros::vision_object_s_t obj = Vision_Sensor.get_by_code(0, Red);
+                pros::vision_object_s_t obj2 = Vision_Sensor.get_by_code(0, Blue);
+                if(obj.signature && obj.width > 1){
+                    pros::lcd::set_text(1, "Red detected!");
+                    rail.moveVelocity(200);
                     state = 2;
-
-                }
             }
-
-            // State 3: VS verdict
-            else if (state == 2)
-            {
-                gate.moveVelocity(0);
-                /*
-                    If vision sensor detects incorrect color
-                    intake.moveVelocity(200);
-                */
-                state = 3;
+                else if(obj2.signature && obj.width > 1){
+                    pros::lcd::set_text(1, "Blue detected!");
+                    rail.moveVelocity(100);
+                    state = 2;
             }
+                else{
+                    pros::lcd::set_text(1, "No color detected!");
+                    state = 1;
+            }
+        }
             
-
-            // State 4: Wait before resetting
-            else if (state == 3)
+            // State 3: Wait before resetting
+            else if (state == 2)
             {
                 pros::delay(2500);
                 state = 0;
-            }
-            
-
+            }           
         }
     }
 
-    static void coveyor_init ()
+    static void coveyor_init()
     {
         rail_state_machine();
     }

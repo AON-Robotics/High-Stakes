@@ -5,6 +5,7 @@
 #include "../okapi/api.hpp"
 #include "./constants.hpp"
 #include "controls/pid/pid.hpp"
+#include "../pros/vision.hpp"
 
 #if USING_15_INCH_ROBOT
 // Motor groups for drivetrain
@@ -20,6 +21,28 @@ pros::Rotation encoderLeft(1, true);
 pros::Rotation encoderRight(10, true);
 pros::Rotation encoderBack(18, false);
 
+//Distance Sensor
+pros::Distance Distance_Sensor(13);
+
+//Vision Sensor
+pros::Vision Vision_Sensor(1);
+// Red color variants 
+pros::vision_signature_s_t Light_Red_SIG = pros::vision_signature_s_t(pros::Vision::signature_from_utility(1, 3000, 6000, 4500, 5000, 7000, 6000, 3.000, 0));
+pros::vision_signature_s_t Medium_Light_Red_SIG = pros::vision_signature_s_t(pros::Vision::signature_from_utility(2, 4000, 7000, 5500, 4000, 6000, 5000, 3.500, 0));
+pros::vision_signature_s_t Medium_Red_SIG = pros::vision_signature_s_t(pros::Vision::signature_from_utility(3, 5000, 8000, 6500, 3500, 5500, 4500, 4.000, 0));
+pros::vision_signature_s_t Medium_Dark_Red_SIG = pros::vision_signature_s_t(pros::Vision::signature_from_utility(4, 6000, 9000, 7500, 3000, 5000, 4000, 4.500, 0));
+pros::vision_signature_s_t Dark_Red_SIG = pros::vision_signature_s_t(pros::Vision::signature_from_utility(5, 7000, 10000, 8500, 2000, 4000, 3000, 5.000, 0));
+// Blue color variants 
+pros::vision_signature_s_t Light_Blue_SIG = pros::vision_signature_s_t(pros::Vision::signature_from_utility(6, -3000, -1500, -2250, 4000, 7000, 5500, 3.000, 0));
+pros::vision_signature_s_t Medium_Light_Blue_SIG = pros::vision_signature_s_t(pros::Vision::signature_from_utility(7, -3500, -2000, -2750, 3500, 6500, 5000, 3.500, 0));
+pros::vision_signature_s_t Medium_Blue_SIG = pros::vision_signature_s_t(pros::Vision::signature_from_utility(8, -4000, -2500, -3250, 3000, 6000, 4500, 4.000, 0));
+pros::vision_signature_s_t Medium_Dark_Blue_SIG = pros::vision_signature_s_t(pros::Vision::signature_from_utility(9, -4500, -3000, -3750, 2500, 5500, 4000, 4.500, 0));
+pros::vision_signature_s_t Dark_Blue_SIG = pros::vision_signature_s_t(pros::Vision::signature_from_utility(10, -5000, -3500, -4250, 2000, 5000, 3500, 5.000, 0));
+// Color codes
+pros::vision_color_code_t Red = Vision_Sensor.create_color_code(1, 2, 3, 4, 5);
+pros::vision_color_code_t Blue = Vision_Sensor.create_color_code(6, 7, 8, 9, 10);
+
+
 // TEMPORARY PORT THERE IS NO GPS INSTALLED YET
 pros::Gps gps(3, -0.127, -0.1397);
 
@@ -27,7 +50,6 @@ aon::PID drivePID = aon::PID(0.1, 0, 0);
 aon::PID turnPID = aon::PID(0.01, 0, 0);
 
 pros::ADIDigitalIn limit_switch ('C');
-pros::ADIDigitalIn dist_sensor ('B');
 bool rail_on = false;
 
 pros::ADIDigitalOut piston ('A');
