@@ -112,20 +112,40 @@ inline void _OpControlManes() {
 
 #else
   //////////// DRIVE ////////////
-  const double leftInput = AnalogInputScaling(main_controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y) / 127.0, 10);
-  const double rightInput = AnalogInputScaling(main_controller.get_analog(::pros::E_CONTROLLER_ANALOG_RIGHT_Y) / 127.0, 10);
+  const double vertical = AnalogInputScaling(main_controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y) / 127.0, SENSITIVITY_DECREASE);
+  const double turn = AnalogInputScaling(main_controller.get_analog(::pros::E_CONTROLLER_ANALOG_RIGHT_X) / 127.0, SENSITIVITY_DECREASE);
 
-  driveLeft.moveVelocity(static_cast<int>(driveLeft.getGearing()) * std::clamp(leftInput, -1.0, 1.0));
-  driveRight.moveVelocity(static_cast<int>(driveRight.getGearing()) * std::clamp(rightInput, -1.0, 1.0));
+  driveLeft.moveVelocity(static_cast<int>(driveLeft.getGearing()) * std::clamp(vertical + turn, -1.0, 1.0));
+  driveRight.moveVelocity(static_cast<int>(driveRight.getGearing()) * std::clamp(vertical - turn, -1.0, 1.0));
 
   //////////// INTAKE ////////////
 
-  if (main_controller.get_digital(DIGITAL_R1)) {
-    intake.moveVoltage(12000);
-  } else if (main_controller.get_digital(DIGITAL_R2)) {
-    intake.moveVoltage(-12000);
-  } else {
-    intake.moveVoltage(0);
+  if (main_controller.get_digital_new_press(DIGITAL_X))
+  {
+    toggle(conveyor_auto);
+  }
+  
+  if (!conveyor_auto)
+  {
+    int intakeVelocity = 200;
+
+    if (main_controller.get_digital(DIGITAL_R1)) {
+      intake.moveVelocity(intakeVelocity);
+    } else if (main_controller.get_digital(DIGITAL_R2)) {
+      intake.moveVelocity(-intakeVelocity);
+    } else {
+      intake.moveVelocity(0);
+    }
+  }
+  else
+  {
+    railing();
+  }
+  
+
+  if (main_controller.get_digital_new_press(DIGITAL_A)) 
+  { 
+    piston.set_value(toggle(piston_on));
   }
 
 #endif

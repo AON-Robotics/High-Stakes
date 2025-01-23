@@ -34,6 +34,7 @@ void opcontrol() {
       // aon::primary_routine_wrapper();
       // aon::squareRoutine();
       // aon::programming_skills();
+      // aon::squareRoutine();
       aon::operator_control::Run(aon::operator_control::kManes);
       // aon::odometry::Update();
       // rail_state_machine();

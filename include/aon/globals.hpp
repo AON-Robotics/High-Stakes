@@ -61,24 +61,42 @@ pros::Imu gyroscope(6);
 
 #else
 // Set up motors and sensors for 18 inch robot3)
-okapi::MotorGroup driveLeft = okapi::MotorGroup({-12, 11});
-okapi::MotorGroup drive_back_left = okapi::MotorGroup({-13, 14});
-okapi::MotorGroup driveRight = okapi::MotorGroup({19, -20});
-okapi::MotorGroup drive_back_right = okapi::MotorGroup({18, -17});
+okapi::MotorGroup driveLeft = okapi::MotorGroup({10,-9, 8});
+okapi::MotorGroup driveRight = okapi::MotorGroup({-20, 19, -18});
+okapi::MotorGroup driveFull = okapi::MotorGroup({10,-9,8,-20,19,-18});
 
-okapi::MotorGroup intake = okapi::MotorGroup({5, 3});  // needs updates
-okapi::MotorGroup flywheel = okapi::MotorGroup({-9, 10});
-okapi::Motor puncher = okapi::Motor(1);  // need updates
+//SIGNATURE COLOR
+pros::Vision vision_sensor(1);
+pros::vision_signature_s_t DONUT;//create signature to wanted color
 
-pros::Rotation encoder_left(3, false);
-pros::Rotation encoder_right(8, true);
-pros::Rotation encoder_back(16, false);
 
-pros::ADIDigitalOut expansion('B');
+pros::Gps gps(7, -0.127, -0.1397);
+
+aon::PID drivePID = aon::PID(0.1, 0, 0);
+aon::PID turnPID = aon::PID(0.01, 0, 0);
+
+pros::ADIDigitalIn limit_switch ('C');
+pros::ADIDigitalIn dist_sensor ('B');
+bool rail_on = false;
+
+pros::ADIDigitalOut piston ('A');
+bool piston_on = false;
+ 
+bool conveyor_auto = true;
+int state = 0; // for railing
 
 #if GYRO_ENABLED
-pros::Imu gyroscope(9);
+pros::Imu gyroscope(7);
 #endif
+
+pros::Rotation encoderLeft(5, false);
+pros::Rotation encoderRight(-6, true);
+pros::Rotation encoderBack(-8, true);
+
+okapi::MotorGroup intake = okapi::MotorGroup({-17, -11, -2});
+okapi::MotorGroup rail = okapi::MotorGroup({-17,-11});
+okapi::Motor gate = okapi::Motor(-2);
+
 
 #endif
 
