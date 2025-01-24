@@ -88,12 +88,10 @@ inline void _OpControlManes() {
   
   if (!conveyor_auto)
   {
-    int intakeVelocity = 200;
-
     if (main_controller.get_digital(DIGITAL_R1)) {
-      intake.moveVelocity(intakeVelocity);
+      intake.moveVelocity(INTAKE_VELOCITY);
     } else if (main_controller.get_digital(DIGITAL_R2)) {
-      intake.moveVelocity(-intakeVelocity);
+      intake.moveVelocity(-INTAKE_VELOCITY);
     } else {
       intake.moveVelocity(0);
     }
@@ -127,12 +125,10 @@ inline void _OpControlManes() {
   
   if (!conveyor_auto)
   {
-    int intakeVelocity = 200;
-
     if (main_controller.get_digital(DIGITAL_R1)) {
-      intake.moveVelocity(intakeVelocity);
+      intake.moveVelocity(INTAKE_VELOCITY);
     } else if (main_controller.get_digital(DIGITAL_R2)) {
-      intake.moveVelocity(-intakeVelocity);
+      intake.moveVelocity(-INTAKE_VELOCITY);
     } else {
       intake.moveVelocity(0);
     }

@@ -6,13 +6,13 @@
 #define DEGREES_PER_REVOLUTION 360.0
 #define TILE_WIDTH 23.6220472441
 #define TILE_DIAG_LENGTH 33.4066195836 // Calculated with the Pythagorean theorem
-#define SENSITIVITY_DECREASE 30 // 20 works good, currently undergoing testing
 
 // NOT using 15 inch robot = Using 18 inch robot
-#define USING_15_INCH_ROBOT true
+#define USING_15_INCH_ROBOT false
 
 #if USING_15_INCH_ROBOT
 
+#define SENSITIVITY_DECREASE 30 // 20 works good, currently undergoing testing
 #define DRIVE_WHEEL_DIAMETER 3.25
 #define TRACKING_WHEEL_DIAMETER 1.9644
 #define DISTANCE_LEFT_TRACKING_WHEEL_CENTER 4.0
@@ -30,21 +30,20 @@
 #define DISTANCE_BACK_RIGHT_DRIVE_WHEEL_CENTER 8.48528137424
 #define AVG_DRIVETRAIN_RADIUS (DISTANCE_FRONT_LEFT_DRIVE_WHEEL_CENTER + DISTANCE_BACK_LEFT_DRIVE_WHEEL_CENTER + DISTANCE_FRONT_RIGHT_DRIVE_WHEEL_CENTER + DISTANCE_BACK_RIGHT_DRIVE_WHEEL_CENTER) / 4
 // This number may be dependent on the degrees being turn in which case it will not be a constant
-#define CLOCKWISE_ROTATION_DEGREES_OFFSET 4
+#define CLOCKWISE_ROTATION_DEGREES_OFFSET 0
 
 // Depend on the robot and the routine
 #define INITIAL_ODOMETRY_X 0.0
 #define INITIAL_ODOMETRY_Y 0.0
 #define INITIAL_ODOMETRY_THETA 0.0
 
+#define INTAKE_VELOCITY 200
+
 #else
 
+#define SENSITIVITY_DECREASE 30 // 20 works good, currently undergoing testing
 #define DRIVE_WHEEL_DIAMETER 4
 #define TRACKING_WHEEL_DIAMETER 2
-#define DEGREES_PER_REVOLUTION 360.0
-#define INITIAL_ODOMETRY_X 0.0
-#define INITIAL_ODOMETRY_Y 0.0
-#define INITIAL_ODOMETRY_THETA 0.0
 #define DISTANCE_LEFT_TRACKING_WHEEL_CENTER 6.375
 #define DISTANCE_RIGHT_TRACKING_WHEEL_CENTER 6.375
 #define DISTANCE_BACK_TRACKING_WHEEL_CENTER 6.25
@@ -62,10 +61,12 @@
 // This number may be dependent on the degrees being turn in which case it will not be a constant
 #define CLOCKWISE_ROTATION_DEGREES_OFFSET 0
 
-#define MAX_ACCELERATION 300
-#define DEFAULT_INITIAL_SPEED 15
-#define DEFAULT_FINAL_SPEED 0
-#define MAX_SPEED (200.0 * M_PI * DRIVE_WHEEL_DIAMETER / 60.0 * 3.0)
+// Depend on the robot and the routine
+#define INITIAL_ODOMETRY_X 0.0
+#define INITIAL_ODOMETRY_Y 0.0
+#define INITIAL_ODOMETRY_THETA 0.0
+
+#define INTAKE_VELOCITY 300
 
 #endif
 
