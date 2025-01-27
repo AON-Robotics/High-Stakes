@@ -821,6 +821,41 @@ inline double getAngleToTurn(Vector target){
 }
 
 /**
+ * \warning Test this function first, it is old code that seems to get the angle needed to turn as well as the distance from current point to target.
+*/
+std::pair<double, double> initialReset(double desired_x, double desired_y)
+{
+  //3 seconds
+  // odometry::ResetInitial();
+
+  // Leave 500ms stationary to take the best results
+  pros::delay(500);
+  // initial_pos_x = gps.get_status().x;
+  // initial_pos_y = gps.get_status().y;
+  // initial_heading = gps.get_heading();
+
+  double dist = sqrt(pow((desired_x - gps.get_status().x), 2) + pow((desired_y - gps.get_status().y), 2));
+
+  double angle_destination = atan2(desired_y - gps.get_status().y, desired_x - gps.get_status().x) * 180.0/M_PI;
+
+  angle_destination = fmod(-angle_destination+90, 360);
+  
+  double robot_heading = fmod(-gps.get_heading()+90, 360);
+
+  // Angle difference
+  double rot = angle_destination - robot_heading;
+
+  if (rot > 180) {
+    rot -= 360;
+  } 
+  else if (rot < -180) {
+    rot += 360;
+  }
+
+  return std::make_pair(dist, rot);
+}
+
+/**
  * \brief Conversion from \b meters to \b inches
  * 
  * \param meters The \b meters to be converted
