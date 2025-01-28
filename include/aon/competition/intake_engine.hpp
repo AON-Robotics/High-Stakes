@@ -20,60 +20,50 @@
 |_______/    |__| |_______/ |_______|       |__|    /__/     \__\ |_______/    |__|\__\ |_______/    
 */
 
-    void rail_state_machine ()
-    {
-        // INITIATE
-        int state = 0;
+    void rail_state_machine() {
+    // Initialize state
+    int state = 0;
 
-        // While Autonomous
-        while(true)
-        {
-            // State 1: Wait for dist_sensor activation
-            if (state == 0)
-            {
-                gate.moveVelocity(0);
-                rail.moveVelocity(0);
-                
-                if (Distance_Sensor.get() < 145){
-                    state = 1;
-            }    
+    // Autonomous loop
+    while (true) {
+        if (state == 0) {
+            gate.moveVelocity(0);
+            rail.moveVelocity(0);
+
+            if (Distance_Sensor.get() < 100) {
+                gate.moveVelocity(100);  
+                state = 1;
+            }
         }
 
-            
-            // State 2: Wait for VS 
-            else if (state == 1)
-            {   
-                gate.moveVelocity(100);
-                rail.moveVelocity(100);
+        //Vision Sensor color detection
+        else if (state == 1) {
+            rail.moveVelocity(100); 
+            int object_count = Vision_Sensor.get_object_count();
 
-                pros::vision_object_s_t obj = Vision_Sensor.get_by_code(0, Red);
-                pros::vision_object_s_t obj2 = Vision_Sensor.get_by_code(0, Blue);
-                if(obj.signature && obj.width > 1){
-                    pros::lcd::set_text(1, "Red detected!");
+            if (object_count > 0) {
+                pros::vision_object_s_t red_obj = Vision_Sensor.get_by_code(0, Red);
+                pros::vision_object_s_t blue_obj = Vision_Sensor.get_by_code(0, Blue);
+
+                if (red_obj.signature == Red) {
                     rail.moveVelocity(200);
-                    state = 2;
-            }
-                else if(obj2.signature && obj.width > 1){
-                    pros::lcd::set_text(1, "Blue detected!");
+                    pros::delay(1000);
+                    state = 0;
+                }
+
+                else if (blue_obj.signature == Blue) {
                     rail.moveVelocity(100);
-                    state = 2;
+                    pros::delay(1000);
+                    state = 0;
+                } 
+            } else {
+                state = 1;
             }
-                else{
-                    pros::lcd::set_text(1, "No color detected!");
-                    state = 1;
-            }
-        }
-            
-            // State 3: Wait before resetting
-            else if (state == 2)
-            {
-                pros::delay(2500);
-                state = 0;
-            }           
         }
     }
+}
 
-    static void coveyor_init()
+    static void conveyor_init()
     {
         rail_state_machine();
     }

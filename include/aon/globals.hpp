@@ -26,13 +26,13 @@ pros::Distance Distance_Sensor(13);
 
 //Vision Sensor
 pros::Vision Vision_Sensor(1);
-// Red color variants 
+// Red color variants
 pros::vision_signature_s_t Light_Red_SIG = pros::vision_signature_s_t(pros::Vision::signature_from_utility(1, 3000, 6000, 4500, 5000, 7000, 6000, 3.000, 0));
 pros::vision_signature_s_t Medium_Light_Red_SIG = pros::vision_signature_s_t(pros::Vision::signature_from_utility(2, 4000, 7000, 5500, 4000, 6000, 5000, 3.500, 0));
 pros::vision_signature_s_t Medium_Red_SIG = pros::vision_signature_s_t(pros::Vision::signature_from_utility(3, 5000, 8000, 6500, 3500, 5500, 4500, 4.000, 0));
 pros::vision_signature_s_t Medium_Dark_Red_SIG = pros::vision_signature_s_t(pros::Vision::signature_from_utility(4, 6000, 9000, 7500, 3000, 5000, 4000, 4.500, 0));
 pros::vision_signature_s_t Dark_Red_SIG = pros::vision_signature_s_t(pros::Vision::signature_from_utility(5, 7000, 10000, 8500, 2000, 4000, 3000, 5.000, 0));
-// Blue color variants 
+// Blue color variants
 pros::vision_signature_s_t Light_Blue_SIG = pros::vision_signature_s_t(pros::Vision::signature_from_utility(6, -3000, -1500, -2250, 4000, 7000, 5500, 3.000, 0));
 pros::vision_signature_s_t Medium_Light_Blue_SIG = pros::vision_signature_s_t(pros::Vision::signature_from_utility(7, -3500, -2000, -2750, 3500, 6500, 5000, 3.500, 0));
 pros::vision_signature_s_t Medium_Blue_SIG = pros::vision_signature_s_t(pros::Vision::signature_from_utility(8, -4000, -2500, -3250, 3000, 6000, 4500, 4.000, 0));
