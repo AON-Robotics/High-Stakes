@@ -20,7 +20,7 @@ inline bool toggle(bool &boolean) {
 
 #if USING_15_INCH_ROBOT
 // Motor groups for drivetrain
-okapi::MotorGroup driveLeft = okapi::MotorGroup({12, 18, -19});
+okapi::MotorGroup driveLeft = okapi::MotorGroup({12, -18, 19});
 okapi::MotorGroup driveRight = okapi::MotorGroup({-15, 16, -17});
 okapi::MotorGroup driveFull = okapi::MotorGroup({12, 18, -19, -15, 16, -17});
 
@@ -35,8 +35,8 @@ pros::vision_signature_s_t Green_SIG = pros::vision_signature_s_t(pros::Vision::
 //vision::signature GR (1, -4729, -3713, -4221, -3483, -2603, -3043, 4.600, 0);
 
 // Rotation sensors for odometry // NOT YET INSTALLED
-pros::Rotation encoderLeft(10, true);
-pros::Rotation encoderRight(9, true);
+pros::Rotation encoderLeft(20, true);
+pros::Rotation encoderRight(-10, true);
 pros::Rotation encoderBack(8, false);
 
 // TEMPORARY PORT THERE IS NO GPS INSTALLED YET ON 15 INCH (18 INCH DOES HAVE IT INSTALLED)
@@ -93,8 +93,8 @@ pros::Rotation encoderLeft(5, false);
 pros::Rotation encoderRight(-6, true);
 pros::Rotation encoderBack(-8, true);
 
-okapi::MotorGroup intake = okapi::MotorGroup({-17, -11, -2});
-okapi::MotorGroup rail = okapi::MotorGroup({-17,-11});
+okapi::MotorGroup intake = okapi::MotorGroup({-17, -2});
+okapi::MotorGroup rail = okapi::MotorGroup({-17});
 okapi::Motor gate = okapi::Motor(-2);
 
 
@@ -164,7 +164,7 @@ inline void ConfigureMotors() {
   driveRight.tarePosition();
 
   intake.setBrakeMode(okapi::AbstractMotor::brakeMode::coast);
-  intake.setGearing(okapi::AbstractMotor::gearset::blue);
+  intake.setGearing(okapi::AbstractMotor::gearset::green);
   intake.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
   intake.tarePosition();
 

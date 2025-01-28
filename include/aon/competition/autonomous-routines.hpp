@@ -1029,32 +1029,32 @@ void MoveDrivePID(PID pid, Vector targetPos, double sign = 1) {
 }
 
 
-void Follow_Object(int sig){
-  while(true){
-    pros::vision_object_s_t object = vision_sensor.get_by_sig(0, sig);
-    if (){
-      //object is in view
-    if(){
-      //the objects center is towards the right (>100)
-    }
-    if(){
-      //the objects center is towards the left (<60)
-    }
-    if(){
-      //the objects center is near the center ()>60 & <100)
-      if(){
-        //the objects width is <125 , drive closer 
-      }
+// void Follow_Object(int sig){
+//   while(true){
+//     pros::vision_object_s_t object = vision_sensor.get_by_sig(0, sig);
+//     if(false){}
+//       //object is in view
+//     if(false){
+//       //the objects center is towards the right (>100)
+//     }
+//     if(){
+//       //the objects center is towards the left (<60)
+//     }
+//     if(){
+//       //the objects center is near the center ()>60 & <100)
+//       if(){
+//         //the objects width is <125 , drive closer 
+//       }
 
-    }
-    }
-    else{
-      //turn until an object is found
-    }
+//     }
+
+//     else{
+//       //turn until an object is found
+//     }
 
 
-  }
- }
+//   }
+//  }
 
 /**
  * \brief Turns the robot by a given angle (default clockwise)
