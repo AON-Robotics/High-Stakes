@@ -47,6 +47,7 @@ aon::PID turnPID = aon::PID(0.01, 0, 0);
 
 pros::ADIDigitalIn limit_switch ('C');
 pros::ADIDigitalIn dist_sensor ('B');
+pros::Distance distanceSensor(1);
 bool rail_on = false;
 
 pros::ADIDigitalOut piston ('H');
@@ -60,13 +61,13 @@ pros::Imu gyroscope(6);
 #endif
 
 #else
-// Set up motors and sensors for 18 inch robot3)
+// Set up motors and sensors for 18 inch robot
 okapi::MotorGroup driveLeft = okapi::MotorGroup({10,-9, 8});
 okapi::MotorGroup driveRight = okapi::MotorGroup({-20, 19, -18});
 okapi::MotorGroup driveFull = okapi::MotorGroup({10,-9,8,-20,19,-18});
 
 //SIGNATURE COLOR
-pros::Vision vision_sensor(1);
+pros::Vision vision_sensor(4);
 pros::vision_signature_s_t DONUT;//create signature to wanted color
 
 
@@ -77,6 +78,7 @@ aon::PID turnPID = aon::PID(0.01, 0, 0);
 
 pros::ADIDigitalIn limit_switch ('C');
 pros::ADIDigitalIn dist_sensor ('B');
+pros::Distance distanceSensor(1);
 bool rail_on = false;
 
 pros::ADIDigitalOut piston ('A');

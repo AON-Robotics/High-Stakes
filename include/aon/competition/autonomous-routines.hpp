@@ -1028,34 +1028,6 @@ void MoveDrivePID(PID pid, Vector targetPos, double sign = 1) {
   #undef time
 }
 
-
-// void Follow_Object(int sig){
-//   while(true){
-//     pros::vision_object_s_t object = vision_sensor.get_by_sig(0, sig);
-//     if(false){}
-//       //object is in view
-//     if(false){
-//       //the objects center is towards the right (>100)
-//     }
-//     if(){
-//       //the objects center is towards the left (<60)
-//     }
-//     if(){
-//       //the objects center is near the center ()>60 & <100)
-//       if(){
-//         //the objects width is <125 , drive closer 
-//       }
-
-//     }
-
-//     else{
-//       //turn until an object is found
-//     }
-
-
-//   }
-//  }
-
 /**
  * \brief Turns the robot by a given angle (default clockwise)
  * 
@@ -1241,6 +1213,48 @@ int turn(double angle = 90)
 //
 // ============================================================================
 
+void driveIntoTaurus(){
+  const int TOLERANCE = 5;
+  const int VISION_FIELD_CENTER = 158;
+  const int SPEED = 150; // 200 is max
+  const int ADJUSTMENT = 20;
+  while(true){
+    auto object = vision_sensor.get_by_sig(0, 1);
+    const int OBJ_CENTER = object.x_middle_coord;
+
+    if(abs(OBJ_CENTER - VISION_FIELD_CENTER) <= TOLERANCE){
+      driveFull.moveVelocity(SPEED);
+    }
+    else if(OBJ_CENTER - VISION_FIELD_CENTER < 0){ // TURN LEFT
+      driveLeft.moveVelocity(SPEED - ADJUSTMENT);
+      driveRight.moveVelocity(SPEED + ADJUSTMENT);
+    }
+    else if(OBJ_CENTER - VISION_FIELD_CENTER > 0){ // TURN RIGHT
+      driveLeft.moveVelocity(SPEED + ADJUSTMENT);
+      driveRight.moveVelocity(SPEED - ADJUSTMENT);
+    }
+
+    if(distanceSensor.get() <= 200){
+      driveFull.moveVelocity(100);
+      pickUpTaurus(500);
+      break;
+    }
+
+    if(main_controller.get_digital(DIGITAL_B)){ // Safety During testing
+      driveFull.moveVelocity(0);
+      intake.moveVelocity(0);
+      return;
+    }
+  }
+  driveFull.moveVelocity(0);
+  pickUpTaurus(1000); // Remember to do this after to finish pickup
+}
+
+void pickUpTaurus(int delay){
+  intake.moveVelocity(INTAKE_VELOCITY);
+  pros::delay(delay);
+  intake.moveVelocity(0);
+}
 
 inline void first_routine(double kP, double kI, double kD) {
   aon::PID pid = aon::PID(kP, kI, kD);
