@@ -32,11 +32,11 @@ std::pair<double, double> getStepsTo(double desired_x, double desired_y)
 
   double dist = sqrt(pow((desired_x - gps.get_status().x), 2) + pow((desired_y - gps.get_status().y), 2));
 
-  double angle_destination = atan2(desired_y - gps.get_status().y, desired_x - gps.get_status().x) * 180.0/M_PI;
+  double angle_destination = atan2(desired_y - gps.get_status().y, desired_x - gps.get_status().x) * 180.0 / M_PI;
 
-  angle_destination = fmod(-angle_destination+90, 360);
+  angle_destination = fmod(-angle_destination + 90, 360);
   
-  double robot_heading = fmod(-gps.get_heading()+90, 360);
+  double robot_heading = fmod(-gps.get_heading() + 90, 360);
 
   // Angle difference
   double rot = angle_destination - robot_heading;
@@ -532,6 +532,82 @@ int turn(double angle = 90)
 //    |_| |___|___/ |_| |___/
 //
 // ============================================================================
+
+// Works but hardware needs to catch up
+void pickUpTaurus(int delay){
+  intake.moveVelocity(INTAKE_VELOCITY);
+  pros::delay(delay);
+  intake.moveVelocity(0);
+}
+
+// Works for red so far
+void driveIntoTaurus(){
+  const int TOLERANCE = 20;
+  const int VISION_FIELD_CENTER = 315/2;
+  const int SPEED = 150; // 200 is max
+  const int ADJUSTMENT = 20;
+  const int RED = 1;
+  const int GREEN = 2;
+  const int BLUE = 3;
+  const int SIGNATURE = BLUE;
+  while(true){
+    auto object = vision_sensor.get_by_sig(0, SIGNATURE);
+    const int OBJ_CENTER = object.x_middle_coord;
+
+    if(object.signature == SIGNATURE){
+      if(abs(OBJ_CENTER - VISION_FIELD_CENTER) <= TOLERANCE){
+        driveFull.moveVelocity(SPEED);
+      }
+      else if(OBJ_CENTER < VISION_FIELD_CENTER){ // TURN LEFT
+        driveLeft.moveVelocity(SPEED - ADJUSTMENT);
+        driveRight.moveVelocity(SPEED + ADJUSTMENT);
+      }
+      else if(OBJ_CENTER > VISION_FIELD_CENTER){ // TURN RIGHT
+        driveLeft.moveVelocity(SPEED + ADJUSTMENT);
+        driveRight.moveVelocity(SPEED - ADJUSTMENT);
+      }
+
+      if(distanceSensor.get() <= 100){
+        driveFull.moveVelocity(100);
+        pickUpTaurus(1000);
+        break;
+      }
+    }
+
+    if(main_controller.get_digital(DIGITAL_B)){ // Safety During testing
+      driveFull.moveVelocity(0);
+      intake.moveVelocity(0);
+      return;
+    }
+  }
+  driveFull.moveVelocity(0);
+  pickUpTaurus(1500); // Remember to do this after to finish pickup
+}
+
+// Does not work yet
+void testGPS(int x, int y){ //Later name this function to GoTo
+  std::pair<double, double> nextSteps = getStepsTo(x, y);
+  turn(nextSteps.second);
+  move(metersToInches(nextSteps.first / 1000));
+}
+
+// Works
+void grabGoal(){
+  driveFull.moveVelocity(-100);
+  pros::delay(500);
+  piston.set_value(true);
+  pros::delay(100);
+  driveFull.moveVelocity(100);
+  pros::delay(600);
+  driveFull.moveVelocity(0);
+}
+
+void raceToGoal(){
+  move(-45);
+  grabGoal();
+  move(45);
+  piston.set_value(false);
+}
 
 
 inline void first_routine(double kP, double kI, double kD) {
@@ -1212,49 +1288,6 @@ int turn(double angle = 90)
 //    |_| |___|___/ |_| |___/
 //
 // ============================================================================
-
-void driveIntoTaurus(){
-  const int TOLERANCE = 5;
-  const int VISION_FIELD_CENTER = 158;
-  const int SPEED = 150; // 200 is max
-  const int ADJUSTMENT = 20;
-  while(true){
-    auto object = vision_sensor.get_by_sig(0, 1);
-    const int OBJ_CENTER = object.x_middle_coord;
-
-    if(abs(OBJ_CENTER - VISION_FIELD_CENTER) <= TOLERANCE){
-      driveFull.moveVelocity(SPEED);
-    }
-    else if(OBJ_CENTER - VISION_FIELD_CENTER < 0){ // TURN LEFT
-      driveLeft.moveVelocity(SPEED - ADJUSTMENT);
-      driveRight.moveVelocity(SPEED + ADJUSTMENT);
-    }
-    else if(OBJ_CENTER - VISION_FIELD_CENTER > 0){ // TURN RIGHT
-      driveLeft.moveVelocity(SPEED + ADJUSTMENT);
-      driveRight.moveVelocity(SPEED - ADJUSTMENT);
-    }
-
-    if(distanceSensor.get() <= 200){
-      driveFull.moveVelocity(100);
-      pickUpTaurus(500);
-      break;
-    }
-
-    if(main_controller.get_digital(DIGITAL_B)){ // Safety During testing
-      driveFull.moveVelocity(0);
-      intake.moveVelocity(0);
-      return;
-    }
-  }
-  driveFull.moveVelocity(0);
-  pickUpTaurus(1000); // Remember to do this after to finish pickup
-}
-
-void pickUpTaurus(int delay){
-  intake.moveVelocity(INTAKE_VELOCITY);
-  pros::delay(delay);
-  intake.moveVelocity(0);
-}
 
 inline void first_routine(double kP, double kI, double kD) {
   aon::PID pid = aon::PID(kP, kI, kD);
