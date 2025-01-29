@@ -6,48 +6,36 @@
 #include "./constants.hpp"
 #include "controls/pid/pid.hpp"
 
-/**
- * \brief Toggles the value of a bool
- * 
- * \param boolean The variable to be toggled
- * 
- * \returns The updated boolean
- */
-inline bool toggle(bool &boolean) {
-  boolean = !boolean;
-  return boolean;
-}
 
 #if USING_15_INCH_ROBOT
 // Motor groups for drivetrain
 okapi::MotorGroup driveLeft = okapi::MotorGroup({12, -18, 19});
-okapi::MotorGroup driveRight = okapi::MotorGroup({-15, 16, -17});
-okapi::MotorGroup driveFull = okapi::MotorGroup({12, 18, -19, -15, 16, -17});
+okapi::MotorGroup driveRight = okapi::MotorGroup({-3, 16, -17});
+okapi::MotorGroup driveFull = okapi::MotorGroup({12, -18, 19, -3, 16, -17});
 
 
-okapi::MotorGroup intake = okapi::MotorGroup({13, 14});
-okapi::MotorGroup rail = okapi::MotorGroup({13});
-okapi::Motor gate = okapi::Motor(14);
+okapi::MotorGroup intake = okapi::MotorGroup({-13, -14});
+okapi::MotorGroup rail = okapi::MotorGroup({-13});
+okapi::Motor gate = okapi::Motor(-14);
 
-// Vision sensor port 
-pros::Vision vision_sensor(11); // NOT YET INSTALLED
-pros::vision_signature_s_t Green_SIG = pros::vision_signature_s_t(pros::Vision::signature_from_utility(1, -4729, -3713, -4221, -3483, -2603, -3043, 4.600, 0));
+pros::Vision vision_sensor(7);
+//pros::vision_signature_s_t Green_SIG = pros::vision_signature_s_t(pros::Vision::signature_from_utility(1, -4729, -3713, -4221, -3483, -2603, -3043, 4.600, 0));
 //vision::signature GR (1, -4729, -3713, -4221, -3483, -2603, -3043, 4.600, 0);
+pros::vision_signature_s_t BLUE_SIG = pros::Vision::signature_from_utility(3, 3139, 4067, 3603, -1269, -1963, -1616, 3.0, 0);
 
-// Rotation sensors for odometry // NOT YET INSTALLED
+//odometry
 pros::Rotation encoderLeft(20, true);
-pros::Rotation encoderRight(-10, true);
-pros::Rotation encoderBack(8, false);
+pros::Rotation encoderRight(-8, true);
+pros::Rotation encoderBack(11, false);
 
-// TEMPORARY PORT THERE IS NO GPS INSTALLED YET ON 15 INCH (18 INCH DOES HAVE IT INSTALLED)
-pros::Gps gps(7, -0.127, -0.1397);
+pros::Gps gps(6, -0.127, -0.1397);
 
 aon::PID drivePID = aon::PID(0.1, 0, 0);
 aon::PID turnPID = aon::PID(0.01, 0, 0);
 
 pros::ADIDigitalIn limit_switch ('C');
 pros::ADIDigitalIn dist_sensor ('B');
-pros::Distance distanceSensor(1);
+pros::Distance distanceSensor(2);
 bool rail_on = false;
 
 pros::ADIDigitalOut piston ('H');
@@ -57,7 +45,7 @@ bool conveyor_auto = true;
 int state = 0; // for railing
 
 #if GYRO_ENABLED
-pros::Imu gyroscope(6);
+pros::Imu gyroscope(11);
 #endif
 
 #else
@@ -171,6 +159,22 @@ inline void ConfigureMotors() {
   intake.tarePosition();
 
 #endif
+}
+
+/**
+ * \brief Toggles the value of a bool
+ * 
+ * \param boolean The variable to be toggled
+ * 
+ * \returns The updated boolean
+ */
+inline bool toggle(bool &boolean) {
+  boolean = !boolean;
+  return boolean;
+}
+
+inline void ConfigureColors(){
+  vision_sensor.set_signature(3, &BLUE_SIG);
 }
 
 }  // namespace aon
