@@ -18,10 +18,9 @@ okapi::MotorGroup intake = okapi::MotorGroup({-13, -14});
 okapi::MotorGroup rail = okapi::MotorGroup({-13});
 okapi::Motor gate = okapi::Motor(-14);
 
-pros::Vision vision_sensor(7);
-//pros::vision_signature_s_t Green_SIG = pros::vision_signature_s_t(pros::Vision::signature_from_utility(1, -4729, -3713, -4221, -3483, -2603, -3043, 4.600, 0));
-//vision::signature GR (1, -4729, -3713, -4221, -3483, -2603, -3043, 4.600, 0);
-pros::vision_signature_s_t BLUE_SIG = pros::Vision::signature_from_utility(3, 3139, 4067, 3603, -1269, -1963, -1616, 3.0, 0);
+pros::Vision vision_sensor(5);
+pros::vision_signature_s_t RED_SIG = pros::Vision::signature_from_utility(1, 8973, 11143, 10058, -2119, -1053, -1586, 5.4, 0);
+pros::vision_signature_s_t BLUE_SIG = pros::Vision::signature_from_utility(2, -3050, -2000, -2500, 8000, 11000, 9500, 5.4, 0);
 
 //odometry
 pros::Rotation encoderLeft(20, true);
@@ -29,6 +28,10 @@ pros::Rotation encoderRight(-8, true);
 pros::Rotation encoderBack(11, false);
 
 pros::Gps gps(6, -0.127, -0.1397);
+// Center of the field is (0,0), uses 4 quadrant cartesian system for coordinates
+// 7.5 in = 0.1905 m
+// approx 110 deg
+// pros::Gps gps(6, 1.5, .3, 110, 0.1905, 0.1905); // measure the values to be certain
 
 aon::PID drivePID = aon::PID(0.1, 0, 0);
 aon::PID turnPID = aon::PID(0.01, 0, 0);
@@ -174,7 +177,8 @@ inline bool toggle(bool &boolean) {
 }
 
 inline void ConfigureColors(){
-  vision_sensor.set_signature(3, &BLUE_SIG);
+  vision_sensor.set_signature(1, &RED_SIG);
+  vision_sensor.set_signature(2, &BLUE_SIG);
 }
 
 }  // namespace aon

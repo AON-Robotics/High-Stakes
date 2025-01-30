@@ -6,6 +6,8 @@
 #define DEGREES_PER_REVOLUTION 360.0
 #define TILE_WIDTH 23.6220472441
 #define TILE_DIAG_LENGTH 33.4066195836 // Calculated with the Pythagorean theorem
+#define RED 1
+#define BLUE 2
 
 // NOT using 15 inch robot = Using 18 inch robot
 #define USING_15_INCH_ROBOT true

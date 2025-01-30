@@ -540,16 +540,12 @@ void pickUpTaurus(int delay){
   intake.moveVelocity(0);
 }
 
-// Works for red so far
-void driveIntoTaurus(){
+// Works 
+void driveIntoTaurus(const int SIGNATURE){
   const int TOLERANCE = 20;
-  const int VISION_FIELD_CENTER = 315/2;
+  const int VISION_FIELD_CENTER = 315 / 2;
   const int SPEED = 150; // 200 is max
   const int ADJUSTMENT = 20;
-  const int RED = 1;
-  const int GREEN = 2;
-  const int BLUE = 3;
-  const int SIGNATURE = BLUE;
   while(true){
     auto object = vision_sensor.get_by_sig(0, SIGNATURE);
     const int OBJ_CENTER = object.x_middle_coord;
@@ -584,14 +580,14 @@ void driveIntoTaurus(){
   pickUpTaurus(1500); // Remember to do this after to finish pickup
 }
 
-// Does not work yet
-void testGPS(int x, int y){ //Later name this function to GoTo
+// Does not work yet because of getStepsTo()
+void testGPS(int x, int y){ // Later name this function to GoTo
   std::pair<double, double> nextSteps = getStepsTo(x, y);
   turn(nextSteps.second);
   move(metersToInches(nextSteps.first / 1000));
 }
 
-// Works
+// Works, you should obviosly be very close to the goal
 void grabGoal(){
   driveFull.moveVelocity(-100);
   pros::delay(500);
@@ -602,11 +598,12 @@ void grabGoal(){
   driveFull.moveVelocity(0);
 }
 
+// This is for the start of the match and it worked
 void raceToGoal(){
   move(-45);
   grabGoal();
-  move(45);
-  piston.set_value(false);
+  // move(45);
+  // piston.set_value(false);
 }
 
 
@@ -765,29 +762,22 @@ int teamRingsRoutine(){
   // This routine focuses on team rings (no duh)
   // Rush to one of the side mobile goals (the one on the side of the double points) and secure it on team side
   
-  // Starting point at (2.5, 1.5) facing 90 degrees (the blue area)
-  moveHalfTiles(-4);
-  turn(-45);
-  moveHalfDiagTiles(-1);
+  // Starting point at (1.5, .3) facing approximately 110 degrees (the blue area)
+  // moveHalfTiles(-4);
+  // turn(-45);
+  // moveHalfDiagTiles(-1);
+  raceToGoal();
 
   // Grab and secure
-  // driveFull.moveVoltage(-8000);
-  piston.set_value(toggle(piston_on));
-  // driveFull.moveVoltage(0);
   moveHalfDiagTiles(1);
-  piston.set_value(toggle(piston_on));
+  piston.set_value(false);
 
   // Go to middle mobile goal to secure it
-  turn(135);
+  turn(-100);
   moveTilesStraight(-1);
-  turn(-45);
-  moveHalfDiagTiles(-1);
-
   // Grab and secure
-  // driveFull.moveVoltage(-8000);
-  piston.set_value(toggle(piston_on));
-  // driveFull.moveVoltage(0);
-  moveHalfDiagTiles(1);
+  grabGoal();
+  moveTilesDiag(1);
 
   // Stack team rings on mobile goal
   // Take mobile goal to double points area

@@ -32,24 +32,16 @@ void opcontrol() {
 
     while (true) {
       // aon::AutonomousReader->ExecuteFunction("autonomous");
-      // aon::primary_routine_wrapper();
-      // aon::squareRoutine();
-      // aon::programming_skills();
-      // aon::squareRoutine();
       aon::operator_control::Run(aon::operator_control::kManes);
 
-
-      // aon::driveIntoTaurus();
+      // aon::driveIntoTaurus(BLUE);
       // aon::testGPS(0, 0);
-      // if(distanceSensor.get() <= 100){
-        // aon::pickUpTaurus(1000);
-      // }
 
-      // aon::raceToGoal();
+
+      // aon::teamRingsRoutine();
 
 
       // aon::odometry::Update();
-      // rail_state_machine();
       pros::delay(10);
       //aon::odometry::Debug();
     }
