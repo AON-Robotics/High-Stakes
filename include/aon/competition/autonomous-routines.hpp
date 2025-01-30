@@ -10,8 +10,6 @@
 
 namespace aon {
 
-#define SAMPLE_SIZE 50
-
 double initial_pos_x;
 double initial_pos_y;
 double initial_heading;
@@ -62,12 +60,12 @@ double metersToInches(double meters);
  * 
  * \warning This function takes three (3) \b seconds to complete
  */
-int initialReset()
+int initialReset(bool gyro = true)
 {
   odometry::ResetInitial();
   
   // 3 seconds
-  gyroscope.reset(true);
+  gyroscope.reset(gyro);
   return 1;
 }
 
@@ -134,13 +132,13 @@ inline Vector getGPSPos(){
   double avg_y = 0;
   
   // Get the average of the readings from the GPS
-  for (int i = 0; i < SAMPLE_SIZE; i++)
+  for (int i = 0; i < GPS_SAMPLE_SIZE; i++)
   {
     avg_x += gps.get_status().x;
     avg_y += gps.get_status().y;
   }
 
-  avg_x /= SAMPLE_SIZE; avg_y /= SAMPLE_SIZE;
+  avg_x /= GPS_SAMPLE_SIZE; avg_y /= GPS_SAMPLE_SIZE;
   
   return Vector().SetPosition(avg_x, avg_y);
 }
@@ -227,7 +225,7 @@ int trackObject(int sig = 1) {
  * \param pid The PID used for the driving
  * \param dist The distance to be moved in \b inches
  */
-void MoveDrivePID(PID pid = drivePID, double dist = TILE_WIDTH) {
+void MoveDrivePID(PID pid = drivePID, double dist = TILE_WIDTH, const double MAX_SPEED = 100.0) {
   const int sign = dist / abs(dist); // Getting the direction of the movement
   dist = abs(dist); // Setting the magnitude to positive
 
@@ -249,52 +247,8 @@ void MoveDrivePID(PID pid = drivePID, double dist = TILE_WIDTH) {
 
     pros::lcd::print(0, "%f", currentDisplacement);
 
-    driveFull.moveVelocity(sign * std::clamp(output * (int)driveLeft.getGearing(), -100.0, 100.0));
+    driveFull.moveVelocity(sign * std::clamp(output * (int)driveLeft.getGearing(), -MAX_SPEED, MAX_SPEED));
 
-    pros::delay(10);
-  }
-
-  // Stop the motors
-  driveLeft.moveVelocity(0);
-  driveRight.moveVelocity(0);
-
-  #undef time
-}
-
-/**
- * \brief Moves the robot a given distance (default forward) into an object of a given vision signature
- * 
- * \param pid The PID used for the driving
- * \param dist The distance to be moved in \b inches
- * \param sig The vision signature of the object that the robot will follow
- * 
- * \warning UNTESTED
- */
-void MoveDrivePIDIntoObject(PID pid = drivePID, double dist = TILE_WIDTH, int sig = 1) {
-  const int sign = dist / abs(dist); // Getting the direction of the movement
-  dist = abs(dist); // Setting the magnitude to positive
-
-  // Define the initialPos using the GPS instead of odometry (later should be both)
-  // aon::Vector initialPos = getGPSPos();
-  pid.Reset();
-  aon::Vector initialPos = aon::odometry::GetPosition();
-
-  const double timeLimit = getTimetoTarget(dist);
-  const double start_time = pros::micros() / 1E6;
-  #define time (pros::micros() / 1E6) - start_time //every time the variable is called it is recalculated automatically
-
-  while (time < timeLimit) {
-    aon::odometry::Update();
-
-    double currentDisplacement = (aon::odometry::GetPosition() - initialPos).GetMagnitude();
-
-    double output = pid.Output(dist, currentDisplacement);
-
-    pros::lcd::print(0, "%f", currentDisplacement);
-
-    driveLeft.moveVelocity(sign * std::clamp(output * (int)driveLeft.getGearing() + trackObject(sig), -100.0, 100.0));
-    driveRight.moveVelocity(sign * std::clamp(output * (int)driveLeft.getGearing() - trackObject(sig), -100.0, 100.0));
-//check track object function 
     pros::delay(10);
   }
 
@@ -354,7 +308,7 @@ void MoveDrivePID(PID pid, Vector targetPos, double sign = 1) {
  * \param pid The PID to be used for the turn
  * \param angle The angle to make the robot turn in \b degrees
  */
-void MoveTurnPID(PID pid = turnPID, double angle = 90){
+void MoveTurnPID(PID pid = turnPID, double angle = 90, const double MAX_SPEED = 50.0){
   const int sign = angle/abs(angle); // Getting the direction of the movement
   angle = abs(angle); // Setting the magnitude to positive
   pid.Reset();
@@ -381,8 +335,8 @@ void MoveTurnPID(PID pid = turnPID, double angle = 90){
     pros::lcd::print(0, "%f", traveledAngle);
 
     // Taking clockwise rotation as positive (to change this just flip the negative on the sign below)
-    driveLeft.moveVelocity(sign * std::clamp(output * (int)driveLeft.getGearing(), -50.0, 50.0));
-    driveRight.moveVelocity(-sign * std::clamp(output * (int)driveRight.getGearing(), -50.0, 50.0));
+    driveLeft.moveVelocity(sign * std::clamp(output * (int)driveLeft.getGearing(), -MAX_SPEED, MAX_SPEED));
+    driveRight.moveVelocity(-sign * std::clamp(output * (int)driveRight.getGearing(), -MAX_SPEED, MAX_SPEED));
 
     pros::delay(10);
   }
@@ -533,79 +487,12 @@ int turn(double angle = 90)
 //
 // ============================================================================
 
-// Works but hardware needs to catch up
-void pickUpTaurus(int delay){
-  intake.moveVelocity(INTAKE_VELOCITY);
-  pros::delay(delay);
-  intake.moveVelocity(0);
-}
-
-// Works 
-void driveIntoTaurus(const int SIGNATURE){
-  const int TOLERANCE = 20;
-  const int VISION_FIELD_CENTER = 315 / 2;
-  const int SPEED = 150; // 200 is max
-  const int ADJUSTMENT = 20;
-  while(true){
-    auto object = vision_sensor.get_by_sig(0, SIGNATURE);
-    const int OBJ_CENTER = object.x_middle_coord;
-
-    if(object.signature == SIGNATURE){
-      if(abs(OBJ_CENTER - VISION_FIELD_CENTER) <= TOLERANCE){
-        driveFull.moveVelocity(SPEED);
-      }
-      else if(OBJ_CENTER < VISION_FIELD_CENTER){ // TURN LEFT
-        driveLeft.moveVelocity(SPEED - ADJUSTMENT);
-        driveRight.moveVelocity(SPEED + ADJUSTMENT);
-      }
-      else if(OBJ_CENTER > VISION_FIELD_CENTER){ // TURN RIGHT
-        driveLeft.moveVelocity(SPEED + ADJUSTMENT);
-        driveRight.moveVelocity(SPEED - ADJUSTMENT);
-      }
-
-      if(distanceSensor.get() <= 100){
-        driveFull.moveVelocity(100);
-        pickUpTaurus(1000);
-        break;
-      }
-    }
-
-    if(main_controller.get_digital(DIGITAL_B)){ // Safety During testing
-      driveFull.moveVelocity(0);
-      intake.moveVelocity(0);
-      return;
-    }
-  }
-  driveFull.moveVelocity(0);
-  pickUpTaurus(1500); // Remember to do this after to finish pickup
-}
-
 // Does not work yet because of getStepsTo()
 void testGPS(int x, int y){ // Later name this function to GoTo
   std::pair<double, double> nextSteps = getStepsTo(x, y);
   turn(nextSteps.second);
   move(metersToInches(nextSteps.first / 1000));
 }
-
-// Works, you should obviosly be very close to the goal
-void grabGoal(){
-  driveFull.moveVelocity(-100);
-  pros::delay(500);
-  piston.set_value(true);
-  pros::delay(100);
-  driveFull.moveVelocity(100);
-  pros::delay(600);
-  driveFull.moveVelocity(0);
-}
-
-// This is for the start of the match and it worked
-void raceToGoal(){
-  move(-45);
-  grabGoal();
-  // move(45);
-  // piston.set_value(false);
-}
-
 
 inline void first_routine(double kP, double kI, double kD) {
   aon::PID pid = aon::PID(kP, kI, kD);
@@ -757,16 +644,15 @@ int combinationPIDRoutine(){
 //                                                                             |
 // ============================================================================|
 
-                                         
-int teamRingsRoutine(){
-  // This routine focuses on team rings (no duh)
-  // Rush to one of the side mobile goals (the one on the side of the double points) and secure it on team side
+/**
+ * \brief This routine is if WE ARE BLUE and want to grab RED RINGS
+*/
+int enemyRingsRoutine(){
+  // This routine focuses on enemy rings (no duh)
+  // Rush to one of the side mobile goals (the one on the side of the negative points) and secure it on team side
   
   // Starting point at (1.5, .3) facing approximately 110 degrees (the blue area)
-  // moveHalfTiles(-4);
-  // turn(-45);
-  // moveHalfDiagTiles(-1);
-  raceToGoal();
+  raceToGoal(45);
 
   // Grab and secure
   moveHalfDiagTiles(1);
@@ -779,21 +665,111 @@ int teamRingsRoutine(){
   grabGoal();
   moveTilesDiag(1);
 
-  // Stack team rings on mobile goal
-  // Take mobile goal to double points area
+  // Stack enemy rings on mobile goal
+  // Take mobile goal to negative points area
   // Go to first secured mobile goal
   // Stack team rings on mobile goal with remaining time
   return 1;
 }
 
-int enemyRingsRoutine(){
-  // This routine focuses on enemy rings (no duh)
-  // Rush to one of the side mobile goals (the one on the side of the negative points) and secure it on team side
-  // Stack enemy rings on mobile goal
-  // Take mobile goal to negative points area
+/**
+ * \brief This routine is if WE ARE BLUE and want to grab BLUE RINGS
+*/
+int teamRingsRoutine(){
+  // This routine focuses on team rings (no duh)
+  // Rush to one of the side mobile goals (the one on the side of the double points) and secure it on team side
+  // Stack team rings on mobile goal
+  // Take mobile goal to double points area
   // Go to mobile goal that started in team area (not one of the three contested ones)
   // Stack team rings on mobile goal with remaining time
   return 1;
+}
+
+/**
+ * \brief This small subroutine moves the intake such that a ring is scored on the mobile goal being carried
+ * 
+ * \param delay The time in \b milliseconds to leave the intake running
+*/
+void pickUpRing(int delay = 1000){
+  intake.moveVelocity(INTAKE_VELOCITY);
+  pros::delay(delay);
+  intake.moveVelocity(0);
+}
+
+/**
+ * \brief This subroutine follows an object (in our case a ring) with a given color signature and picks it up
+ * 
+ * \param SIGNATURE The id number of the vision signature of the object to follow and pick up
+*/
+void driveIntoRing(const int SIGNATURE){
+  const int TOLERANCE = 20;
+  const int VISION_FIELD_CENTER = 315 / 2;
+  const int SPEED = 150; // 200 is max
+  const int ADJUSTMENT = 20;
+  while(true){
+    auto object = vision_sensor.get_by_sig(0, SIGNATURE);
+    const int OBJ_CENTER = object.x_middle_coord;
+
+    if(object.signature == SIGNATURE){
+      if(abs(OBJ_CENTER - VISION_FIELD_CENTER) <= TOLERANCE){
+        driveFull.moveVelocity(SPEED);
+      }
+      else if(OBJ_CENTER < VISION_FIELD_CENTER){ // TURN LEFT
+        driveLeft.moveVelocity(SPEED - ADJUSTMENT);
+        driveRight.moveVelocity(SPEED + ADJUSTMENT);
+      }
+      else if(OBJ_CENTER > VISION_FIELD_CENTER){ // TURN RIGHT
+        driveLeft.moveVelocity(SPEED + ADJUSTMENT);
+        driveRight.moveVelocity(SPEED - ADJUSTMENT);
+      }
+
+      if(distanceSensor.get() <= 100){
+        driveFull.moveVelocity(100);
+        pickUpRing(1000);
+        break;
+      }
+    }
+
+    if(main_controller.get_digital(DIGITAL_B)){ // Safety During testing
+      driveFull.moveVelocity(0);
+      intake.moveVelocity(0);
+      return;
+    }
+  }
+  driveFull.moveVelocity(0);
+  pickUpRing(1500); // Remember to do this after to finish pickup
+}
+
+/**
+ * \brief This small subroutine grabs a goal (stake)
+ * 
+ * \warning You must already be very close to the goal and facing away (with the clamp towards it)
+ * 
+ * \details This routine uses timing but ideally there would be a way of knowing when we have the goal within our grasp
+*/
+void grabGoal(){
+  driveFull.moveVelocity(-100);
+  pros::delay(500);
+  piston.set_value(true);
+  pros::delay(100);
+  driveFull.moveVelocity(100);
+  pros::delay(600);
+  driveFull.moveVelocity(0);
+}
+
+/**
+ * \brief This subroutine moves toward a mobile goal IN REVERSE
+ * 
+ * \param dist This is the absolute value of the distance the mobile goal is from the robot in \b inches
+ * 
+ * \details The function already converts the distance to negative so the robot drives into the goal backwards
+ * 
+ * \todo Change the internal move() function to directly use the MoveDrivePid() function with a specific PID and speed
+*/
+void raceToGoal(double dist){
+  dist = abs(dist);
+  move(-dist);
+  grabGoal();
 }
 
 
@@ -808,12 +784,12 @@ double metersToInches(double meters);
  * 
  * \warning This function takes three (3) \b seconds to complete
  */
-int initialReset()
+int initialReset(bool gyro = true)
 {
   odometry::ResetInitial();
   
   // 3 seconds
-  gyroscope.reset(true);
+  gyroscope.reset(gyro);
   return 1;
 }
 
@@ -880,13 +856,13 @@ inline Vector getGPSPos(){
   double avg_y = 0;
   
   // Get the average of the readings from the GPS
-  for (int i = 0; i < SAMPLE_SIZE; i++)
+  for (int i = 0; i < GPS_SAMPLE_SIZE; i++)
   {
     avg_x += gps.get_status().x;
     avg_y += gps.get_status().y;
   }
 
-  avg_x /= SAMPLE_SIZE; avg_y /= SAMPLE_SIZE;
+  avg_x /= GPS_SAMPLE_SIZE; avg_y /= GPS_SAMPLE_SIZE;
   
   return Vector().SetPosition(avg_x, avg_y);
 }
@@ -974,7 +950,7 @@ int trackObject(int sig = 1) {
  * \param pid The PID used for the driving
  * \param dist The distance to be moved in \b inches
  */
-void MoveDrivePID(PID pid = drivePID, double dist = TILE_WIDTH) {
+void MoveDrivePID(PID pid = drivePID, double dist = TILE_WIDTH, const double MAX_SPEED = 100.0) {
   const int sign = dist / abs(dist); // Getting the direction of the movement
   dist = abs(dist); // Setting the magnitude to positive
 
@@ -996,52 +972,8 @@ void MoveDrivePID(PID pid = drivePID, double dist = TILE_WIDTH) {
 
     pros::lcd::print(0, "%f", currentDisplacement);
 
-    driveFull.moveVelocity(sign * std::clamp(output * (int)driveLeft.getGearing(), -100.0, 100.0));
+    driveFull.moveVelocity(sign * std::clamp(output * (int)driveLeft.getGearing(), -MAX_SPEED, MAX_SPEED));
 
-    pros::delay(10);
-  }
-
-  // Stop the motors
-  driveLeft.moveVelocity(0);
-  driveRight.moveVelocity(0);
-
-  #undef time
-}
-
-/**
- * \brief Moves the robot a given distance (default forward) into an object of a given vision signature
- * 
- * \param pid The PID used for the driving
- * \param dist The distance to be moved in \b inches
- * \param sig The vision signature of the object that the robot will follow
- * 
- * \warning UNTESTED
- */
-void MoveDrivePIDIntoObject(PID pid = drivePID, double dist = TILE_WIDTH, int sig = 1) {
-  const int sign = dist / abs(dist); // Getting the direction of the movement
-  dist = abs(dist); // Setting the magnitude to positive
-
-  // Define the initialPos using the GPS instead of odometry (later should be both)
-  // aon::Vector initialPos = getGPSPos();
-  pid.Reset();
-  aon::Vector initialPos = aon::odometry::GetPosition();
-
-  const double timeLimit = getTimetoTarget(dist);
-  const double start_time = pros::micros() / 1E6;
-  #define time (pros::micros() / 1E6) - start_time //every time the variable is called it is recalculated automatically
-
-  while (time < timeLimit) {
-    aon::odometry::Update();
-
-    double currentDisplacement = (aon::odometry::GetPosition() - initialPos).GetMagnitude();
-
-    double output = pid.Output(dist, currentDisplacement);
-
-    pros::lcd::print(0, "%f", currentDisplacement);
-
-    driveLeft.moveVelocity(sign * std::clamp(output * (int)driveLeft.getGearing() + trackObject(sig), -100.0, 100.0));
-    driveRight.moveVelocity(sign * std::clamp(output * (int)driveLeft.getGearing() - trackObject(sig), -100.0, 100.0));
-//check track object function 
     pros::delay(10);
   }
 
@@ -1100,7 +1032,7 @@ void MoveDrivePID(PID pid, Vector targetPos, double sign = 1) {
  * \param pid The PID to be used for the turn
  * \param angle The angle to make the robot turn in \b degrees
  */
-void MoveTurnPID(PID pid = turnPID, double angle = 90){
+void MoveTurnPID(PID pid = turnPID, double angle = 90, const double MAX_SPEED = 50.0){
   const int sign = angle/abs(angle); // Getting the direction of the movement
   angle = abs(angle); // Setting the magnitude to positive
   pid.Reset();
@@ -1127,8 +1059,8 @@ void MoveTurnPID(PID pid = turnPID, double angle = 90){
     pros::lcd::print(0, "%f", traveledAngle);
 
     // Taking clockwise rotation as positive (to change this just flip the negative on the sign below)
-    driveLeft.moveVelocity(sign * std::clamp(output * (int)driveLeft.getGearing(), -50.0, 50.0));
-    driveRight.moveVelocity(-sign * std::clamp(output * (int)driveRight.getGearing(), -50.0, 50.0));
+    driveLeft.moveVelocity(sign * std::clamp(output * (int)driveLeft.getGearing(), -MAX_SPEED, MAX_SPEED));
+    driveRight.moveVelocity(-sign * std::clamp(output * (int)driveRight.getGearing(), -MAX_SPEED, MAX_SPEED));
 
     pros::delay(10);
   }

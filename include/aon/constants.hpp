@@ -6,6 +6,9 @@
 #define DEGREES_PER_REVOLUTION 360.0
 #define TILE_WIDTH 23.6220472441
 #define TILE_DIAG_LENGTH 33.4066195836 // Calculated with the Pythagorean theorem
+#define GPS_SAMPLE_SIZE 50
+
+// Colors
 #define RED 1
 #define BLUE 2
 

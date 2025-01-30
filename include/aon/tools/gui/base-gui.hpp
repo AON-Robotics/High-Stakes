@@ -380,12 +380,14 @@ static void HandleButtonPress() {
           // AUT2
           DrawNABlock(blocks_x[1], blocks_y[3], blocks_x[2], blocks_y[4],
                       lower_block_2_text_x, lower_block_text_y);
+          AutonomousReader->AddFunction("autonomous", aon::first_routine_wrapper);  //
           pros::delay(200);
 
         } else {
           // AUT3
           DrawNABlock(blocks_x[2], blocks_y[3], blocks_x[3], blocks_y[4],
                       lower_block_3_text_x, lower_block_text_y);
+          AutonomousReader->AddFunction("autonomous", aon::first_routine_wrapper);  //
           pros::delay(200);
         }
       }
@@ -411,22 +413,21 @@ static void HandleButtonPress() {
           // AUT1
           DrawNABlock(blocks_x[0], blocks_y[3], blocks_x[1], blocks_y[4],
                       lower_block_1_text_x, lower_block_text_y);
-          AutonomousReader->AddFunction("autonomous", aon::proportionalFavoredRoutine);
+          AutonomousReader->AddFunction("autonomous", aon::teamRingsRoutine);
           pros::delay(200);
 
         } else if (TouchStatus.x < blocks_x[2]) {
           // AUT2
           DrawNABlock(blocks_x[1], blocks_y[3], blocks_x[2], blocks_y[4],
                       lower_block_2_text_x, lower_block_text_y);
-          AutonomousReader->AddFunction("autonomous", aon::integralFavoredRoutine);  //
-
+          AutonomousReader->AddFunction("autonomous", aon::enemyRingsRoutine);
           pros::delay(200);
 
         } else {
           // AUT3
           DrawNABlock(blocks_x[2], blocks_y[3], blocks_x[3], blocks_y[4],
                       lower_block_3_text_x, lower_block_text_y);
-          AutonomousReader->AddFunction("autonomous", aon::derivativeFavoredRoutine);  //
+          AutonomousReader->AddFunction("autonomous", aon::derivativeFavoredRoutine);
           pros::delay(200);
         }
       }
