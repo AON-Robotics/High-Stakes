@@ -27,7 +27,7 @@ pros::Rotation encoderLeft(20, true);
 pros::Rotation encoderRight(-8, true);
 pros::Rotation encoderBack(11, false);
 
-pros::Gps gps(6, -0.127, -0.1397);
+pros::Gps gps(6);
 // Center of the field is (0,0), uses 4 quadrant cartesian system for coordinates
 // 7.5 in = 0.1905 m
 // approx 110 deg
@@ -53,13 +53,14 @@ pros::Imu gyroscope(11);
 
 #else
 // Set up motors and sensors for 18 inch robot
-okapi::MotorGroup driveLeft = okapi::MotorGroup({10,-9, 8});
-okapi::MotorGroup driveRight = okapi::MotorGroup({-20, 19, -18});
-okapi::MotorGroup driveFull = okapi::MotorGroup({10,-9,8,-20,19,-18});
+okapi::MotorGroup driveLeft = okapi::MotorGroup({12, -18, 19});
+okapi::MotorGroup driveRight = okapi::MotorGroup({-15, 16, -17});
+okapi::MotorGroup driveFull = okapi::MotorGroup({12, -15, 16, -17, -18, 19});
 
 //SIGNATURE COLOR
 pros::Vision vision_sensor(4);
-pros::vision_signature_s_t DONUT;//create signature to wanted color
+pros::vision_signature_s_t RED_SIG = pros::Vision::signature_from_utility(1, 8973, 11143, 10058, -2119, -1053, -1586, 5.4, 0);
+pros::vision_signature_s_t BLUE_SIG = pros::Vision::signature_from_utility(2, -3050, -2000, -2500, 8000, 11000, 9500, 5.4, 0);
 
 
 pros::Gps gps(7, -0.127, -0.1397);
@@ -69,10 +70,10 @@ aon::PID turnPID = aon::PID(0.01, 0, 0);
 
 pros::ADIDigitalIn limit_switch ('C');
 pros::ADIDigitalIn dist_sensor ('B');
-pros::Distance distanceSensor(1);
+pros::Distance distanceSensor(10);
 bool rail_on = false;
 
-pros::ADIDigitalOut piston ('A');
+pros::ADIDigitalOut piston ('H');
 bool piston_on = false;
  
 bool conveyor_auto = true;
@@ -82,13 +83,13 @@ int state = 0; // for railing
 pros::Imu gyroscope(7);
 #endif
 
-pros::Rotation encoderLeft(5, false);
-pros::Rotation encoderRight(-6, true);
-pros::Rotation encoderBack(-8, true);
+pros::Rotation encoderLeft(-30, false);
+pros::Rotation encoderRight(11, true);
+pros::Rotation encoderBack(8, true);
 
-okapi::MotorGroup intake = okapi::MotorGroup({-17, -2});
-okapi::MotorGroup rail = okapi::MotorGroup({-17});
-okapi::Motor gate = okapi::Motor(-2);
+okapi::MotorGroup intake = okapi::MotorGroup({13, 14});
+okapi::MotorGroup rail = okapi::MotorGroup({13});
+okapi::Motor gate = okapi::Motor(14);
 
 
 #endif
@@ -176,9 +177,21 @@ inline bool toggle(bool &boolean) {
   return boolean;
 }
 
+/**
+ * \brief Adds the colors to the vision sensor
+*/
 inline void ConfigureColors(){
   vision_sensor.set_signature(1, &RED_SIG);
   vision_sensor.set_signature(2, &BLUE_SIG);
+}
+
+/**
+ * \brief Used to make sure a condition is being met or a line of code is being run
+*/
+void testEndpoint(int speed = 100){
+  intake.moveVelocity(speed);
+  pros::delay(3000);
+  intake.moveVelocity(0);
 }
 
 }  // namespace aon

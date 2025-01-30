@@ -55,6 +55,8 @@ std::pair<double, double> getStepsTo(double desired_x, double desired_y)
 int move(double dist);
 int turn(double angle);
 double metersToInches(double meters);
+void grabGoal();
+void raceToGoal(double dist);
 
 /**
  * \brief Resets odometry and gyro for error accumulation cleanse
@@ -488,11 +490,102 @@ int turn(double angle = 90)
 //
 // ============================================================================
 
+// THIS ONE WORKS!!
+double smartTurnToTarget(Vector target, Vector current) {
+  // Get and change the heading to the common cartesian plane
+  double heading = 90 - gps.get_heading();
+
+  // Limiting the heading to the 0-360 range
+  if (heading < 0) heading += 360;
+  else if (heading > 360) heading -= 360;
+ 
+  // This number is in respect to the common cartesian plane if odometry position is used
+  double toTarget = (target - current).GetDegrees();
+ 
+  // Limiting the the target to the 0-360 range
+  if (toTarget < 0) toTarget += 360;
+  else if (toTarget >= 360) toTarget -= 360;
+
+  double angle = toTarget - heading; // Calculate the angle to turn
+ 
+  // Limiting the heading to the -180-180 range
+  if (angle > 180) angle -= 360;
+  else if (angle < -180) angle += 360;
+
+  return angle;
+}
+
+double calculateTurnDeg(Vector target, Vector current) {
+  // Get and change the heading to the common cartesian plane
+  double heading = 90 - gps.get_heading();
+
+  // Limiting the heading to the 0-360 range
+  if (heading < 0) {heading += 360;}
+  // else if (heading > 360) heading -= 360;
+
+  Vector toTarget = target - current;
+ 
+  // This number is in respect to the common cartesian plane if odometry or gps position is used
+  double toTargetAngle = toTarget.GetDegrees();
+
+  if(toTarget.GetX() < 0 && toTarget.GetY() < 0){
+    toTargetAngle += 180;
+  }
+  else if(toTarget.GetX() < 0){
+    toTargetAngle = 180 - toTargetAngle;
+  }
+  else if(toTarget.GetY() < 0){
+    toTargetAngle = 360 - toTargetAngle;
+  }
+ 
+  // // Limiting the the target to the 0-360 range
+  // if (toTargetAngle < 0) toTarget += 360;
+  // else if (toTargetAngle >= 360) toTarget -= 360;
+
+  double angle = toTargetAngle - heading; // Calculate the angle to turn
+ 
+  // // Limiting the heading to the -180-180 range
+  // if (angle > 180) angle -= 360;
+  // else if (angle < -180) angle += 360;
+
+  return angle;
+}
+void goToTarget(Vector target, Vector current){
+  // target.SetX(metersToInches(target.GetX()));
+  // target.SetY(metersToInches(target.GetY()));
+
+  // Vector current = odometry::GetPosition(); // If this one is used the INITIAL_ODOMETRY_{COMPONENT} variables must be set and no reset can be done
+
+  turn(-smartTurnToTarget(target, current));
+  move(metersToInches(abs((target - current).GetMagnitude())));
+}
+
+
+// In testing, uses Jorge Lunas' code
+void testGPSNew(double x, double y){
+  Vector target = Vector().SetPosition(x, y);
+
+  // // if the following code is used, the target should be in units of meters
+  pros::delay(1000);
+  pros::c::gps_status_s_t status = gps.get_status();
+
+  // double heading = 90 - gps.get_heading(); // This is a conversion to the common system where counter-clockwise is positive with 0 on positive x-axis
+  // if (heading < 0) heading += 360;
+  // turn(heading);
+  // move(-metersToInches(status.x));
+  // turn(-90);
+  // move(-metersToInches(status.y));
+
+  Vector current = Vector().SetPosition(status.x, status.y);
+  
+  goToTarget(target, current);
+}
+
 // Does not work yet because of getStepsTo()
-void testGPS(int x, int y){ // Later name this function to GoTo
+void testGPSOld(int x, int y){ // Later name this function to GoTo
   std::pair<double, double> nextSteps = getStepsTo(x, y);
   turn(nextSteps.second);
-  move(metersToInches(nextSteps.first / 1000));
+  move(metersToInches(nextSteps.first));
 }
 
 inline void first_routine(double kP, double kI, double kD) {
