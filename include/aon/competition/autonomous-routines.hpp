@@ -700,6 +700,8 @@ void pickUpRing(int delay = 1000){
  * \brief This subroutine follows an object (in our case a ring) with a given color signature and picks it up
  * 
  * \param SIGNATURE The id number of the vision signature of the object to follow and pick up
+ * 
+ * \todo Add time constraint in case a ring is never found
 */
 void driveIntoRing(const int SIGNATURE){
   const int TOLERANCE = 20;
