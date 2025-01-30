@@ -22,15 +22,16 @@ std::pair<double, double> getStepsTo(double desired_x, double desired_y)
   //3 seconds
   // odometry::ResetInitial();
 
-  // Leave 500ms stationary to take the best results
-  pros::delay(500);
+  // Leave 1000ms stationary to take the best results
+  pros::delay(1000);
   // initial_pos_x = gps.get_status().x;
   // initial_pos_y = gps.get_status().y;
   // initial_heading = gps.get_heading();
+  pros::c::gps_status_s_t status = gps.get_status();
 
-  double dist = sqrt(pow((desired_x - gps.get_status().x), 2) + pow((desired_y - gps.get_status().y), 2));
+  double dist = sqrt(pow((desired_x - status.x), 2) + pow((desired_y - status.y), 2));
 
-  double angle_destination = atan2(desired_y - gps.get_status().y, desired_x - gps.get_status().x) * 180.0 / M_PI;
+  double angle_destination = atan2(desired_y - status.y, desired_x - status.x) * 180.0 / M_PI;
 
   angle_destination = fmod(-angle_destination + 90, 360);
   
