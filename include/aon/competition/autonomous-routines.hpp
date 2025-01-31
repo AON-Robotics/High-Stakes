@@ -57,6 +57,9 @@ int turn(double angle);
 double metersToInches(double meters);
 void grabGoal();
 void raceToGoal(double dist);
+void driveIntoRing(const int SIGNATURE);
+void pickUpRing(int delay);
+void scoreRing(int delay);
 
 /**
  * \brief Resets odometry and gyro for error accumulation cleanse
@@ -111,7 +114,7 @@ inline double getTimetoTurnRad(const double &radians){
   double RPS = (int)driveRight.getGearing() / 60; // (revolutions per seconds)
   RPS /= 2; // We are using half power to turn
   double velocity = RPS * circumference; // Calculated speed (in / s)
-  double time = 2 * arcLength / velocity; // Calculated time (seconds)
+  double time = 1.8 * arcLength / velocity; // Calculated time (seconds)
   return time;
 }
 
@@ -490,8 +493,18 @@ int turn(double angle = 90)
 //
 // ============================================================================
 
-// THIS ONE WORKS!!
-double smartTurnToTarget(Vector target, Vector current) {
+/**
+ * \brief Determines the angle needed to be turned in order to face a specific point in the field
+ * 
+ * \param target The point we wish to face
+ * \param current Where the robot is now
+ * 
+ * \returns The angle the robot needs to turn in order to face the target location
+ * 
+ * \note The result must be passed into functions such as turn() and MoveTurnPID() as negative because of their convention
+ * \todo Test thoroughly
+*/
+double calculateTurn(Vector target, Vector current) {
   // Get and change the heading to the common cartesian plane
   double heading = 90 - gps.get_heading();
 
@@ -550,13 +563,37 @@ double calculateTurnDeg(Vector target, Vector current) {
 
   return angle;
 }
-void goToTarget(Vector target, Vector current){
-  // target.SetX(metersToInches(target.GetX()));
-  // target.SetY(metersToInches(target.GetY()));
 
-  // Vector current = odometry::GetPosition(); // If this one is used the INITIAL_ODOMETRY_{COMPONENT} variables must be set and no reset can be done
+/**
+ * \brief Turns the robot towards a specific direction
+ * 
+ * \param target The point we wish to face
+*/
+void turnToTarget(Vector target){
+  // Determine current position
+  pros::delay(2000);
+  pros::c::gps_status_s_t status = gps.get_status();
+  Vector current = Vector().SetPosition(status.x, status.y);
 
-  turn(-smartTurnToTarget(target, current));
+  // Do the movement
+  turn(-calculateTurn(target, current));
+}
+
+/**
+ * \brief Goes to the target point
+ * 
+ * \param target The place where we want to go using the gps coordinate system (x, y) both needto be in the range (-1.8, 1.8)
+ * 
+ * Example argument for target Vector target = Vector().SetPosition(x, y);
+*/
+void goToTarget(Vector target){
+  // Determine current position
+  pros::delay(2000);
+  pros::c::gps_status_s_t status = gps.get_status();
+  Vector current = Vector().SetPosition(status.x, status.y);
+
+  // Do the movement
+  turn(-calculateTurn(target, current));
   move(metersToInches(abs((target - current).GetMagnitude())));
 }
 
@@ -566,8 +603,6 @@ void testGPSNew(double x, double y){
   Vector target = Vector().SetPosition(x, y);
 
   // // if the following code is used, the target should be in units of meters
-  pros::delay(1000);
-  pros::c::gps_status_s_t status = gps.get_status();
 
   // double heading = 90 - gps.get_heading(); // This is a conversion to the common system where counter-clockwise is positive with 0 on positive x-axis
   // if (heading < 0) heading += 360;
@@ -576,9 +611,11 @@ void testGPSNew(double x, double y){
   // turn(-90);
   // move(-metersToInches(status.y));
 
+  pros::delay(1000);
+  pros::c::gps_status_s_t status = gps.get_status();
   Vector current = Vector().SetPosition(status.x, status.y);
   
-  goToTarget(target, current);
+  goToTarget(target);
 }
 
 // Does not work yet because of getStepsTo()
@@ -770,6 +807,24 @@ int enemyRingsRoutine(){
  * \brief This routine is if WE ARE BLUE and want to grab BLUE RINGS
 */
 int teamRingsRoutine(){
+  raceToGoal(45);
+  pickUpRing(1500);
+  move(-5);
+  turn(-25);
+  initialReset(false);
+  driveIntoRing(COLOR);
+  driveIntoRing(COLOR);
+  turn(95);
+  initialReset(false);
+  move(18);
+  driveIntoRing(COLOR);
+  driveIntoRing(COLOR);
+  pros::delay(3000);
+  turn(-calculateTurn(Vector().SetPosition(-1.8, -1.8), Vector().SetPosition(gps.get_status().x, gps.get_status().y)));
+  moveTilesStraight(3);
+  driveIntoRing(COLOR);
+  piston.set_value(false);
+  // turn(360 * 10);
   // This routine focuses on team rings (no duh)
   // Rush to one of the side mobile goals (the one on the side of the double points) and secure it on team side
   // Stack team rings on mobile goal
@@ -788,6 +843,17 @@ void pickUpRing(int delay = 1000){
   intake.moveVelocity(INTAKE_VELOCITY);
   pros::delay(delay);
   intake.moveVelocity(0);
+}
+
+/**
+ * \brief This small subroutine moves the rail such that a ring is scored on the mobile goal being carried
+ * 
+ * \param delay The time in \b milliseconds to leave the intake running
+*/
+void scoreRing(int delay = 1000){
+  rail.moveVelocity(INTAKE_VELOCITY);
+  pros::delay(delay);
+  rail.moveVelocity(0);
 }
 
 /**
@@ -874,6 +940,12 @@ void raceToGoal(double dist){
 int move(double dist);
 int turn(double angle);
 double metersToInches(double meters);
+void grabGoal();
+void raceToGoal(double dist);
+void driveIntoRing(const int SIGNATURE);
+void pickUpRing(int delay);
+void scoreRing(int delay);
+
 
 /**
  * \brief Resets odometry and gyro for error accumulation cleanse
@@ -1307,6 +1379,70 @@ int turn(double angle = 90)
 //
 // ============================================================================
 
+/**
+ * \brief Determines the angle needed to be turned in order to face a specific point in the field
+ * 
+ * \param target The point we wish to face
+ * \param current Where the robot is now
+ * 
+ * \returns The angle the robot needs to turn in order to face the target location
+ * 
+ * \note The result must be passed into functions such as turn() and MoveTurnPID() as negative because of their convention
+ * \todo Test thoroughly
+*/
+double calculateTurn(Vector target, Vector current) {
+  // Get and change the heading to the common cartesian plane
+  double heading = 90 - gps.get_heading();
+
+  // Limiting the heading to the 0-360 range
+  if (heading < 0) heading += 360;
+  else if (heading > 360) heading -= 360;
+ 
+  // This number is in respect to the common cartesian plane if odometry position is used
+  double toTarget = (target - current).GetDegrees();
+ 
+  // Limiting the the target to the 0-360 range
+  if (toTarget < 0) toTarget += 360;
+  else if (toTarget >= 360) toTarget -= 360;
+
+  double angle = toTarget - heading; // Calculate the angle to turn
+ 
+  // Limiting the heading to the -180-180 range
+  if (angle > 180) angle -= 360;
+  else if (angle < -180) angle += 360;
+
+  return angle;
+}
+
+/**
+ * \brief Turns the robot towards a specific direction
+ * 
+ * \param target The point we wish to face
+*/
+void turnToTarget(Vector target){
+  // Determine current position
+  pros::delay(2000);
+  pros::c::gps_status_s_t status = gps.get_status();
+  Vector current = Vector().SetPosition(status.x, status.y);
+
+  // Do the movement
+  turn(-calculateTurn(target, current));
+}
+
+/**
+ * \brief Vector target = Vector().SetPosition(x, y);
+*/
+void goToTarget(Vector target){
+  // Determine current position
+  pros::delay(2000);
+  pros::c::gps_status_s_t status = gps.get_status();
+  Vector current = Vector().SetPosition(status.x, status.y);
+
+  // Do the movement
+  turn(-calculateTurn(target, current));
+  move(metersToInches(abs((target - current).GetMagnitude())));
+}
+
 inline void first_routine(double kP, double kI, double kD) {
   aon::PID pid = aon::PID(kP, kI, kD);
   int dist = 36; // Inches
@@ -1496,12 +1632,147 @@ int teamRingsRoutine(){
 int enemyRingsRoutine(){
   // This routine focuses on enemy rings (no duh)
   // Rush to one of the side mobile goals (the one on the side of the negative points) and secure it on team side
+  // Starting point at (1.5, .3) facing approximately 110 degrees (the blue area)
+  raceToGoal(45);
+  pickUpRing(2000); 
+  
+  // Grab and secure
+  moveHalfDiagTiles(1);
+  // piston.set_value(false);
+
+  // Go to middle mobile goal to secure it
+  // auto target= Vector().SetPosition(0.5, 0);
+  // goToTarget(target);
+
+  turn(10);
+  driveIntoRing(COLOR);
+  driveIntoRing(COLOR);
+  goToTarget(Vector().SetPosition(-.9, .9));
+  turnToTarget(Vector().SetPosition(-.6, .6));
+  driveIntoRing(COLOR);
+  goToTarget(Vector().SetPosition(-1.7, 1.7));
+  turn(350);
+  initialReset(false);
+  turn(350);
+  initialReset(false);
+  turn(350);
+  initialReset(false);
+  turn(30);
+  driveIntoRing(COLOR);
+  //moveTilesStraight(1);
+  // Grab and secure
+  //grabGoal();
+  //moveTilesDiag(-1);
   // Stack enemy rings on mobile goal
+  //turn(180);
   // Take mobile goal to negative points area
-  // Go to mobile goal that started in team area (not one of the three contested ones)
+  //(-1.8 1.8)
+  // Go to first secured mobile goal
+  
   // Stack team rings on mobile goal with remaining time
   return 1;
 }
+
+/**
+ * \brief This small subroutine moves the intake such that a ring is pickedUp from the ground
+ * 
+ * \param delay The time in \b milliseconds to leave the intake running
+*/
+void pickUpRing(int delay = 1000){
+  intake.moveVelocity(INTAKE_VELOCITY);
+  pros::delay(delay);
+  intake.moveVelocity(0);
+}
+
+/**
+ * \brief This small subroutine moves the rail such that a ring is scored on the mobile goal being carried
+ * 
+ * \param delay The time in \b milliseconds to leave the intake running
+*/
+void scoreRing(int delay = 1000){
+  rail.moveVelocity(RAIL_VELOCITY);
+  pros::delay(delay);
+  rail.moveVelocity(0);
+}
+
+/**
+ * \brief This subroutine follows an object (in our case a ring) with a given color signature and picks it up
+ * 
+ * \param SIGNATURE The id number of the vision signature of the object to follow and pick up
+ * 
+ * \todo Add time constraint in case a ring is never found
+*/
+void driveIntoRing(const int SIGNATURE){
+  const int TOLERANCE = 20;
+  const int VISION_FIELD_CENTER = 315 / 2;
+  const int SPEED = 150; // 200 is max
+  const int ADJUSTMENT = 20;
+  while(true){
+    auto object = vision_sensor.get_by_sig(0, SIGNATURE);
+    const int OBJ_CENTER = object.x_middle_coord;
+
+    if(object.signature == SIGNATURE){
+      if(abs(OBJ_CENTER - VISION_FIELD_CENTER) <= TOLERANCE){
+        driveFull.moveVelocity(SPEED);
+      }
+      else if(OBJ_CENTER < VISION_FIELD_CENTER){ // TURN LEFT
+        driveLeft.moveVelocity(SPEED - ADJUSTMENT);
+        driveRight.moveVelocity(SPEED + ADJUSTMENT);
+      }
+      else if(OBJ_CENTER > VISION_FIELD_CENTER){ // TURN RIGHT
+        driveLeft.moveVelocity(SPEED + ADJUSTMENT);
+        driveRight.moveVelocity(SPEED - ADJUSTMENT);
+      }
+
+      if(distanceSensor.get() <= 100){
+        driveFull.moveVelocity(100);
+        pickUpRing(1000);
+        break;
+      }
+    }
+
+    if(main_controller.get_digital(DIGITAL_B)){ // Safety During testing
+      driveFull.moveVelocity(0);
+      intake.moveVelocity(0);
+      return;
+    }
+  }
+  driveFull.moveVelocity(0);
+  pickUpRing(1500); // Remember to do this after to finish pickup
+}
+
+/**
+ * \brief This small subroutine grabs a goal (stake)
+ * 
+ * \warning You must already be very close to the goal and facing away (with the clamp towards it)
+ * 
+ * \details This routine uses timing but ideally there would be a way of knowing when we have the goal within our grasp
+*/
+void grabGoal(){
+  driveFull.moveVelocity(-100);
+  pros::delay(500);
+  piston.set_value(true);
+  pros::delay(100);
+  driveFull.moveVelocity(100);
+  pros::delay(600);
+  driveFull.moveVelocity(0);
+}
+
+/**
+ * \brief This subroutine moves toward a mobile goal IN REVERSE
+ * 
+ * \param dist This is the absolute value of the distance the mobile goal is from the robot in \b inches
+ * 
+ * \details The function already converts the distance to negative so the robot drives into the goal backwards
+ * 
+ * \todo Change the internal move() function to directly use the MoveDrivePid() function with a specific PID and speed
+*/
+void raceToGoal(double dist){
+  dist = abs(dist);
+  move(-dist);
+  grabGoal();
+}
+
 
 
 #endif

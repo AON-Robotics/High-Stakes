@@ -34,29 +34,9 @@ void opcontrol() {
       // aon::AutonomousReader->ExecuteFunction("autonomous");
       aon::operator_control::Run(aon::operator_control::kManes);
 
-      // aon::driveIntoTaurus(BLUE);
-      // aon::testGPSNew(0, 0);
-      // double angle = aon::calculateTurnDeg(aon::Vector().SetPosition(0, 0), aon::Vector().SetPosition(gps.get_status().x, gps.get_status().y));
-
-      // if(angle < 0){
-      //   piston.set_value(aon::toggle(piston_on));
-      // }
-      // else if(angle < 90) {
-      //   aon::testEndpoint();
-      // }
-      // else if(angle < 180)
-      // {
-      //   aon::testEndpoint(-100);
-      // }
-      // else if(angle < 270){
-      //   aon::testEndpoint(200);
-      // }
-      // else if(angle < 360){
-      //   aon::testEndpoint(-200);
-      // }
-
 
       // aon::teamRingsRoutine();
+      // aon::enemyRingsRoutine();
 
 
       // aon::odometry::Update();

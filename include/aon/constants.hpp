@@ -42,7 +42,9 @@
 #define INITIAL_ODOMETRY_Y 0.0
 #define INITIAL_ODOMETRY_THETA 0.0
 
-#define INTAKE_VELOCITY 200
+#define INTAKE_VELOCITY (int)intake.getGearing()
+
+#define COLOR RED
 
 #else
 
@@ -71,7 +73,10 @@
 #define INITIAL_ODOMETRY_Y 0.0
 #define INITIAL_ODOMETRY_THETA 0.0
 
-#define INTAKE_VELOCITY 200
+#define INTAKE_VELOCITY (int)intake.getGearing()
+#define RAIL_VELOCITY (int)rail.getGearing()
+
+#define COLOR BLUE
 
 #endif
 
