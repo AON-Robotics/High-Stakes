@@ -14,40 +14,12 @@ double initial_pos_x;
 double initial_pos_y;
 double initial_heading;
 
-/**
- * \warning Test this function first, it is old code that seems to get the angle needed to turn as well as the distance from current point to target.
-*/
-std::pair<double, double> getStepsTo(double desired_x, double desired_y)
-{
-  //3 seconds
-  // odometry::ResetInitial();
-
-  // Leave 1000ms stationary to take the best results
-  pros::delay(1000);
-  // initial_pos_x = gps.get_status().x;
-  // initial_pos_y = gps.get_status().y;
-  // initial_heading = gps.get_heading();
+Vector POSITION(){
+  pros::delay(2000);
   pros::c::gps_status_s_t status = gps.get_status();
+  Vector current = Vector().SetPosition(status.x, status.y);
 
-  double dist = sqrt(pow((desired_x - status.x), 2) + pow((desired_y - status.y), 2));
-
-  double angle_destination = atan2(desired_y - status.y, desired_x - status.x) * 180.0 / M_PI;
-
-  angle_destination = fmod(-angle_destination + 90, 360);
-  
-  double robot_heading = fmod(-gps.get_heading() + 90, 360);
-
-  // Angle difference
-  double rot = angle_destination - robot_heading;
-
-  if (rot > 180) {
-    rot -= 360;
-  } 
-  else if (rot < -180) {
-    rot += 360;
-  }
-
-  return std::make_pair(dist, rot);
+  return current;
 }
 
 #if USING_15_INCH_ROBOT
@@ -60,6 +32,9 @@ void raceToGoal(double dist);
 void driveIntoRing(const int SIGNATURE);
 void pickUpRing(int delay);
 void scoreRing(int delay);
+inline double metersToInches(double meters);
+void discardDisk();
+void dropGoal();
 
 /**
  * \brief Resets odometry and gyro for error accumulation cleanse
@@ -71,7 +46,7 @@ int initialReset(bool gyro = true)
   odometry::ResetInitial();
   
   // 3 seconds
-  gyroscope.reset(gyro);
+  // gyroscope.reset(gyro);
   return 1;
 }
 
@@ -96,6 +71,10 @@ inline double getTimetoTarget(const double &distance){
   double velocity = RPS * circumference; // Calculated speed (in / s)
   double time = 2 * distance / velocity; // Calculated time (seconds)
   return time;
+}
+
+inline double getTimeToTargetFast(const double &distance){
+  return getTimetoTarget(distance) / 2;
 }
 
 /**
@@ -189,33 +168,52 @@ inline double getAngleToTurn(Vector target){
 inline double metersToInches(double meters) { return meters * 39.3701; }
 
 /**
- * \brief Determines the adjustment necessary to the voltage or speed being passed into drivetrain in order to pick up an object
+ * \brief Gets the distance between two points in the field
  * 
- * \param sig The vision signature of the object to be recollected
+ * \param target The target location
+ * \param current The current location
  * 
- * \returns An integer representing the adjustment to be applied (by adding or subtracting) to voltage or speed of drivetrain 
- * 
- * \warning UNVERIFIED AND UNTESTED
+ * \returns The distance between the two points
  */
-int trackObject(int sig = 1) {
-    int adjustment = 10;
-    pros::vision_object_s_t obj = vision_sensor.get_by_sig(0, sig);
-    if (obj.signature == sig) {
-        if (obj.x_middle_coord < -10) {
-            // Turn left
-            // return obj.x_middle_coord; // This could be a good adjustment for the robot's drivetrain, figure it out experimentally
-            return -adjustment; // DUMMY VALUE FOR TESTS
-        } else if (obj.x_middle_coord > 10) {
-            // Turn right
-            // return obj.x_middle_coord; // This could be a good adjustment for the robot's drivetrain, figure it out experimentally
-            return adjustment; // DUMMY VALUE FOR TESTS
-        } else {
-            return 0;
-        }
-    }
-    return 0;
+double findDistance(Vector target, Vector current){
+  double Dist_meters= (target - current).GetMagnitude(); 
+  return metersToInches(Dist_meters); 
 }
 
+/**
+ * \brief Determines the angle needed to be turned in order to face a specific point in the field
+ * 
+ * \param target The point we wish to face
+ * \param current Where the robot is now
+ * 
+ * \returns The angle the robot needs to turn in order to face the target location
+ * 
+ * \note The result must be passed into functions such as turn() and MoveTurnPID() as negative because of their convention
+ * \todo Test thoroughly
+*/
+double calculateTurn(Vector target, Vector current) {
+  // Get and change the heading to the common cartesian plane
+  double heading = 90 - gps.get_heading();
+
+  // Limiting the heading to the 0-360 range
+  if (heading < 0) heading += 360;
+  else if (heading > 360) heading -= 360;
+ 
+  // This number is in respect to the common cartesian plane if odometry position is used
+  double toTarget = (target - current).GetDegrees();
+ 
+  // Limiting the the target to the 0-360 range
+  if (toTarget < 0) toTarget += 360;
+  else if (toTarget >= 360) toTarget -= 360;
+
+  double angle = toTarget - heading; // Calculate the angle to turn
+ 
+  // Limiting the heading to the -180-180 range
+  if (angle > 180) angle -= 360;
+  else if (angle < -180) angle += 360;
+
+  return angle;
+}
 // ============================================================================
 //   __  __  _____   _____ __  __ ___ _  _ _____ 
 //  |  \/  |/ _ \ \ / / __|  \/  | __| \| |_   _|
@@ -240,7 +238,7 @@ void MoveDrivePID(PID pid = drivePID, double dist = TILE_WIDTH, const double MAX
   pid.Reset();
   aon::Vector initialPos = aon::odometry::GetPosition();
 
-  const double timeLimit = getTimetoTarget(dist);
+  const double timeLimit = MAX_SPEED == (int)driveFull.getGearing() ? getTimeToTargetFast(dist) : getTimetoTarget(dist);
   const double start_time = pros::micros() / 1E6;
   #define time (pros::micros() / 1E6) - start_time //every time the variable is called it is recalculated automatically
 
@@ -264,49 +262,6 @@ void MoveDrivePID(PID pid = drivePID, double dist = TILE_WIDTH, const double MAX
 
   #undef time
 }
-
-/**
- * \brief Moves the robot toward a given position (default forward)
- * 
- * \param pid The PID used for the driving
- * \param targetPos A vector representing the position towards which we want to go
- * \param sign Determines the direction of the movement, 1 is front and -1 is backwards
- * 
- * \warning LEGACY
- */
-void MoveDrivePID(PID pid, Vector targetPos, double sign = 1) {
-  // Define the initialPos using the GPS instead of odometry (later should be both)
-  // aon::Vector initialPos = getGPSPos();
-  pid.Reset();
-  aon::Vector initialPos = aon::odometry::GetPosition();
-
-  const double timeLimit = getTimetoTarget(std::abs((targetPos - initialPos).GetMagnitude()));
-  const double start_time = pros::micros() / 1E6;
-  #define time (pros::micros() / 1E6) - start_time //every time the variable is called it is recalculated automatically
-
-  //Target position minus initial position
-  const double targetDiplacement = (targetPos - initialPos).GetMagnitude();
-  while (time < timeLimit) {
-    aon::odometry::Update();
-
-    double currentDisplacement = (aon::odometry::GetPosition() - initialPos).GetMagnitude();
-
-    double output = pid.Output(targetDiplacement, currentDisplacement);
-
-    pros::lcd::print(0, "%f", currentDisplacement);
-
-    driveFull.moveVelocity(sign * std::clamp(output * (int)driveLeft.getGearing(), -100.0, 100.0));
-
-    pros::delay(10);
-  }
-
-  // Stop the movement
-  driveLeft.moveVelocity(0);
-  driveRight.moveVelocity(0);
-
-  #undef time
-}
-
 
 /**
  * \brief Turns the robot by a given angle (default clockwise)
@@ -351,6 +306,38 @@ void MoveTurnPID(PID pid = turnPID, double angle = 90, const double MAX_SPEED = 
   driveRight.moveVelocity(0);
 
   #undef time
+}
+
+/**
+ * \brief Turns the robot towards a specific direction
+ * 
+ * \param x The x component of the point we wish to face
+ * \param y The y component of the point we wish to face
+*/
+void turnToTarget(double x, double y){
+  Vector target = Vector().SetPosition(x, y);
+  // Determine current position
+  Vector current = POSITION();
+
+  // Do the movement
+  turn(-calculateTurn(target, current));
+}
+
+/**
+ * \brief Goes to the target point
+ * 
+ * \param x The x component of the place where we want to go using the gps coordinate system (x, y) both needto be in the range (-1.8, 1.8)
+ * \param y The y component of the place where we want to go using the gps coordinate system (x, y) both needto be in the range (-1.8, 1.8)
+ *  
+*/
+void goToTarget(double x, double y){
+  Vector target = Vector().SetPosition(x, y);
+  // Determine current position
+  Vector current = POSITION();
+
+  // Do the movement
+  turn(-calculateTurn(target, current));
+  move(metersToInches(abs((target - current).GetMagnitude())));
 }
 
 
@@ -427,32 +414,6 @@ void turn90(int amt = 1){
 }
 
 /**
- * \brief Turns to face a given target naively
- * 
- * \param target The point which the robot is supposed to face
- * 
- * \returns The angle between your current orientation and the target direction
- * 
- * \warning The units must be meters because a mandatory conversion happens (this can be modified)
- * \warning There are two turns meaning inefficiency
- */
-void dumbTurnToTarget(Vector target){
-  target.SetX(metersToInches(target.GetX()));
-  target.SetY(metersToInches(target.GetY()));
-
-  // Vector current = getGPSPos();
-  Vector current = odometry::GetPosition(); // If this one is used the INITIAL_ODOMETRY_{COMPONENT} variables must be set and no reset can be done
-
-  // These two lines are to put the robot in default position for the calculations after (common cartesian plane)
-  double heading = gps.get_heading();
-  turn(-1 * (heading + 90));
-
-  double toTarget = (target - current).GetDegrees(); // This number is in respect to the common cartesian plane if odometry position is used
-
-  turn(toTarget);
-}
-
-/**
  * \brief Moves the robot a given distance
  * 
  * \param dist The distance to move in \b inches
@@ -485,354 +446,13 @@ int turn(double angle = 90)
 }
 
 
-// ============================================================================
-//   _____ ___ ___ _____ ___ 
-//  |_   _| __/ __|_   _/ __|
-//    | | | _|\__ \ | | \__ \
-//    |_| |___|___/ |_| |___/
-//
-// ============================================================================
-
-/**
- * \brief Determines the angle needed to be turned in order to face a specific point in the field
- * 
- * \param target The point we wish to face
- * \param current Where the robot is now
- * 
- * \returns The angle the robot needs to turn in order to face the target location
- * 
- * \note The result must be passed into functions such as turn() and MoveTurnPID() as negative because of their convention
- * \todo Test thoroughly
-*/
-double calculateTurn(Vector target, Vector current) {
-  // Get and change the heading to the common cartesian plane
-  double heading = 90 - gps.get_heading();
-
-  // Limiting the heading to the 0-360 range
-  if (heading < 0) heading += 360;
-  else if (heading > 360) heading -= 360;
- 
-  // This number is in respect to the common cartesian plane if odometry position is used
-  double toTarget = (target - current).GetDegrees();
- 
-  // Limiting the the target to the 0-360 range
-  if (toTarget < 0) toTarget += 360;
-  else if (toTarget >= 360) toTarget -= 360;
-
-  double angle = toTarget - heading; // Calculate the angle to turn
- 
-  // Limiting the heading to the -180-180 range
-  if (angle > 180) angle -= 360;
-  else if (angle < -180) angle += 360;
-
-  return angle;
-}
-
-double calculateTurnDeg(Vector target, Vector current) {
-  // Get and change the heading to the common cartesian plane
-  double heading = 90 - gps.get_heading();
-
-  // Limiting the heading to the 0-360 range
-  if (heading < 0) {heading += 360;}
-  // else if (heading > 360) heading -= 360;
-
-  Vector toTarget = target - current;
- 
-  // This number is in respect to the common cartesian plane if odometry or gps position is used
-  double toTargetAngle = toTarget.GetDegrees();
-
-  if(toTarget.GetX() < 0 && toTarget.GetY() < 0){
-    toTargetAngle += 180;
-  }
-  else if(toTarget.GetX() < 0){
-    toTargetAngle = 180 - toTargetAngle;
-  }
-  else if(toTarget.GetY() < 0){
-    toTargetAngle = 360 - toTargetAngle;
-  }
- 
-  // // Limiting the the target to the 0-360 range
-  // if (toTargetAngle < 0) toTarget += 360;
-  // else if (toTargetAngle >= 360) toTarget -= 360;
-
-  double angle = toTargetAngle - heading; // Calculate the angle to turn
- 
-  // // Limiting the heading to the -180-180 range
-  // if (angle > 180) angle -= 360;
-  // else if (angle < -180) angle += 360;
-
-  return angle;
-}
-
-/**
- * \brief Turns the robot towards a specific direction
- * 
- * \param target The point we wish to face
-*/
-void turnToTarget(Vector target){
-  // Determine current position
-  pros::delay(2000);
-  pros::c::gps_status_s_t status = gps.get_status();
-  Vector current = Vector().SetPosition(status.x, status.y);
-
-  // Do the movement
-  turn(-calculateTurn(target, current));
-}
-
-/**
- * \brief Goes to the target point
- * 
- * \param target The place where we want to go using the gps coordinate system (x, y) both needto be in the range (-1.8, 1.8)
- * 
- * Example argument for target Vector target = Vector().SetPosition(x, y);
-*/
-void goToTarget(Vector target){
-  // Determine current position
-  pros::delay(2000);
-  pros::c::gps_status_s_t status = gps.get_status();
-  Vector current = Vector().SetPosition(status.x, status.y);
-
-  // Do the movement
-  turn(-calculateTurn(target, current));
-  move(metersToInches(abs((target - current).GetMagnitude())));
-}
-
-
-// In testing, uses Jorge Lunas' code
-void testGPSNew(double x, double y){
-  Vector target = Vector().SetPosition(x, y);
-
-  // // if the following code is used, the target should be in units of meters
-
-  // double heading = 90 - gps.get_heading(); // This is a conversion to the common system where counter-clockwise is positive with 0 on positive x-axis
-  // if (heading < 0) heading += 360;
-  // turn(heading);
-  // move(-metersToInches(status.x));
-  // turn(-90);
-  // move(-metersToInches(status.y));
-
-  pros::delay(1000);
-  pros::c::gps_status_s_t status = gps.get_status();
-  Vector current = Vector().SetPosition(status.x, status.y);
-  
-  goToTarget(target);
-}
-
-// Does not work yet because of getStepsTo()
-void testGPSOld(int x, int y){ // Later name this function to GoTo
-  std::pair<double, double> nextSteps = getStepsTo(x, y);
-  turn(nextSteps.second);
-  move(metersToInches(nextSteps.first));
-}
-
-inline void first_routine(double kP, double kI, double kD) {
-  aon::PID pid = aon::PID(kP, kI, kD);
-  int dist = 36; // Inches
-  aon::Vector target = aon::Vector().SetPosition(dist, 0);
-  
-  aon::MoveDrivePID(pid, target);
-  pid.Reset();
-
-  intake.moveVelocity(90);
-  pros::delay(500);
-  intake.moveVelocity(0);
-
-  target = aon::Vector().SetPosition(0, 0);
-  aon::MoveDrivePID(pid, target, -1);
-
-  pros::delay(500);
-  // aon::turn90(pid);
-
-
-  pid.Reset();
-}
-
-inline void turnTest(double kP, double kI, double kD) {
-  PID pid = PID(kP, kI, kD);
-  for(int i = 0; i < 4; i++){
-    aon::MoveTurnPID(pid, 90);
-    pros::delay(500);
-  }
-  // aon::MoveTurnPID(pid, 90, -1);
-  // pros::delay(500);
-  // aon::MoveTurnPID(pid, 45, -1);
-  // pros::delay(500);
-  pid.Reset();
-}
-
-inline void programming_skills() {
-  first_routine(10, 0, 0);
-  // drive_left.moveVelocity(-100);
-  // drive_right.moveVelocity(-100);
-  pros::delay(1500);
-  // drive_right.moveVelocity(0);
-  // aon::PID pid = aon::PID(10, 0, 0);
-  // aon::Vector target = aon::Vector().SetPosition(-2.0, 0);
-  // aon::MoveDrivePID(pid, target, 2);
-  // pid.Reset();
-
-  /*target = aon::Vector().SetPosition(0, 0);
-  aon::MoveDrivePID(f_pid, target, 3, -1);
-  f_id.Reset();*/
-
-  // expansion.set_value(1);
-
-}
-  int first_routine_wrapper() {  // fixing gui return type Temp
-  // aon::odometry::Debug();
-  first_routine(10, 0, 0);
-  return 0;
-  
-}
-
-void tempRoutine() {  // temporary routine to test GUI
-
-  // aon::PID x_pid = aon::PID(10, 0, 0.75);
-  // aon::PID y_pid = aon::PID(10, 0, 0.75);
-  // aon::PID heading_pid = aon::PID(0.15, 0, 0.0099);
-
-  // MoveDrivePID(x_pid, y_pid, heading_pid, 10, 0, 0, 3);
-  // x_pid.Reset();
-  // y_pid.Reset();
-  // heading_pid.Reset();
-}
-
-int tempRoutine_wrapper() {  // fixing gui return type Temp
-  // aon::odometry::Debug();
-  // tempRoutine();
-  aon::programming_skills();
-  // driveLeft.moveVoltage(12000);
-  // driveRight.moveVoltage(12000);
-  return 0;
-}
-
-// TESTING PHASE FOR PID
-
-int proportionalFavoredRoutine(){
-  first_routine(10, 0, 0);
-  return 0;
-}
-
-int integralFavoredRoutine(){
-  first_routine(0, 10, 0);
-  return 0;
-}
-
-// This one causes no movement because it depends on change of error (there is none)
-int derivativeFavoredRoutine(){
-  first_routine(0, 0, 10);
-  return 0;
-}
-
-void squareRoutine(){
-  PID drivePID = PID(0.1, 0, 0);
-  PID turnPID = PID(0.01, 0, 0);
-  const int dist = 12;
-  //Draws a square with the robot
-  for(int i = 0; i < 4; i++){
-    odometry::ResetInitial();
-    // MoveDrivePID(drivePID, Vector().SetPosition(dist, 0));
-    move(dist);
-    // drivePID.Reset();
-    // turnPID.Reset();
-
-    // gyroscope.reset(true);
-    MoveTurnPID(turnPID, 90);
-    // drivePID.Reset();
-    // turnPID.Reset();
-
-    pros::delay(500);
-  }
-}
-
-int combinationPIDRoutine(){
-  // squareRoutine();
-  // first_routine(0.1, 0, 0);
-  turnTest(0.01, 0, 0);
-  return 0;
-}
-
-// void Vision_Sensor(){
-//   int cnt= vision_sensor.get_object_count();
-//   pros::vision_object_s_t return_obj= vision_sensor.get_by_sig(0,1);
-//   if( return_obj.width>5 && cnt>0){
-//     rail.moveVelocity(100);
-
-//   }
-//   else{
-//     rail.moveVelocity(200);
-//   }
-//   pros::delay(200);
-// }
-
-// END TEST FUNCTIONS
-
 // ============================================================================|
-//   ___  ___  _   _ _____ ___ _  _ ___ ___                                    |
-//  | _ \/ _ \| | | |_   _|_ _| \| | __/ __|                                   |
-//  |   / (_) | |_| | | |  | || .` | _|\__ \                                   |
-//  |_|_\\___/ \___/  |_| |___|_|\_|___|___/                                   |
-//                                                                             |
+//   ____        _       ____             _   _                 
+//  / ___| _   _| |__   |  _ \ ___  _   _| |_(_)_ __   ___  ___ 
+//  \___ \| | | | '_ \  | |_) / _ \| | | | __| | '_ \ / _ \/ __|
+//   ___) | |_| | |_) | |  _ < (_) | |_| | |_| | | | |  __/\__ \
+//  |____/ \__,_|_.__/  |_| \_\___/ \__,_|\__|_|_| |_|\___||___/
 // ============================================================================|
-
-/**
- * \brief This routine is if WE ARE BLUE and want to grab RED RINGS
-*/
-int enemyRingsRoutine(){
-  // This routine focuses on enemy rings (no duh)
-  // Rush to one of the side mobile goals (the one on the side of the negative points) and secure it on team side
-  
-  // Starting point at (1.5, .3) facing approximately 110 degrees (the blue area)
-  raceToGoal(45);
-
-  // Grab and secure
-  moveHalfDiagTiles(1);
-  piston.set_value(false);
-
-  // Go to middle mobile goal to secure it
-  turn(-100);
-  moveTilesStraight(-1);
-  // Grab and secure
-  grabGoal();
-  moveTilesDiag(1);
-
-  // Stack enemy rings on mobile goal
-  // Take mobile goal to negative points area
-  // Go to first secured mobile goal
-  // Stack team rings on mobile goal with remaining time
-  return 1;
-}
-
-/**
- * \brief This routine is if WE ARE BLUE and want to grab BLUE RINGS
-*/
-int teamRingsRoutine(){
-  raceToGoal(45);
-  pickUpRing(1500);
-  move(-5);
-  turn(-25);
-  initialReset(false);
-  driveIntoRing(COLOR);
-  driveIntoRing(COLOR);
-  turn(95);
-  initialReset(false);
-  move(18);
-  driveIntoRing(COLOR);
-  driveIntoRing(COLOR);
-  pros::delay(3000);
-  turn(-calculateTurn(Vector().SetPosition(-1.8, -1.8), Vector().SetPosition(gps.get_status().x, gps.get_status().y)));
-  moveTilesStraight(3);
-  driveIntoRing(COLOR);
-  piston.set_value(false);
-  // turn(360 * 10);
-  // This routine focuses on team rings (no duh)
-  // Rush to one of the side mobile goals (the one on the side of the double points) and secure it on team side
-  // Stack team rings on mobile goal
-  // Take mobile goal to double points area
-  // Go to mobile goal that started in team area (not one of the three contested ones)
-  // Stack team rings on mobile goal with remaining time
-  return 1;
-}
 
 /**
  * \brief This small subroutine moves the intake such that a ring is scored on the mobile goal being carried
@@ -850,7 +470,7 @@ void pickUpRing(int delay = 1000){
  * 
  * \param delay The time in \b milliseconds to leave the intake running
 */
-void scoreRing(int delay = 1000){
+void scoreRing(int delay = 1500){
   rail.moveVelocity(INTAKE_VELOCITY);
   pros::delay(delay);
   rail.moveVelocity(0);
@@ -867,7 +487,8 @@ void driveIntoRing(const int SIGNATURE){
   const int TOLERANCE = 20;
   const int VISION_FIELD_CENTER = 315 / 2;
   const int SPEED = 150; // 200 is max
-  const int ADJUSTMENT = 20;
+  const int ADJUSTMENT = 30;
+  const int DISTANCE = 120;
   while(true){
     auto object = vision_sensor.get_by_sig(0, SIGNATURE);
     const int OBJ_CENTER = object.x_middle_coord;
@@ -885,9 +506,18 @@ void driveIntoRing(const int SIGNATURE){
         driveRight.moveVelocity(SPEED - ADJUSTMENT);
       }
 
-      if(distanceSensor.get() <= 100){
+      if(distanceSensor.get() <= DISTANCE){
         driveFull.moveVelocity(100);
         pickUpRing(1000);
+        break;
+      }
+    }
+    else {
+      driveFull.moveVelocity(SPEED);
+
+      if(distanceSensor.get() <= DISTANCE){
+        driveFull.moveVelocity(100);
+        pickUpRing(3000);
         break;
       }
     }
@@ -899,7 +529,7 @@ void driveIntoRing(const int SIGNATURE){
     }
   }
   driveFull.moveVelocity(0);
-  pickUpRing(1500); // Remember to do this after to finish pickup
+  scoreRing(1500); // Remember to do this after to finish pickup
 }
 
 /**
@@ -920,6 +550,17 @@ void grabGoal(){
 }
 
 /**
+ * \brief Discards disk at beginning of match
+ * 
+ * \note This function is really meant for routines that will focus on enemy rings
+ */
+void discardDisk(){
+  intake.moveVelocity(-INTAKE_VELOCITY);
+  pros::delay(1000); 
+  intake.moveVelocity(0);
+}
+
+/**
  * \brief This subroutine moves toward a mobile goal IN REVERSE
  * 
  * \param dist This is the absolute value of the distance the mobile goal is from the robot in \b inches
@@ -928,12 +569,87 @@ void grabGoal(){
  * 
  * \todo Change the internal move() function to directly use the MoveDrivePid() function with a specific PID and speed
 */
-void raceToGoal(double dist){
+void raceToGoal(double dist = 40){
   dist = abs(dist);
-  move(-dist);
+  MoveDrivePID(fastPID, -dist, (int)driveFull.getGearing());
   grabGoal();
 }
 
+/**
+ * \brief Drops the goal by releasing the piston
+ */
+void dropGoal(){
+  piston.set_value(false);
+}
+
+
+// ============================================================================
+//   _____ ___ ___ _____ ___ 
+//  |_   _| __/ __|_   _/ __|
+//    | | | _|\__ \ | | \__ \
+//    |_| |___|___/ |_| |___/
+//
+// ============================================================================
+
+
+
+
+// ============================================================================|
+//   ___  ___  _   _ _____ ___ _  _ ___ ___                                    |
+//  | _ \/ _ \| | | |_   _|_ _| \| | __/ __|                                   |
+//  |   / (_) | |_| | | |  | || .` | _|\__ \                                   |
+//  |_|_\\___/ \___/  |_| |___|_|\_|___|___/                                   |
+//                                                                             |
+// ============================================================================|
+
+/**
+ * \brief This routine is if WE ARE RED and want to grab RED RINGS
+ * 
+ * \author Kevin Gomez
+*/
+int RedRingsRoutine(){
+  // Secure and score the first ring in the middle stake
+  raceToGoal();
+  move(6);
+  scoreRing();
+  dropGoal();
+
+  // Get second goal
+  goToTarget(-0.9, -0.9);
+  goToTarget(-0.9, -0.3);
+  turnToTarget(-0.6, -0.6);
+  move(-10);
+  grabGoal();
+  goToTarget(-1.2, -0.6);
+  driveIntoRing(RED);
+
+  // Extend indexer and knock down red ring close to intially picked up stake to pick it up
+
+
+  return 1;
+}
+
+/**
+ * \brief This routine is if WE ARE BLUE and want to grab BLUE RINGS
+ * 
+ * \author Kevin Gomez
+*/
+int BlueRingsRoutine(){
+  raceToGoal();
+  move(6);
+  scoreRing();
+  dropGoal();
+
+  // Get second goal
+  goToTarget(0.9, 0.9);
+  goToTarget(0.9, 0.3);
+  turnToTarget(0.6, 0.6);
+  move(-10);
+  grabGoal();
+  goToTarget(1.2, 0.6);
+  driveIntoRing(BLUE);
+  return 1;
+}
 
 #else
 
@@ -945,6 +661,7 @@ void raceToGoal(double dist);
 void driveIntoRing(const int SIGNATURE);
 void pickUpRing(int delay);
 void scoreRing(int delay);
+void dropGoal();
 
 
 /**
@@ -955,6 +672,8 @@ void scoreRing(int delay);
 int initialReset(bool gyro = true)
 {
   odometry::ResetInitial();
+  drivePID.Reset();
+  turnPID.Reset();
   
   // 3 seconds
   gyroscope.reset(gyro);
@@ -982,6 +701,10 @@ inline double getTimetoTarget(const double &distance){
   double velocity = RPS * circumference; // Calculated speed (in / s)
   double time = 2 * distance / velocity; // Calculated time (seconds)
   return time;
+}
+
+inline double getTimeToTargetFast(const double &distance){
+  return getTimetoTarget(distance) / 2;
 }
 
 /**
@@ -1076,31 +799,51 @@ inline double getAngleToTurn(Vector target){
 inline double metersToInches(double meters) { return meters * 39.3701; }
 
 /**
- * \brief Determines the adjustment necessary to the voltage or speed being passed into drivetrain in order to pick up an object
+ * \brief Gets the distance between two points in the field
  * 
- * \param sig The vision signature of the object to be recollected
+ * \param target The target location
+ * \param current The current location
  * 
- * \returns An integer representing the adjustment to be applied (by adding or subtracting) to voltage or speed of drivetrain 
- * 
- * \warning UNVERIFIED AND UNTESTED
+ * \returns The distance between the two points
  */
-int trackObject(int sig = 1) {
-    int adjustment = 10;
-    pros::vision_object_s_t obj = vision_sensor.get_by_sig(0, sig);
-    if (obj.signature == sig) {
-        if (obj.x_middle_coord < -10) {
-            // Turn left
-            // return obj.x_middle_coord; // This could be a good adjustment for the robot's drivetrain, figure it out experimentally
-            return -adjustment; // DUMMY VALUE FOR TESTS
-        } else if (obj.x_middle_coord > 10) {
-            // Turn right
-            // return obj.x_middle_coord; // This could be a good adjustment for the robot's drivetrain, figure it out experimentally
-            return adjustment; // DUMMY VALUE FOR TESTS
-        } else {
-            return 0;
-        }
-    }
-    return 0;
+double findDistance(Vector target, Vector current){
+  double Dist_meters= (target - current).GetMagnitude(); 
+  return metersToInches(Dist_meters); 
+}
+
+/**
+ * \brief Determines the angle needed to be turned in order to face a specific point in the field
+ * 
+ * \param target The point we wish to face
+ * \param current Where the robot is now
+ * 
+ * \returns The angle the robot needs to turn in order to face the target location
+ * 
+ * \note The result must be passed into functions such as turn() and MoveTurnPID() as negative because of their convention
+ * \todo Test thoroughly
+*/
+double calculateTurn(Vector target, Vector current) {
+  // Get and change the heading to the common cartesian plane
+  double heading = 90 - gps.get_heading();
+
+  // Limiting the heading to the 0-360 range
+  if (heading < 0) heading += 360;
+  else if (heading > 360) heading -= 360;
+ 
+  // This number is in respect to the common cartesian plane if odometry position is used
+  double toTarget = (target - current).GetDegrees();
+ 
+  // Limiting the the target to the 0-360 range
+  if (toTarget < 0) toTarget += 360;
+  else if (toTarget >= 360) toTarget -= 360;
+
+  double angle = toTarget - heading; // Calculate the angle to turn
+ 
+  // Limiting the heading to the -180-180 range
+  if (angle > 180) angle -= 360;
+  else if (angle < -180) angle += 360;
+
+  return angle;
 }
 
 // ============================================================================
@@ -1127,7 +870,7 @@ void MoveDrivePID(PID pid = drivePID, double dist = TILE_WIDTH, const double MAX
   pid.Reset();
   aon::Vector initialPos = aon::odometry::GetPosition();
 
-  const double timeLimit = getTimetoTarget(dist);
+  const double timeLimit = MAX_SPEED == (int)driveFull.getGearing() ? getTimeToTargetFast(dist) : getTimetoTarget(dist);
   const double start_time = pros::micros() / 1E6;
   #define time (pros::micros() / 1E6) - start_time //every time the variable is called it is recalculated automatically
 
@@ -1146,48 +889,6 @@ void MoveDrivePID(PID pid = drivePID, double dist = TILE_WIDTH, const double MAX
   }
 
   // Stop the motors
-  driveLeft.moveVelocity(0);
-  driveRight.moveVelocity(0);
-
-  #undef time
-}
-
-/**
- * \brief Moves the robot toward a given position (default forward)
- * 
- * \param pid The PID used for the driving
- * \param targetPos A vector representing the position towards which we want to go
- * \param sign Determines the direction of the movement, 1 is front and -1 is backwards
- * 
- * \warning LEGACY
- */
-void MoveDrivePID(PID pid, Vector targetPos, double sign = 1) {
-  // Define the initialPos using the GPS instead of odometry (later should be both)
-  // aon::Vector initialPos = getGPSPos();
-  pid.Reset();
-  aon::Vector initialPos = aon::odometry::GetPosition();
-
-  const double timeLimit = getTimetoTarget(std::abs((targetPos - initialPos).GetMagnitude()));
-  const double start_time = pros::micros() / 1E6;
-  #define time (pros::micros() / 1E6) - start_time //every time the variable is called it is recalculated automatically
-
-  //Target position minus initial position
-  const double targetDiplacement = (targetPos - initialPos).GetMagnitude();
-  while (time < timeLimit) {
-    aon::odometry::Update();
-
-    double currentDisplacement = (aon::odometry::GetPosition() - initialPos).GetMagnitude();
-
-    double output = pid.Output(targetDiplacement, currentDisplacement);
-
-    pros::lcd::print(0, "%f", currentDisplacement);
-
-    driveFull.moveVelocity(sign * std::clamp(output * (int)driveLeft.getGearing(), -100.0, 100.0));
-
-    pros::delay(10);
-  }
-
-  // Stop the movement
   driveLeft.moveVelocity(0);
   driveRight.moveVelocity(0);
 
@@ -1237,6 +938,38 @@ void MoveTurnPID(PID pid = turnPID, double angle = 90, const double MAX_SPEED = 
   driveRight.moveVelocity(0);
 
   #undef time
+}
+
+/**
+ * \brief Turns the robot towards a specific direction
+ * 
+ * \param x The x component of the point we wish to face
+ * \param y The y component of the point we wish to face
+*/
+void turnToTarget(double x, double y){
+  Vector target = Vector().SetPosition(x, y);
+  // Determine current position
+  Vector current = POSITION();
+
+  // Do the movement
+  turn(-calculateTurn(target, current));
+}
+
+/**
+ * \brief Goes to the target point
+ * 
+ * \param x The x component of the place where we want to go using the gps coordinate system (x, y) both needto be in the range (-1.8, 1.8)
+ * \param y The y component of the place where we want to go using the gps coordinate system (x, y) both needto be in the range (-1.8, 1.8)
+ *  
+*/
+void goToTarget(double x, double y){
+  Vector target = Vector().SetPosition(x, y);
+  // Determine current position
+  Vector current = POSITION();
+
+  // Do the movement
+  turn(-calculateTurn(target, current));
+  move(metersToInches(abs((target - current).GetMagnitude())));
 }
 
 
@@ -1313,32 +1046,6 @@ void turn90(int amt = 1){
 }
 
 /**
- * \brief Turns to face a given target naively
- * 
- * \param target The point which the robot is supposed to face
- * 
- * \returns The angle between your current orientation and the target direction
- * 
- * \warning The units must be meters because a mandatory conversion happens (this can be modified)
- * \warning There are two turns meaning inefficiency
- */
-void dumbTurnToTarget(Vector target){
-  target.SetX(metersToInches(target.GetX()));
-  target.SetY(metersToInches(target.GetY()));
-
-  // Vector current = getGPSPos();
-  Vector current = odometry::GetPosition(); // If this one is used the INITIAL_ODOMETRY_{COMPONENT} variables must be set and no reset can be done
-
-  // These two lines are to put the robot in default position for the calculations after (common cartesian plane)
-  double heading = gps.get_heading();
-  turn(-1 * (heading + 90));
-
-  double toTarget = (target - current).GetDegrees(); // This number is in respect to the common cartesian plane if odometry position is used
-
-  turn(toTarget);
-}
-
-/**
  * \brief Moves the robot a given distance
  * 
  * \param dist The distance to move in \b inches
@@ -1371,6 +1078,142 @@ int turn(double angle = 90)
 }
 
 
+// ============================================================================|
+//   ____        _       ____             _   _                 
+//  / ___| _   _| |__   |  _ \ ___  _   _| |_(_)_ __   ___  ___ 
+//  \___ \| | | | '_ \  | |_) / _ \| | | | __| | '_ \ / _ \/ __|
+//   ___) | |_| | |_) | |  _ < (_) | |_| | |_| | | | |  __/\__ \
+//  |____/ \__,_|_.__/  |_| \_\___/ \__,_|\__|_|_| |_|\___||___/
+// ============================================================================|
+
+/**
+ * \brief This small subroutine moves the intake such that a ring is scored on the mobile goal being carried
+ * 
+ * \param delay The time in \b milliseconds to leave the intake running
+*/
+void pickUpRing(int delay = 1000){
+  intake.moveVelocity(INTAKE_VELOCITY);
+  pros::delay(delay);
+  intake.moveVelocity(0);
+}
+
+/**
+ * \brief This small subroutine moves the rail such that a ring is scored on the mobile goal being carried
+ * 
+ * \param delay The time in \b milliseconds to leave the intake running
+*/
+void scoreRing(int delay = 1500){
+  rail.moveVelocity(INTAKE_VELOCITY);
+  pros::delay(delay);
+  rail.moveVelocity(0);
+}
+
+/**
+ * \brief This subroutine follows an object (in our case a ring) with a given color signature and picks it up
+ * 
+ * \param SIGNATURE The id number of the vision signature of the object to follow and pick up
+ * 
+ * \todo Add time constraint in case a ring is never found
+*/
+void driveIntoRing(const int SIGNATURE){
+  const int TOLERANCE = 20;
+  const int VISION_FIELD_CENTER = 315 / 2;
+  const int SPEED = 150; // 200 is max
+  const int ADJUSTMENT = 30;
+  const int DISTANCE = 120;
+  while(true){
+    auto object = vision_sensor.get_by_sig(0, SIGNATURE);
+    const int OBJ_CENTER = object.x_middle_coord;
+
+    if(object.signature == SIGNATURE){
+      if(abs(OBJ_CENTER - VISION_FIELD_CENTER) <= TOLERANCE){
+        driveFull.moveVelocity(SPEED);
+      }
+      else if(OBJ_CENTER < VISION_FIELD_CENTER){ // TURN LEFT
+        driveLeft.moveVelocity(SPEED - ADJUSTMENT);
+        driveRight.moveVelocity(SPEED + ADJUSTMENT);
+      }
+      else if(OBJ_CENTER > VISION_FIELD_CENTER){ // TURN RIGHT
+        driveLeft.moveVelocity(SPEED + ADJUSTMENT);
+        driveRight.moveVelocity(SPEED - ADJUSTMENT);
+      }
+
+      if(distanceSensor.get() <= DISTANCE){
+        driveFull.moveVelocity(100);
+        pickUpRing(1000);
+        break;
+      }
+    }
+    else {
+      driveFull.moveVelocity(SPEED);
+
+      if(distanceSensor.get() <= DISTANCE){
+        driveFull.moveVelocity(100);
+        pickUpRing(1000);
+        break;
+      }
+    }
+
+    if(main_controller.get_digital(DIGITAL_B)){ // Safety During testing
+      driveFull.moveVelocity(0);
+      intake.moveVelocity(0);
+      return;
+    }
+  }
+  driveFull.moveVelocity(0);
+  scoreRing(1500); // Remember to do this after to finish pickup
+}
+
+/**
+ * \brief This small subroutine grabs a goal (stake)
+ * 
+ * \warning You must already be very close to the goal and facing away (with the clamp towards it)
+ * 
+ * \details This routine uses timing but ideally there would be a way of knowing when we have the goal within our grasp
+*/
+void grabGoal(){
+  driveFull.moveVelocity(-100);
+  pros::delay(500);
+  piston.set_value(true);
+  pros::delay(100);
+  driveFull.moveVelocity(100);
+  pros::delay(600);
+  driveFull.moveVelocity(0);
+}
+
+/**
+ * \brief Discards disk at beginning of match
+ * 
+ * \note This function is really meant for routines that will focus on enemy rings
+ */
+void discardDisk(){
+  intake.moveVelocity(-INTAKE_VELOCITY);
+  pros::delay(1000); 
+  intake.moveVelocity(0);
+}
+
+/**
+ * \brief This subroutine moves toward a mobile goal IN REVERSE
+ * 
+ * \param dist This is the absolute value of the distance the mobile goal is from the robot in \b inches
+ * 
+ * \details The function already converts the distance to negative so the robot drives into the goal backwards
+ * 
+ * \todo Change the internal move() function to directly use the MoveDrivePid() function with a specific PID and speed
+*/
+void raceToGoal(double dist = 40){
+  dist = abs(dist);
+  MoveDrivePID(fastPID, -dist, (int)driveFull.getGearing());
+  grabGoal();
+}
+
+/**
+ * \brief Drops the goal by releasing the piston
+ */
+void dropGoal(){
+  piston.set_value(false);
+}
+
 // ============================================================================
 //   _____ ___ ___ _____ ___ 
 //  |_   _| __/ __|_   _/ __|
@@ -1379,211 +1222,7 @@ int turn(double angle = 90)
 //
 // ============================================================================
 
-/**
- * \brief Determines the angle needed to be turned in order to face a specific point in the field
- * 
- * \param target The point we wish to face
- * \param current Where the robot is now
- * 
- * \returns The angle the robot needs to turn in order to face the target location
- * 
- * \note The result must be passed into functions such as turn() and MoveTurnPID() as negative because of their convention
- * \todo Test thoroughly
-*/
-double calculateTurn(Vector target, Vector current) {
-  // Get and change the heading to the common cartesian plane
-  double heading = 90 - gps.get_heading();
 
-  // Limiting the heading to the 0-360 range
-  if (heading < 0) heading += 360;
-  else if (heading > 360) heading -= 360;
- 
-  // This number is in respect to the common cartesian plane if odometry position is used
-  double toTarget = (target - current).GetDegrees();
- 
-  // Limiting the the target to the 0-360 range
-  if (toTarget < 0) toTarget += 360;
-  else if (toTarget >= 360) toTarget -= 360;
-
-  double angle = toTarget - heading; // Calculate the angle to turn
- 
-  // Limiting the heading to the -180-180 range
-  if (angle > 180) angle -= 360;
-  else if (angle < -180) angle += 360;
-
-  return angle;
-}
-
-/**
- * \brief Turns the robot towards a specific direction
- * 
- * \param target The point we wish to face
-*/
-void turnToTarget(Vector target){
-  // Determine current position
-  pros::delay(2000);
-  pros::c::gps_status_s_t status = gps.get_status();
-  Vector current = Vector().SetPosition(status.x, status.y);
-
-  // Do the movement
-  turn(-calculateTurn(target, current));
-}
-
-/**
- * \brief Vector target = Vector().SetPosition(x, y);
-*/
-void goToTarget(Vector target){
-  // Determine current position
-  pros::delay(2000);
-  pros::c::gps_status_s_t status = gps.get_status();
-  Vector current = Vector().SetPosition(status.x, status.y);
-
-  // Do the movement
-  turn(-calculateTurn(target, current));
-  move(metersToInches(abs((target - current).GetMagnitude())));
-}
-
-inline void first_routine(double kP, double kI, double kD) {
-  aon::PID pid = aon::PID(kP, kI, kD);
-  int dist = 36; // Inches
-  aon::Vector target = aon::Vector().SetPosition(dist, 0);
-  
-  aon::MoveDrivePID(pid, target);
-  pid.Reset();
-
-  intake.moveVelocity(90);
-  pros::delay(500);
-  intake.moveVelocity(0);
-
-  target = aon::Vector().SetPosition(0, 0);
-  aon::MoveDrivePID(pid, target, -1);
-
-  pros::delay(500);
-  // aon::turn90(pid);
-
-
-  pid.Reset();
-}
-
-inline void turnTest(double kP, double kI, double kD) {
-  PID pid = PID(kP, kI, kD);
-  for(int i = 0; i < 4; i++){
-    aon::MoveTurnPID(pid, 90);
-    pros::delay(500);
-  }
-  // aon::MoveTurnPID(pid, 90, -1);
-  // pros::delay(500);
-  // aon::MoveTurnPID(pid, 45, -1);
-  // pros::delay(500);
-  pid.Reset();
-}
-
-inline void programming_skills() {
-  first_routine(10, 0, 0);
-  // drive_left.moveVelocity(-100);
-  // drive_right.moveVelocity(-100);
-  pros::delay(1500);
-  // drive_right.moveVelocity(0);
-  // aon::PID pid = aon::PID(10, 0, 0);
-  // aon::Vector target = aon::Vector().SetPosition(-2.0, 0);
-  // aon::MoveDrivePID(pid, target, 2);
-  // pid.Reset();
-
-  /*target = aon::Vector().SetPosition(0, 0);
-  aon::MoveDrivePID(f_pid, target, 3, -1);
-  f_id.Reset();*/
-
-  // expansion.set_value(1);
-
-}
-  int first_routine_wrapper() {  // fixing gui return type Temp
-  // aon::odometry::Debug();
-  first_routine(10, 0, 0);
-  return 0;
-  
-}
-
-void tempRoutine() {  // temporary routine to test GUI
-
-  // aon::PID x_pid = aon::PID(10, 0, 0.75);
-  // aon::PID y_pid = aon::PID(10, 0, 0.75);
-  // aon::PID heading_pid = aon::PID(0.15, 0, 0.0099);
-
-  // MoveDrivePID(x_pid, y_pid, heading_pid, 10, 0, 0, 3);
-  // x_pid.Reset();
-  // y_pid.Reset();
-  // heading_pid.Reset();
-}
-
-int tempRoutine_wrapper() {  // fixing gui return type Temp
-  // aon::odometry::Debug();
-  // tempRoutine();
-  aon::programming_skills();
-  // driveLeft.moveVoltage(12000);
-  // driveRight.moveVoltage(12000);
-  return 0;
-}
-
-// TESTING PHASE FOR PID
-
-int proportionalFavoredRoutine(){
-  first_routine(10, 0, 0);
-  return 0;
-}
-
-int integralFavoredRoutine(){
-  first_routine(0, 10, 0);
-  return 0;
-}
-
-// This one causes no movement because it depends on change of error (there is none)
-int derivativeFavoredRoutine(){
-  first_routine(0, 0, 10);
-  return 0;
-}
-
-void squareRoutine(){
-  PID drivePID = PID(0.1, 0, 0);
-  PID turnPID = PID(0.01, 0, 0);
-  const int dist = 12;
-  //Draws a square with the robot
-  for(int i = 0; i < 4; i++){
-    odometry::ResetInitial();
-    // MoveDrivePID(drivePID, Vector().SetPosition(dist, 0));
-    move(dist);
-    // drivePID.Reset();
-    // turnPID.Reset();
-
-    // gyroscope.reset(true);
-    MoveTurnPID(turnPID, 90);
-    // drivePID.Reset();
-    // turnPID.Reset();
-
-    pros::delay(500);
-  }
-}
-
-int combinationPIDRoutine(){
-  // squareRoutine();
-  // first_routine(0.1, 0, 0);
-  turnTest(0.01, 0, 0);
-  return 0;
-}
-
-// void Vision_Sensor(){
-//   int cnt= vision_sensor.get_object_count();
-//   pros::vision_object_s_t return_obj= vision_sensor.get_by_sig(0,1);
-//   if( return_obj.width>5 && cnt>0){
-//     rail.moveVelocity(100);
-
-//   }
-//   else{
-//     rail.moveVelocity(200);
-//   }
-//   pros::delay(200);
-// }
-
-// END TEST FUNCTIONS
 
 // ============================================================================|
 //   ___  ___  _   _ _____ ___ _  _ ___ ___                                    |
@@ -1593,8 +1232,12 @@ int combinationPIDRoutine(){
 //                                                                             |
 // ============================================================================|
 
-                                         
-int teamRingsRoutine(){
+/**
+ * \brief This routine is if WE ARE BLUE and want to grab BLUE RINGS
+ * 
+ * \author TBD
+*/              
+int BlueRingsRoutine(){
   // This routine focuses on team rings (no duh)
   // Rush to one of the side mobile goals (the one on the side of the double points) and secure it on team side
   
@@ -1629,36 +1272,51 @@ int teamRingsRoutine(){
   return 1;
 }
 
-int enemyRingsRoutine(){
-  // This routine focuses on enemy rings (no duh)
+
+/**
+ * \brief This routine is if WE ARE RED and want to grab BLUE RINGS
+ * 
+ * \author Solimar Cruz
+*/
+int RedRingsRoutine(){
   // Rush to one of the side mobile goals (the one on the side of the negative points) and secure it on team side
   // Starting point at (1.5, .3) facing approximately 110 degrees (the blue area)
   raceToGoal(45);
-  pickUpRing(2000); 
-  
-  // Grab and secure
-  moveHalfDiagTiles(1);
-  // piston.set_value(false);
+  grabGoal();
+  scoreRing(2000); 
+  turn(180);
+  driveIntoRing(COLOR);//should be red
+  driveIntoRing(COLOR);
+  driveIntoRing(COLOR);//should be red
+  driveIntoRing(COLOR);
 
+
+  // Grab and secure/drop
   // Go to middle mobile goal to secure it
-  // auto target= Vector().SetPosition(0.5, 0);
-  // goToTarget(target);
+  // goToTarget(-0.7, 0.7);
+  // auto target = Vector().SetPosition(0, 0);
+  // turnToTarget(0, 0);
+  // turn(180);
+  // double dist = findDistance(target, POSITION());
+  // raceToGoal(dist);
 
-  turn(10);
-  driveIntoRing(COLOR);
-  driveIntoRing(COLOR);
-  goToTarget(Vector().SetPosition(-.9, .9));
-  turnToTarget(Vector().SetPosition(-.6, .6));
-  driveIntoRing(COLOR);
-  goToTarget(Vector().SetPosition(-1.7, 1.7));
-  turn(350);
-  initialReset(false);
-  turn(350);
-  initialReset(false);
-  turn(350);
-  initialReset(false);
-  turn(30);
-  driveIntoRing(COLOR);
+  //move forward and knock down rings
+  
+  
+  
+  //grab rings
+  // driveIntoRing(COLOR);//should be red
+  // driveIntoRing(COLOR);
+  // turn(-10);
+  // driveIntoRing(COLOR);
+  // turn(350);
+  // initialReset(false);
+  // turn(350);
+  // initialReset(false);
+  // turn(350);
+  // initialReset(false);
+  // turn(30);
+  // driveIntoRing(COLOR);
   //moveTilesStraight(1);
   // Grab and secure
   //grabGoal();
@@ -1673,107 +1331,13 @@ int enemyRingsRoutine(){
   return 1;
 }
 
-/**
- * \brief This small subroutine moves the intake such that a ring is pickedUp from the ground
- * 
- * \param delay The time in \b milliseconds to leave the intake running
-*/
-void pickUpRing(int delay = 1000){
-  intake.moveVelocity(INTAKE_VELOCITY);
-  pros::delay(delay);
-  intake.moveVelocity(0);
-}
-
-/**
- * \brief This small subroutine moves the rail such that a ring is scored on the mobile goal being carried
- * 
- * \param delay The time in \b milliseconds to leave the intake running
-*/
-void scoreRing(int delay = 1000){
-  rail.moveVelocity(RAIL_VELOCITY);
-  pros::delay(delay);
-  rail.moveVelocity(0);
-}
-
-/**
- * \brief This subroutine follows an object (in our case a ring) with a given color signature and picks it up
- * 
- * \param SIGNATURE The id number of the vision signature of the object to follow and pick up
- * 
- * \todo Add time constraint in case a ring is never found
-*/
-void driveIntoRing(const int SIGNATURE){
-  const int TOLERANCE = 20;
-  const int VISION_FIELD_CENTER = 315 / 2;
-  const int SPEED = 150; // 200 is max
-  const int ADJUSTMENT = 20;
-  while(true){
-    auto object = vision_sensor.get_by_sig(0, SIGNATURE);
-    const int OBJ_CENTER = object.x_middle_coord;
-
-    if(object.signature == SIGNATURE){
-      if(abs(OBJ_CENTER - VISION_FIELD_CENTER) <= TOLERANCE){
-        driveFull.moveVelocity(SPEED);
-      }
-      else if(OBJ_CENTER < VISION_FIELD_CENTER){ // TURN LEFT
-        driveLeft.moveVelocity(SPEED - ADJUSTMENT);
-        driveRight.moveVelocity(SPEED + ADJUSTMENT);
-      }
-      else if(OBJ_CENTER > VISION_FIELD_CENTER){ // TURN RIGHT
-        driveLeft.moveVelocity(SPEED + ADJUSTMENT);
-        driveRight.moveVelocity(SPEED - ADJUSTMENT);
-      }
-
-      if(distanceSensor.get() <= 100){
-        driveFull.moveVelocity(100);
-        pickUpRing(1000);
-        break;
-      }
-    }
-
-    if(main_controller.get_digital(DIGITAL_B)){ // Safety During testing
-      driveFull.moveVelocity(0);
-      intake.moveVelocity(0);
-      return;
-    }
-  }
-  driveFull.moveVelocity(0);
-  pickUpRing(1500); // Remember to do this after to finish pickup
-}
-
-/**
- * \brief This small subroutine grabs a goal (stake)
- * 
- * \warning You must already be very close to the goal and facing away (with the clamp towards it)
- * 
- * \details This routine uses timing but ideally there would be a way of knowing when we have the goal within our grasp
-*/
-void grabGoal(){
+void quickMiddleScore(){
   driveFull.moveVelocity(-100);
-  pros::delay(500);
-  piston.set_value(true);
-  pros::delay(100);
-  driveFull.moveVelocity(100);
-  pros::delay(600);
-  driveFull.moveVelocity(0);
-}
-
-/**
- * \brief This subroutine moves toward a mobile goal IN REVERSE
- * 
- * \param dist This is the absolute value of the distance the mobile goal is from the robot in \b inches
- * 
- * \details The function already converts the distance to negative so the robot drives into the goal backwards
- * 
- * \todo Change the internal move() function to directly use the MoveDrivePid() function with a specific PID and speed
-*/
-void raceToGoal(double dist){
-  dist = abs(dist);
-  move(-dist);
+  pros::delay(200);
   grabGoal();
+  pickUpRing();
+  scoreRing();
 }
-
-
 
 #endif
 };  // namespace aon

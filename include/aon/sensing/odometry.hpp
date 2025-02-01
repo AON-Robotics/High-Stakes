@@ -252,7 +252,7 @@ inline void ResetCurrent(const double x, const double y, const double theta) {
   SetY(y);
 
 #if GYRO_ENABLED
-  gyroscope.reset();
+  gyroscope.tare();
   pros::delay(3000);
 #endif
 }

@@ -18,6 +18,10 @@ okapi::MotorGroup intake = okapi::MotorGroup({-13, -14});
 okapi::MotorGroup rail = okapi::MotorGroup({-13});
 okapi::Motor gate = okapi::Motor(-14);
 
+okapi::Motor arm = okapi::Motor(10);
+
+okapi::Motor indexer = okapi::Motor(8);
+
 pros::Vision vision_sensor(5);
 pros::vision_signature_s_t RED_SIG = pros::Vision::signature_from_utility(1, 8973, 11143, 10058, -2119, -1053, -1586, 5.4, 0);
 pros::vision_signature_s_t BLUE_SIG = pros::Vision::signature_from_utility(2, -3050, -2000, -2500, 8000, 11000, 9500, 5.4, 0);
@@ -27,7 +31,9 @@ pros::Rotation encoderLeft(20, true);
 pros::Rotation encoderRight(-8, true);
 pros::Rotation encoderBack(11, false);
 
-pros::Gps gps(6);
+pros::Gps gps(6, GPS_INITIAL_X, GPS_INITIAL_Y, GPS_INITIAL_HEADING, GPS_X_OFFSET, GPS_Y_OFFSET);
+// pros::Gps gps(6, GPS_INITIAL_X, GPS_INITIAL_Y, GPS_INITIAL_HEADING);
+// pros::Gps gps(6);
 // Center of the field is (0,0), uses 4 quadrant cartesian system for coordinates
 // 7.5 in = 0.1905 m
 // approx 110 deg
@@ -35,6 +41,7 @@ pros::Gps gps(6);
 
 aon::PID drivePID = aon::PID(0.1, 0, 0);
 aon::PID turnPID = aon::PID(0.01, 0, 0);
+aon::PID fastPID = aon::PID(1, 0, 0);
 
 pros::ADIDigitalIn limit_switch ('C');
 pros::ADIDigitalIn dist_sensor ('B');
@@ -63,10 +70,11 @@ pros::vision_signature_s_t RED_SIG = pros::Vision::signature_from_utility(1, 897
 pros::vision_signature_s_t BLUE_SIG = pros::Vision::signature_from_utility(2, -3050, -2000, -2500, 8000, 11000, 9500, 5.4, 0);
 
 
-pros::Gps gps(7, -0.127, -0.1397);
+pros::Gps gps(6, GPS_INITIAL_X, GPS_INITIAL_Y, GPS_INITIAL_HEADING, GPS_X_OFFSET, GPS_Y_OFFSET);
 
 aon::PID drivePID = aon::PID(0.1, 0, 0);
 aon::PID turnPID = aon::PID(0.01, 0, 0);
+aon::PID fastPID = aon::PID(1, 0, 0);
 
 pros::ADIDigitalIn limit_switch ('C');
 pros::ADIDigitalIn dist_sensor ('B');
@@ -87,10 +95,13 @@ pros::Rotation encoderLeft(-30, false);
 pros::Rotation encoderRight(11, true);
 pros::Rotation encoderBack(8, true);
 
-okapi::MotorGroup intake = okapi::MotorGroup({13, 14});
+okapi::MotorGroup intake = okapi::MotorGroup({13, -14});
 okapi::MotorGroup rail = okapi::MotorGroup({13});
-okapi::Motor gate = okapi::Motor(14);
+okapi::Motor gate = okapi::Motor(-14);
 
+okapi::Motor arm = okapi::Motor(10);
+
+okapi::Motor indexer = okapi::Motor(8);
 
 #endif
 
@@ -140,10 +151,20 @@ inline void ConfigureMotors() {
   driveRight.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
   driveRight.tarePosition();
 
+  driveFull.setBrakeMode(okapi::AbstractMotor::brakeMode::coast);
+  driveFull.setGearing(okapi::AbstractMotor::gearset::green);
+  driveFull.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
+  driveFull.tarePosition();
+
   intake.setBrakeMode(okapi::AbstractMotor::brakeMode::coast);
   intake.setGearing(okapi::AbstractMotor::gearset::green);
   intake.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
   intake.tarePosition();
+
+  arm.setBrakeMode(okapi::AbstractMotor::brakeMode::coast);
+  arm.setGearing(okapi::AbstractMotor::gearset::green);
+  arm.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
+  arm.tarePosition();
 
 #else
   // Configure motors for 18 inch robot
@@ -156,6 +177,11 @@ inline void ConfigureMotors() {
   driveRight.setGearing(okapi::AbstractMotor::gearset::green);
   driveRight.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
   driveRight.tarePosition();
+
+  driveFull.setBrakeMode(okapi::AbstractMotor::brakeMode::coast);
+  driveFull.setGearing(okapi::AbstractMotor::gearset::green);
+  driveFull.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
+  driveFull.tarePosition();
 
   intake.setBrakeMode(okapi::AbstractMotor::brakeMode::coast);
   intake.setGearing(okapi::AbstractMotor::gearset::green);

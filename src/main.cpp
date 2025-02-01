@@ -8,7 +8,6 @@ void initialize() {
   aon::ConfigureColors();
   aon::odometry::Initialize();
   pros::Task gui_task(aon::gui::Initialize);
-  // pros::Task intake_task(rail_state_machine);
 }
 
 void disabled() {}
@@ -28,15 +27,38 @@ void autonomous() {
 
  }
 
+// During development
+// Program slot 1 with Pizza Icon is for opcontrol
+// Program slot 2 with Planet Icon is for autonomous routine
 void opcontrol() {
 
     while (true) {
       // aon::AutonomousReader->ExecuteFunction("autonomous");
-      aon::operator_control::Run(aon::operator_control::kManes);
+      // aon::operator_control::Run(aon::operator_control::kManes);
 
+      // aon::raceToGoal(39);
 
-      // aon::teamRingsRoutine();
-      // aon::enemyRingsRoutine();
+      // aon::driveIntoRing(RED);
+
+      // if(COLOR == RED){
+      //   aon::RedRingsRoutine();
+      // }
+      // else {
+      //   aon::BlueRingsRoutine();
+      // }
+
+      aon::goToTarget(.6, -1.2);
+      aon::goToTarget(1.2, -.6);
+      aon::goToTarget(1.2, .6);
+      aon::goToTarget(.6, 1.2);
+      aon::goToTarget(-.6, 1.2);
+      aon::goToTarget(-1.2, .6);
+      aon::goToTarget(-1.2, -.6);
+      aon::goToTarget(-.6, -1.2);
+      aon::goToTarget(.6, -1.2);
+      aon::goToTarget(1.2, -.6);
+
+      // aon::quickMiddleScore();
 
 
       // aon::odometry::Update();

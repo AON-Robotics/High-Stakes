@@ -54,6 +54,15 @@ inline double AnalogInputScaling(const double x, const double t) {
   return (a + b * (1 - a)) * z / 127.0;
 }
 
+/**
+ * \brief Makes the rail go slightly back
+ */
+void kickBackRail(){
+  rail.moveVelocity(-100);
+  pros::delay(150);
+  rail.moveVelocity(0);
+}
+
 // ============================================================================
 //    ___      _
 //   |   \ _ _(_)_ _____ _ _ ___
@@ -80,33 +89,32 @@ inline void _OpControlManes() {
   driveRight.moveVelocity(static_cast<int>(driveRight.getGearing()) * std::clamp(vertical - turn, -1.0, 1.0));
 
   //////////// INTAKE ////////////
-
-  if (main_controller.get_digital_new_press(DIGITAL_X))
-  {
-    toggle(conveyor_auto);
+  
+  if (main_controller.get_digital(DIGITAL_R1)) {
+    intake.moveVelocity(INTAKE_VELOCITY);
+  } else if (main_controller.get_digital(DIGITAL_R2)) {
+    intake.moveVelocity(-INTAKE_VELOCITY);
+  } else {
+    intake.moveVelocity(0);
   }
   
-  if (!conveyor_auto)
-  {
-    if (main_controller.get_digital(DIGITAL_R1)) {
-      intake.moveVelocity(INTAKE_VELOCITY);
-    } else if (main_controller.get_digital(DIGITAL_R2)) {
-      intake.moveVelocity(-INTAKE_VELOCITY);
-    } else {
-      intake.moveVelocity(0);
-    }
-  }
-  else
-  {
-    railing();
-  }
-  
-
   if (main_controller.get_digital_new_press(DIGITAL_A)) 
   { 
     piston.set_value(toggle(piston_on));
   }
 
+  if (main_controller.get_digital_new_press(DIGITAL_B)) 
+  { 
+    kickBackRail();
+  }
+
+  if (main_controller.get_digital(DIGITAL_L1)) {
+    arm.moveVelocity(INTAKE_VELOCITY);
+  } else if (main_controller.get_digital(DIGITAL_L2)) {
+    arm.moveVelocity(-INTAKE_VELOCITY);
+  } else {
+    arm.moveVelocity(0);
+  }
 
 #else
   //////////// DRIVE ////////////
@@ -142,6 +150,11 @@ inline void _OpControlManes() {
   if (main_controller.get_digital_new_press(DIGITAL_A)) 
   { 
     piston.set_value(toggle(piston_on));
+  }
+
+  if (main_controller.get_digital_new_press(DIGITAL_B)) 
+  { 
+    kickBackRail();
   }
 
 #endif
