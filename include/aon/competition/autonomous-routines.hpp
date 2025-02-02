@@ -597,6 +597,17 @@ void moveIndexer(bool extend = true){
 }
 
 /**
+ * 
+ * \brief This small subroutine removes the top ring of a stack of two and scores the ring at top. use ONLY when the indexer is at the right side of stack.
+ * 
+*/
+void RemoveTop(){
+  moveIndexer();
+  turn(-45);
+  moveIndexer(false);
+}
+
+/**
  * \brief Drops the gate from starting position so the robot can grab stuff
  */
 void enableGate(){
