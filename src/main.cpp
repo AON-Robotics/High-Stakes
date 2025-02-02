@@ -17,7 +17,13 @@ void competition_initialize() {}
 void autonomous() { 
  
   // while (true) {
-    aon::AutonomousReader->ExecuteFunction("autonomous");
+    // aon::AutonomousReader->ExecuteFunction("autonomous");
+    if(COLOR == RED){
+      aon::RedRingsRoutine();
+    }
+    else {
+      aon::BlueRingsRoutine();
+    }
     // aon::programming_skills();
     // aon::operator_control::Run(aon::operator_control::kManes);
     // aon::odometry::Update();
@@ -34,29 +40,20 @@ void opcontrol() {
 
     while (true) {
       // aon::AutonomousReader->ExecuteFunction("autonomous");
-      // aon::operator_control::Run(aon::operator_control::kManes);
+      aon::operator_control::Run(aon::operator_control::kManes);
 
       // aon::raceToGoal(39);
 
       // aon::driveIntoRing(RED);
 
-      // if(COLOR == RED){
-      //   aon::RedRingsRoutine();
-      // }
-      // else {
-      //   aon::BlueRingsRoutine();
-      // }
+      if(COLOR == RED){
+        aon::RedRingsRoutine();
+      }
+      else {
+        aon::BlueRingsRoutine();
+      }
 
-      aon::goToTarget(.6, -1.2);
-      aon::goToTarget(1.2, -.6);
-      aon::goToTarget(1.2, .6);
-      aon::goToTarget(.6, 1.2);
-      aon::goToTarget(-.6, 1.2);
-      aon::goToTarget(-1.2, .6);
-      aon::goToTarget(-1.2, -.6);
-      aon::goToTarget(-.6, -1.2);
-      aon::goToTarget(.6, -1.2);
-      aon::goToTarget(1.2, -.6);
+      // aon::testGPS();
 
       // aon::quickMiddleScore();
 

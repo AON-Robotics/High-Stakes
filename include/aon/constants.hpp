@@ -44,8 +44,8 @@
 #define INITIAL_ODOMETRY_THETA 0.0
 
 // These next four (4) are in meters (all else is inches)
-#define GPS_X_OFFSET 0.139699924562 // Tweak
-#define GPS_Y_OFFSET 0.215899883414 // Tweak
+#define GPS_X_OFFSET 0.139699924562
+#define GPS_Y_OFFSET 0.215899883414
 #define GPS_INITIAL_X -0.34
 #define GPS_INITIAL_Y -0.82
 #define GPS_INITIAL_HEADING 296.86 // Degrees

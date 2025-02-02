@@ -161,10 +161,15 @@ inline void ConfigureMotors() {
   intake.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
   intake.tarePosition();
 
-  arm.setBrakeMode(okapi::AbstractMotor::brakeMode::coast);
-  arm.setGearing(okapi::AbstractMotor::gearset::green);
+  arm.setBrakeMode(okapi::AbstractMotor::brakeMode::brake);
+  arm.setGearing(okapi::AbstractMotor::gearset::red);
   arm.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
   arm.tarePosition();
+
+  indexer.setBrakeMode(okapi::AbstractMotor::brakeMode::brake);
+  indexer.setGearing(okapi::AbstractMotor::gearset::green);
+  indexer.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
+  indexer.tarePosition();
 
 #else
   // Configure motors for 18 inch robot

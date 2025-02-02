@@ -27,7 +27,7 @@ Vector POSITION(){
 int move(double dist);
 int turn(double angle);
 double metersToInches(double meters);
-void grabGoal();
+void grabGoal(int delay);
 void raceToGoal(double dist);
 void driveIntoRing(const int SIGNATURE);
 void pickUpRing(int delay);
@@ -35,6 +35,7 @@ void scoreRing(int delay);
 inline double metersToInches(double meters);
 void discardDisk();
 void dropGoal();
+void moveIndexer(bool extend);
 
 /**
  * \brief Resets odometry and gyro for error accumulation cleanse
@@ -535,17 +536,19 @@ void driveIntoRing(const int SIGNATURE){
 /**
  * \brief This small subroutine grabs a goal (stake)
  * 
+ * \param delay The amount of time in \b milliseconds you will be moving back (500-600 is quick and works)
+ * 
  * \warning You must already be very close to the goal and facing away (with the clamp towards it)
  * 
  * \details This routine uses timing but ideally there would be a way of knowing when we have the goal within our grasp
 */
-void grabGoal(){
+void grabGoal(int delay = 600){
   driveFull.moveVelocity(-100);
-  pros::delay(500);
+  pros::delay(delay * 5 / 6);
   piston.set_value(true);
-  pros::delay(100);
+  pros::delay(delay * 1/6);
   driveFull.moveVelocity(100);
-  pros::delay(600);
+  pros::delay(delay);
   driveFull.moveVelocity(0);
 }
 
@@ -567,12 +570,11 @@ void discardDisk(){
  * 
  * \details The function already converts the distance to negative so the robot drives into the goal backwards
  * 
- * \todo Change the internal move() function to directly use the MoveDrivePid() function with a specific PID and speed
 */
 void raceToGoal(double dist = 40){
   dist = abs(dist);
   MoveDrivePID(fastPID, -dist, (int)driveFull.getGearing());
-  grabGoal();
+  grabGoal(300);
 }
 
 /**
@@ -580,6 +582,17 @@ void raceToGoal(double dist = 40){
  */
 void dropGoal(){
   piston.set_value(false);
+}
+
+/**
+ * \brief Extends or retracts indexer to later knock down rings
+ * 
+ * \param extend If true, indexer will extend, if false, it will retract
+ */
+void moveIndexer(bool extend = true){
+  indexer.moveVelocity((extend ? -1 : 1) * (int)indexer.getGearing() * 5/6);
+  pros::delay(1050);
+  indexer.moveVelocity(0);
 }
 
 
@@ -591,7 +604,18 @@ void dropGoal(){
 //
 // ============================================================================
 
-
+void testGPS() {
+  aon::goToTarget(.6, -1.2);
+  aon::goToTarget(1.2, -.6);
+  aon::goToTarget(1.2, .6);
+  aon::goToTarget(.6, 1.2);
+  aon::goToTarget(-.6, 1.2);
+  aon::goToTarget(-1.2, .6);
+  aon::goToTarget(-1.2, -.6);
+  aon::goToTarget(-.6, -1.2);
+  aon::goToTarget(.6, -1.2);
+  aon::goToTarget(1.2, -.6);
+}
 
 
 // ============================================================================|
@@ -604,6 +628,9 @@ void dropGoal(){
 
 /**
  * \brief This routine is if WE ARE RED and want to grab RED RINGS
+ * 
+ * \note Designed for being in the third quadrant
+ * \note Starting Position (-0.34, -0.82) \b m facing towards 296.86 \b deg
  * 
  * \author Kevin Gomez
 */
@@ -621,20 +648,42 @@ int RedRingsRoutine(){
   move(-10);
   grabGoal();
   goToTarget(-1.2, -0.6);
-  driveIntoRing(RED);
+  driveIntoRing(COLOR);
 
+  moveTilesStraight(-1);
+  goToTarget(-.7, -1.2);
   // Extend indexer and knock down red ring close to intially picked up stake to pick it up
+  moveIndexer();
+  turn90(-1);
+  turn(10);
+  moveTilesStraight(-1);
 
+  // Try to pick it up
+  driveIntoRing(COLOR);
+  moveIndexer(false);
 
+  // Pickup red ring in front of alliance stake
+  goToTarget(-1.2, -.3);
+  driveIntoRing(COLOR);
+
+  // Try to knock down corner rings
+  goToTarget(-1.8, -1.2);
+  moveIndexer();
+  turn90(-1);
+  
   return 1;
 }
 
 /**
  * \brief This routine is if WE ARE BLUE and want to grab BLUE RINGS
  * 
+ * \note Designed for being in the first quadrant
+ * \note Starting Position (0.34, 0.82) \b m facing towards 116.86 \b deg
+ * 
  * \author Kevin Gomez
 */
 int BlueRingsRoutine(){
+  // Secure and score the first ring in the middle stake
   raceToGoal();
   move(6);
   scoreRing();
@@ -647,7 +696,29 @@ int BlueRingsRoutine(){
   move(-10);
   grabGoal();
   goToTarget(1.2, 0.6);
-  driveIntoRing(BLUE);
+  driveIntoRing(COLOR);
+
+  moveTilesStraight(-1);
+  goToTarget(.7, 1.2);
+  // Extend indexer and knock down blue ring close to intially picked up stake to pick it up
+  moveIndexer();
+  turn90(-1);
+  turn(10);
+  moveTilesStraight(-1);
+
+  // Try to pick it up
+  driveIntoRing(COLOR);
+  moveIndexer(false);
+
+  // Pickup blue ring in front of alliance stake
+  goToTarget(1.2, .3);
+  driveIntoRing(COLOR);
+
+  // Try to knock down corner rings
+  goToTarget(1.8, 1.2);
+  moveIndexer();
+  turn90(-1);
+
   return 1;
 }
 
@@ -662,6 +733,7 @@ void driveIntoRing(const int SIGNATURE);
 void pickUpRing(int delay);
 void scoreRing(int delay);
 void dropGoal();
+void moveIndexer(bool extend);
 
 
 /**
@@ -1167,17 +1239,19 @@ void driveIntoRing(const int SIGNATURE){
 /**
  * \brief This small subroutine grabs a goal (stake)
  * 
+ * \param delay The amount of time in \b milliseconds you will be moving back (500-600 is quick and works)
+ * 
  * \warning You must already be very close to the goal and facing away (with the clamp towards it)
  * 
  * \details This routine uses timing but ideally there would be a way of knowing when we have the goal within our grasp
 */
-void grabGoal(){
+void grabGoal(int delay = 600){
   driveFull.moveVelocity(-100);
-  pros::delay(500);
+  pros::delay(delay * 5 / 6);
   piston.set_value(true);
-  pros::delay(100);
+  pros::delay(delay * 1/6);
   driveFull.moveVelocity(100);
-  pros::delay(600);
+  pros::delay(delay);
   driveFull.moveVelocity(0);
 }
 
@@ -1212,6 +1286,17 @@ void raceToGoal(double dist = 40){
  */
 void dropGoal(){
   piston.set_value(false);
+}
+
+/**
+ * \brief Extends or retracts indexer to later knock down rings
+ * 
+ * \param extend If true, indexer will extend, if false, it will retract
+ */
+void moveIndexer(bool extend = true){
+  indexer.moveVelocity((extend ? -1 : 1) * (int)indexer.getGearing() * 5/6);
+  pros::delay(1050);
+  indexer.moveVelocity(0);
 }
 
 // ============================================================================
@@ -1331,6 +1416,9 @@ int RedRingsRoutine(){
   return 1;
 }
 
+/**
+ * \brief This is a safety routine to at least grab one goal and score on it
+ */
 void quickMiddleScore(){
   driveFull.moveVelocity(-100);
   pros::delay(200);
