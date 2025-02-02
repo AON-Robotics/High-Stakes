@@ -36,6 +36,7 @@ inline double metersToInches(double meters);
 void discardDisk();
 void dropGoal();
 void moveIndexer(bool extend);
+void enableGate();
 
 /**
  * \brief Resets odometry and gyro for error accumulation cleanse
@@ -595,6 +596,14 @@ void moveIndexer(bool extend = true){
   indexer.moveVelocity(0);
 }
 
+/**
+ * \brief Drops the gate from starting position so the robot can grab stuff
+ */
+void enableGate(){
+  gate.moveVelocity(-100);
+  pros::delay(250);
+  gate.moveVelocity(0);
+}
 
 // ============================================================================
 //   _____ ___ ___ _____ ___ 
@@ -640,6 +649,7 @@ int RedRingsRoutine(){
   move(6);
   scoreRing();
   dropGoal();
+  enableGate();
 
   // Get second goal
   goToTarget(-0.9, -0.9);
@@ -688,6 +698,7 @@ int BlueRingsRoutine(){
   move(6);
   scoreRing();
   dropGoal();
+  enableGate();
 
   // Get second goal
   goToTarget(0.9, 0.9);
@@ -722,6 +733,43 @@ int BlueRingsRoutine(){
   return 1;
 }
 
+/**
+ * \brief This routine is if WE ARE BLUE and want to grab BLUE RINGS
+ * 
+ * \author Jorge Luis
+*/    
+
+int BlueRingsRoutineJorgeLuna() {
+  /*
+    go for negative side mobile goal, score rings, and prepare for go enemy double side 
+  */
+  // go to the side mobile goal
+  raceToGoal();
+  move(6);
+  scoreRing(2000);
+  enableGate();
+
+  // go to ring on the bottom
+  goToTarget(1.2, -0.55);
+  RemoveTop();
+  driveIntoRing(COLOR);
+
+  // then the one below that one
+  goToTarget(1.2, -1.1);
+  driveIntoRing(COLOR);
+
+  // drive into the corner and try to grab the rings
+  goToTarget(1.7, -1.7);
+  RemoveTop();
+  driveIntoRing(COLOR);
+  turnToTarget(1.7, -1.7);
+  RemoveTop();
+  driveIntoRing(COLOR);
+
+  move(-6);
+  turnToTarget(1.8, 1.8);
+}
+
 #else
 
 int move(double dist);
@@ -734,6 +782,7 @@ void pickUpRing(int delay);
 void scoreRing(int delay);
 void dropGoal();
 void moveIndexer(bool extend);
+void enableGate();
 
 
 /**
@@ -1278,7 +1327,7 @@ void discardDisk(){
 void raceToGoal(double dist = 40){
   dist = abs(dist);
   MoveDrivePID(fastPID, -dist, (int)driveFull.getGearing());
-  grabGoal();
+  grabGoal(300);
 }
 
 /**
@@ -1299,6 +1348,26 @@ void moveIndexer(bool extend = true){
   indexer.moveVelocity(0);
 }
 
+/**
+ * 
+ * \brief This small subroutine removes the top ring of a stack of two and scores the ring at top. use ONLY when the indexer is at the right side of stack.
+ * 
+*/
+void RemoveTop(){
+  moveIndexer();
+  turn(-45);
+  moveIndexer(false);
+}
+
+/**
+ * \brief Drops the gate from starting position so the robot can grab stuff
+ */
+void enableGate(){
+  gate.moveVelocity(-100);
+  pros::delay(250);
+  gate.moveVelocity(0);
+}
+
 
 // ============================================================================
 //   _____ ___ ___ _____ ___ 
@@ -1308,7 +1377,18 @@ void moveIndexer(bool extend = true){
 //
 // ============================================================================
 
-
+void testGPS() {
+  aon::goToTarget(.6, -1.2);
+  aon::goToTarget(1.2, -.6);
+  aon::goToTarget(1.2, .6);
+  aon::goToTarget(.6, 1.2);
+  aon::goToTarget(-.6, 1.2);
+  aon::goToTarget(-1.2, .6);
+  aon::goToTarget(-1.2, -.6);
+  aon::goToTarget(-.6, -1.2);
+  aon::goToTarget(.6, -1.2);
+  aon::goToTarget(1.2, -.6);
+}
 
 // ============================================================================|
 //   ___  ___  _   _ _____ ___ _  _ ___ ___                                    |
@@ -1334,22 +1414,26 @@ int BlueRingsRoutine(){
   move(3);
   scoreRing(2000); 
   dropGoal();
+  enableGate();
 
   // Goes to middle mobile goal to secure it
-   goToTarget(0.7, -0.7);
-   auto target = Vector().SetPosition(0, 0);
-   turnToTarget(0, 0);
-   turn(180);
-   double dist = findDistance(target, POSITION());
-   raceToGoal(dist);
+  goToTarget(0.3, -0.3);
+  turnToTarget(0.6, -0.6);
+  move(-5);
+  grabGoal();
+
+  goToTarget(0.75,-1.05 );
+  turnToTarget(1.2,-1.2);
+  driveIntoRing(COLOR);
+  move(10);
 
 
-   //knock down stacks
-   goToTarget(0.9,-0.9);
-   turnToTarget(1.8,-1.8);
-   moveIndexer();
-   moveTilesStraight(1);
-   turn(10);
+  //knock down stacks
+  goToTarget(0.9,-0.9);
+  turnToTarget(1.8,-1.8);
+  moveIndexer();
+  moveTilesStraight(1);
+  turn(10);
   //start collecting red rings
 
   driveIntoRing(COLOR);
@@ -1359,6 +1443,25 @@ int BlueRingsRoutine(){
   return 1;
 }
 
+/**
+ * \brief This routine is if WE ARE BLUE and want to grab BLUE RINGS on positive side.
+ * 
+ * \author Jorge Guzmán
+*/              
+int BlueRingsRoutineJorgeGuzman(){
+  raceToGoal(40);
+  scoreRing();
+  enableGate();
+
+  turnToTarget(0.3, -1.050);
+  goToTarget(0.3, -1.050);
+  RemoveTop();
+  driveIntoRing(1500);
+  turnToTarget(1.050, -1.050);
+  goToTarget(1.050, -1.050);
+  driveIntoRing(1500);
+  return 1;
+}
 
 /**
  * \brief This routine is if WE ARE RED and want to grab BLUE RINGS
@@ -1368,25 +1471,28 @@ int BlueRingsRoutine(){
 int RedRingsRoutine(){
   // Rush to one of the side mobile goals (the one on the side of the negative points) and secure it on team side
   //scores one ring onto side mobile goal and drops it 
-  raceToGoal(45);
-  // grabGoal(); // Esto ya esta dentro de raceToGoal() -Kevin
+  raceToGoal(40);
   move(3);
   scoreRing(2000); 
   dropGoal();
+  enableGate();
 
   // Goes to middle mobile goal to secure it
-   goToTarget(-0.7, 0.7);
-   auto target = Vector().SetPosition(0, 0);
-   turnToTarget(0, 0);
-   turn(180);
-   double dist = findDistance(target, POSITION());
-   raceToGoal(dist);
+  goToTarget(-0.3, 0.3);
+  turnToTarget(-0.6, 0.6);
+  move(-5);
+  grabGoal();//grabs middle goal 
+
+  goToTarget(-0.75,1.05 );
+  turnToTarget(-1.2,1.2);
+  driveIntoRing(COLOR);
+  move(10);
 //knock down stacks
-   goToTarget(-0.9,0.9);
-   turnToTarget(-1.8,1.8);
-   moveIndexer();
-   moveTilesStraight(1);
-   turn(10);
+  goToTarget(-0.9,0.9);
+  turnToTarget(-1.8,1.8);
+  moveIndexer();
+  moveTilesStraight(1);
+  turn(10);
   //start collecting red rings
   driveIntoRing(COLOR);
   //incase no more rings are found of RED then turn to find
