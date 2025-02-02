@@ -46,12 +46,12 @@ void opcontrol() {
 
       // aon::driveIntoRing(RED);
 
-      if(COLOR == RED){
-        aon::RedRingsRoutine();
-      }
-      else {
-        aon::BlueRingsRoutine();
-      }
+      // if(COLOR == RED){
+      //   aon::RedRingsRoutine();
+      // }
+      // else {
+      //   aon::BlueRingsRoutine();
+      // }
 
       // aon::testGPS();
 

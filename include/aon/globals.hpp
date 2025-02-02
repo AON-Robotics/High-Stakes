@@ -83,6 +83,7 @@ bool rail_on = false;
 
 pros::ADIDigitalOut piston ('H');
 bool piston_on = false;
+bool indexerOut = false;
  
 bool conveyor_auto = true;
 int state = 0; // for railing

@@ -727,7 +727,7 @@ int BlueRingsRoutine(){
 int move(double dist);
 int turn(double angle);
 double metersToInches(double meters);
-void grabGoal();
+void grabGoal(int delay);
 void raceToGoal(double dist);
 void driveIntoRing(const int SIGNATURE);
 void pickUpRing(int delay);

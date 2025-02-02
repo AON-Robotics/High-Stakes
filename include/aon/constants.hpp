@@ -13,7 +13,7 @@
 #define BLUE 2
 
 // NOT using 15 inch robot = Using 18 inch robot
-#define USING_15_INCH_ROBOT true
+#define USING_15_INCH_ROBOT false
 #define COLOR RED
 
 #if USING_15_INCH_ROBOT

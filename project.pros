@@ -309,8 +309,8 @@
       }
     },
     "upload_options": {
-      "slot": 2,
-      "icon": "planet",
+      "slot": 1,
+      "icon": "pizza",
       "description": " "
     }
   }
