@@ -14,7 +14,7 @@
 
 // NOT using 15 inch robot = Using 18 inch robot
 #define USING_15_INCH_ROBOT false
-#define COLOR RED
+#define COLOR BLUE
 
 #if USING_15_INCH_ROBOT
 
@@ -81,10 +81,10 @@
 #define INITIAL_ODOMETRY_THETA 0.0
 
 // These next four (4) are in meters (all else is inches)
-#define GPS_X_OFFSET 0.158470514426
-#define GPS_Y_OFFSET 0.12699993142
-#define GPS_INITIAL_X -1.37
-#define GPS_INITIAL_Y 0.48
+#define GPS_X_OFFSET -0.149225298451
+#define GPS_Y_OFFSET 0.127000254001
+#define GPS_INITIAL_X -0.34
+#define GPS_INITIAL_Y 0.82
 #define GPS_INITIAL_HEADING 245.7 // Degrees
 
 #define INTAKE_VELOCITY (int)intake.getGearing()

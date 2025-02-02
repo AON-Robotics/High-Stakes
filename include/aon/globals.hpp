@@ -65,12 +65,12 @@ okapi::MotorGroup driveRight = okapi::MotorGroup({-15, 16, -17});
 okapi::MotorGroup driveFull = okapi::MotorGroup({12, -15, 16, -17, -18, 19});
 
 //SIGNATURE COLOR
-pros::Vision vision_sensor(4);
+pros::Vision vision_sensor(7);
 pros::vision_signature_s_t RED_SIG = pros::Vision::signature_from_utility(1, 8973, 11143, 10058, -2119, -1053, -1586, 5.4, 0);
 pros::vision_signature_s_t BLUE_SIG = pros::Vision::signature_from_utility(2, -3050, -2000, -2500, 8000, 11000, 9500, 5.4, 0);
 
 
-pros::Gps gps(6, GPS_INITIAL_X, GPS_INITIAL_Y, GPS_INITIAL_HEADING, GPS_X_OFFSET, GPS_Y_OFFSET);
+pros::Gps gps(9, GPS_INITIAL_X, GPS_INITIAL_Y, GPS_INITIAL_HEADING, GPS_X_OFFSET, GPS_Y_OFFSET);
 
 aon::PID drivePID = aon::PID(0.1, 0, 0);
 aon::PID turnPID = aon::PID(0.01, 0, 0);
@@ -89,7 +89,7 @@ bool conveyor_auto = true;
 int state = 0; // for railing
 
 #if GYRO_ENABLED
-pros::Imu gyroscope(7);
+pros::Imu gyroscope(5);
 #endif
 
 pros::Rotation encoderLeft(-30, false);
