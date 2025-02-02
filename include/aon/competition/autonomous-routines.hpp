@@ -590,8 +590,8 @@ void dropGoal(){
  * \param extend If true, indexer will extend, if false, it will retract
  */
 void moveIndexer(bool extend = true){
-  indexer.moveVelocity((extend ? -1 : 1) * (int)indexer.getGearing() * 5/6);
-  pros::delay(1050);
+  indexer.moveVelocity((extend ? -1 : 1) * (int)indexer.getGearing());
+  pros::delay(900);
   indexer.moveVelocity(0);
 }
 
@@ -1294,10 +1294,11 @@ void dropGoal(){
  * \param extend If true, indexer will extend, if false, it will retract
  */
 void moveIndexer(bool extend = true){
-  indexer.moveVelocity((extend ? -1 : 1) * (int)indexer.getGearing() * 5/6);
-  pros::delay(1050);
+  indexer.moveVelocity((extend ? -1 : 1) * (int)indexer.getGearing());
+  pros::delay(900);
   indexer.moveVelocity(0);
 }
+
 
 // ============================================================================
 //   _____ ___ ___ _____ ___ 
@@ -1320,39 +1321,40 @@ void moveIndexer(bool extend = true){
 /**
  * \brief This routine is if WE ARE BLUE and want to grab BLUE RINGS
  * 
- * \author TBD
+ * \author Solimar Cruz 
 */              
 int BlueRingsRoutine(){
   // This routine focuses on team rings (no duh)
   // Rush to one of the side mobile goals (the one on the side of the double points) and secure it on team side
-  
   // Starting point at (2.5, 1.5) facing 90 degrees (the blue area)
-  moveHalfTiles(-4);
-  turn(-45);
-  moveHalfDiagTiles(-1);
+  // Rush to one of the side mobile goals (the one on the side of the negative points) and secure it on team side
+  //scores one ring onto side mobile goal and drops it 
+  raceToGoal(45);
+  grabGoal();
+  move(3);
+  scoreRing(2000); 
+  dropGoal();
 
-  // Grab and secure
-  // driveFull.moveVoltage(-8000);
-  piston.set_value(toggle(piston_on));
-  // driveFull.moveVoltage(0);
-  moveHalfDiagTiles(1);
-  piston.set_value(toggle(piston_on));
+  // Goes to middle mobile goal to secure it
+   goToTarget(0.7, -0.7);
+   auto target = Vector().SetPosition(0, 0);
+   turnToTarget(0, 0);
+   turn(180);
+   double dist = findDistance(target, POSITION());
+   raceToGoal(dist);
 
-  // Go to middle mobile goal to secure it
-  turn(135);
-  moveTilesStraight(-1);
-  turn(-45);
-  moveHalfDiagTiles(-1);
 
-  // Grab and secure
-  // driveFull.moveVoltage(-8000);
-  piston.set_value(toggle(piston_on));
-  // driveFull.moveVoltage(0);
-  moveHalfDiagTiles(1);
+   //knock down stacks
+   goToTarget(0.9,-0.9);
+   turnToTarget(1.8,-1.8);
+   moveIndexer();
+   moveTilesStraight(1);
+   turn(10);
+  //start collecting red rings
 
-  // Stack team rings on mobile goal
-  // Take mobile goal to double points area
-  // Go to first secured mobile goal
+  driveIntoRing(COLOR);
+  //incase no more rings are found of RED then turn to find
+  turn(30); //??
   // Stack team rings on mobile goal with remaining time
   return 1;
 }
@@ -1365,53 +1367,30 @@ int BlueRingsRoutine(){
 */
 int RedRingsRoutine(){
   // Rush to one of the side mobile goals (the one on the side of the negative points) and secure it on team side
-  // Starting point at (1.5, .3) facing approximately 110 degrees (the blue area)
+  //scores one ring onto side mobile goal and drops it 
   raceToGoal(45);
-  grabGoal();
+  // grabGoal(); // Esto ya esta dentro de raceToGoal() -Kevin
+  move(3);
   scoreRing(2000); 
-  turn(180);
-  driveIntoRing(COLOR);//should be red
+  dropGoal();
+
+  // Goes to middle mobile goal to secure it
+   goToTarget(-0.7, 0.7);
+   auto target = Vector().SetPosition(0, 0);
+   turnToTarget(0, 0);
+   turn(180);
+   double dist = findDistance(target, POSITION());
+   raceToGoal(dist);
+//knock down stacks
+   goToTarget(-0.9,0.9);
+   turnToTarget(-1.8,1.8);
+   moveIndexer();
+   moveTilesStraight(1);
+   turn(10);
+  //start collecting red rings
   driveIntoRing(COLOR);
-  driveIntoRing(COLOR);//should be red
-  driveIntoRing(COLOR);
-
-
-  // Grab and secure/drop
-  // Go to middle mobile goal to secure it
-  // goToTarget(-0.7, 0.7);
-  // auto target = Vector().SetPosition(0, 0);
-  // turnToTarget(0, 0);
-  // turn(180);
-  // double dist = findDistance(target, POSITION());
-  // raceToGoal(dist);
-
-  //move forward and knock down rings
-  
-  
-  
-  //grab rings
-  // driveIntoRing(COLOR);//should be red
-  // driveIntoRing(COLOR);
-  // turn(-10);
-  // driveIntoRing(COLOR);
-  // turn(350);
-  // initialReset(false);
-  // turn(350);
-  // initialReset(false);
-  // turn(350);
-  // initialReset(false);
-  // turn(30);
-  // driveIntoRing(COLOR);
-  //moveTilesStraight(1);
-  // Grab and secure
-  //grabGoal();
-  //moveTilesDiag(-1);
-  // Stack enemy rings on mobile goal
-  //turn(180);
-  // Take mobile goal to negative points area
-  //(-1.8 1.8)
-  // Go to first secured mobile goal
-  
+  //incase no more rings are found of RED then turn to find
+  turn(30); //??
   // Stack team rings on mobile goal with remaining time
   return 1;
 }

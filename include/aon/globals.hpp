@@ -14,8 +14,8 @@ okapi::MotorGroup driveRight = okapi::MotorGroup({-3, 16, -17});
 okapi::MotorGroup driveFull = okapi::MotorGroup({12, -18, 19, -3, 16, -17});
 
 
-okapi::MotorGroup intake = okapi::MotorGroup({-13, -14});
-okapi::MotorGroup rail = okapi::MotorGroup({-13});
+okapi::MotorGroup intake = okapi::MotorGroup({13, -14});
+okapi::MotorGroup rail = okapi::MotorGroup({13});
 okapi::Motor gate = okapi::Motor(-14);
 
 okapi::Motor arm = okapi::Motor(10);
