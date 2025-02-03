@@ -8,6 +8,10 @@
 #include "../controls/pid/pid.hpp"
 #include "../controls/holonomic-motion.hpp"
 
+/**
+ * For GPS coord system: https://pros.cs.purdue.edu/v5/tutorials/topical/gps.html
+ */
+
 namespace aon {
 
 double initial_pos_x;
@@ -781,6 +785,20 @@ int BlueRingsRoutineJorgeLuna() {
   turnToTarget(1.8, 1.8);
 }
 
+/**
+ * \brief This is a safety routine to at least grab one goal and score on it
+ */
+void quickMiddleScore(){
+  goToTarget(.3, 1.2);
+  turnToTarget(0.6, 1.2);
+  move(-3);
+  grabGoal();
+  scoreRing();
+  move(10);
+  turn(360 * 10);
+  
+}
+
 #else
 
 int move(double dist);
@@ -1421,8 +1439,7 @@ int BlueRingsRoutine(){
   // Rush to one of the side mobile goals (the one on the side of the negative points) and secure it on team side
   //scores one ring onto side mobile goal and drops it 
   raceToGoal(45);
-  grabGoal();
-  move(3);
+  move(9);
   scoreRing(2000); 
   dropGoal();
   enableGate();
@@ -1430,7 +1447,7 @@ int BlueRingsRoutine(){
   // Goes to middle mobile goal to secure it
   goToTarget(0.3, -0.3);
   turnToTarget(0.6, -0.6);
-  move(-5);
+  move(-3);
   grabGoal();
 
   goToTarget(0.75,-1.05 );
@@ -1483,7 +1500,7 @@ int RedRingsRoutine(){
   // Rush to one of the side mobile goals (the one on the side of the negative points) and secure it on team side
   //scores one ring onto side mobile goal and drops it 
   raceToGoal(40);
-  move(3);
+  move(8);
   scoreRing(2000); 
   dropGoal();
   enableGate();
@@ -1491,7 +1508,7 @@ int RedRingsRoutine(){
   // Goes to middle mobile goal to secure it
   goToTarget(-0.3, 0.3);
   turnToTarget(-0.6, 0.6);
-  move(-5);
+  move(-3);
   grabGoal();//grabs middle goal 
 
   goToTarget(-0.75,1.05 );
@@ -1519,8 +1536,10 @@ void quickMiddleScore(){
   driveFull.moveVelocity(-100);
   pros::delay(200);
   grabGoal();
-  pickUpRing();
   scoreRing();
+  dropGoal();
+  pros::delay(30000);
+  
 }
 
 #endif

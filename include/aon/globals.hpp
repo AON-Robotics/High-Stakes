@@ -14,13 +14,13 @@ okapi::MotorGroup driveRight = okapi::MotorGroup({-3, 16, -17});
 okapi::MotorGroup driveFull = okapi::MotorGroup({12, -18, 19, -3, 16, -17});
 
 
-okapi::MotorGroup intake = okapi::MotorGroup({13, -14});
-okapi::MotorGroup rail = okapi::MotorGroup({13});
+okapi::MotorGroup intake = okapi::MotorGroup({-13, -14});
+okapi::MotorGroup rail = okapi::MotorGroup({-13});
 okapi::Motor gate = okapi::Motor(-14);
 
 okapi::Motor arm = okapi::Motor(10);
 
-okapi::Motor indexer = okapi::Motor(8);
+okapi::Motor indexer = okapi::Motor(7);
 
 pros::Vision vision_sensor(5);
 pros::vision_signature_s_t RED_SIG = pros::Vision::signature_from_utility(1, 8973, 11143, 10058, -2119, -1053, -1586, 5.4, 0);
@@ -50,7 +50,8 @@ bool rail_on = false;
 
 pros::ADIDigitalOut piston ('H');
 bool piston_on = false;
- 
+bool indexerOut = false;
+
 bool conveyor_auto = true;
 int state = 0; // for railing
 
@@ -60,9 +61,9 @@ pros::Imu gyroscope(11);
 
 #else
 // Set up motors and sensors for 18 inch robot
-okapi::MotorGroup driveLeft = okapi::MotorGroup({12, -18, 19});
+okapi::MotorGroup driveLeft = okapi::MotorGroup({12, -6, 19});
 okapi::MotorGroup driveRight = okapi::MotorGroup({-15, 16, -17});
-okapi::MotorGroup driveFull = okapi::MotorGroup({12, -15, 16, -17, -18, 19});
+okapi::MotorGroup driveFull = okapi::MotorGroup({12, -15, 16, -17, -6, 19});
 
 //SIGNATURE COLOR
 pros::Vision vision_sensor(7);

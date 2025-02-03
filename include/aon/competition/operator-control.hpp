@@ -108,6 +108,10 @@ inline void _OpControlManes() {
     kickBackRail();
   }
 
+  if(main_controller.get_digital_new_press(DIGITAL_Y)){
+    moveIndexer(toggle(indexerOut));
+  }
+
   if (main_controller.get_digital(DIGITAL_L1)) {
     arm.moveVelocity(INTAKE_VELOCITY);
   } else if (main_controller.get_digital(DIGITAL_L2)) {
