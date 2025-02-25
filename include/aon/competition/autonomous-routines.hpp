@@ -18,7 +18,13 @@ double initial_pos_x;
 double initial_pos_y;
 double initial_heading;
 
+/**
+ * \brief Returns position of the robot in the field
+ * 
+ * \returns The GPS coordinates as a `Vector`
+ */
 Vector POSITION(){
+  STOP();
   pros::delay(2000);
   pros::c::gps_status_s_t status = gps.get_status();
   Vector current = Vector().SetPosition(status.x, status.y);
@@ -64,6 +70,23 @@ int initialReset(bool gyro = true)
 //
 // ============================================================================
 
+/**
+ * \brief Determines the speed of the robot given drivetrain motors' RPM
+ * 
+ * \param RPM The RPM for which to calculate the velocity (default current RPM)
+ * 
+ * \returns The speed in \b in/s at which the robot would move at the given RPM
+ * 
+ * \note Test the accuracy precision of the `getActualVelocity()` method,
+ * \note it may be possible to need to use `get_velocity()` from `encoder` which uses \b centidegrees.
+ * \note The distance units depend on the units used for measuring `DRIVE_WHEEL_DIAMETER`
+ */
+inline double getSpeed(const double &RPM = (int)driveFull.getActualVelocity()){
+  double circumference = DRIVE_WHEEL_DIAMETER * M_PI;
+  double RPS = RPM / 60;
+  double speed = circumference * RPS;
+  return speed;
+}
 
 /**
  * \brief Calculates time for the robot to reach a given distance
@@ -72,10 +95,7 @@ int initialReset(bool gyro = true)
  * \returns The approximate time necessary to reach the target (overestimation) in \b seconds
  */
 inline double getTimetoTarget(const double &distance){
-  double circumference = DRIVE_WHEEL_DIAMETER * M_PI; // of the drive wheel (inches)
-  double RPS = (int)driveRight.getGearing() / 60; // (revolutions per seconds)
-  double velocity = RPS * circumference; // Calculated speed (in / s)
-  double time = 2 * distance / velocity; // Calculated time (seconds)
+  double time = 2 * distance / MAX_SPEED;
   return time;
 }
 
@@ -235,7 +255,7 @@ double calculateTurn(Vector target, Vector current) {
  * \param pid The PID used for the driving
  * \param dist The distance to be moved in \b inches
  */
-void MoveDrivePID(PID pid = drivePID, double dist = TILE_WIDTH, const double MAX_SPEED = 100.0) {
+void MoveDrivePID(PID pid = drivePID, double dist = TILE_WIDTH, const double MAX_REVS = 100.0) {
   const int sign = dist / abs(dist); // Getting the direction of the movement
   dist = abs(dist); // Setting the magnitude to positive
 
@@ -244,7 +264,7 @@ void MoveDrivePID(PID pid = drivePID, double dist = TILE_WIDTH, const double MAX
   pid.Reset();
   aon::Vector initialPos = aon::odometry::GetPosition();
 
-  const double timeLimit = MAX_SPEED == (int)driveFull.getGearing() ? getTimeToTargetFast(dist) : getTimetoTarget(dist);
+  const double timeLimit = MAX_REVS == (int)driveFull.getGearing() ? getTimeToTargetFast(dist) : getTimetoTarget(dist);
   const double start_time = pros::micros() / 1E6;
   #define time (pros::micros() / 1E6) - start_time //every time the variable is called it is recalculated automatically
 
@@ -257,7 +277,7 @@ void MoveDrivePID(PID pid = drivePID, double dist = TILE_WIDTH, const double MAX
 
     pros::lcd::print(0, "%f", currentDisplacement);
 
-    driveFull.moveVelocity(sign * std::clamp(output * (int)driveLeft.getGearing(), -MAX_SPEED, MAX_SPEED));
+    driveFull.moveVelocity(sign * std::clamp(output * (int)driveLeft.getGearing(), -MAX_REVS, MAX_REVS));
 
     pros::delay(10);
   }
@@ -275,7 +295,7 @@ void MoveDrivePID(PID pid = drivePID, double dist = TILE_WIDTH, const double MAX
  * \param pid The PID to be used for the turn
  * \param angle The angle to make the robot turn in \b degrees
  */
-void MoveTurnPID(PID pid = turnPID, double angle = 90, const double MAX_SPEED = 50.0){
+void MoveTurnPID(PID pid = turnPID, double angle = 90, const double MAX_REVS = 50.0){
   const int sign = angle/abs(angle); // Getting the direction of the movement
   angle = abs(angle); // Setting the magnitude to positive
   pid.Reset();
@@ -302,8 +322,8 @@ void MoveTurnPID(PID pid = turnPID, double angle = 90, const double MAX_SPEED = 
     pros::lcd::print(0, "%f", traveledAngle);
 
     // Taking clockwise rotation as positive (to change this just flip the negative on the sign below)
-    driveLeft.moveVelocity(sign * std::clamp(output * (int)driveLeft.getGearing(), -MAX_SPEED, MAX_SPEED));
-    driveRight.moveVelocity(-sign * std::clamp(output * (int)driveRight.getGearing(), -MAX_SPEED, MAX_SPEED));
+    driveLeft.moveVelocity(sign * std::clamp(output * (int)driveLeft.getGearing(), -MAX_REVS, MAX_REVS));
+    driveRight.moveVelocity(-sign * std::clamp(output * (int)driveRight.getGearing(), -MAX_REVS, MAX_REVS));
 
     pros::delay(10);
   }
@@ -628,6 +648,9 @@ void enableGate(){
 //
 // ============================================================================
 
+/**
+ * \brief Basic Routine to make the robot go in circles around the map to test GPS setup.
+ */
 void testGPS() {
   aon::goToTarget(.6, -1.2);
   aon::goToTarget(1.2, -.6);
@@ -639,6 +662,98 @@ void testGPS() {
   aon::goToTarget(-.6, -1.2);
   aon::goToTarget(.6, -1.2);
   aon::goToTarget(1.2, -.6);
+}
+
+void testMotionProfile(const double dist = TILE_WIDTH){
+  const double MAX_VELOCITY = (double)driveFull.getGearing(); // (RPM)
+  const double MAX_ACCEL = 100; // (RPM/s)
+  const double MAX_JERK = 300; // (RPM/s^2)
+  double currVelocity = 0;
+  double currAccel = 0;
+  double traveledDist = 0;
+  // Vector startPos = aon::odometry::GetPosition();
+  double dt = 0.02; // (s)
+
+  double startTime = pros::micros() / 1E6;
+  double secs = 5;
+  #define time (pros::micros() / 1E6) - startTime
+
+  while(traveledDist < dist){
+    // aon::odometry::Update();
+    // traveledDist = (aon::odometry::GetPosition() - startPos).GetMagnitude();
+    double remainingDist = dist - traveledDist;
+
+    // Debugging output to brain
+    pros::lcd::print(1, "Traveled: %.2f / %.2f", traveledDist, dist);
+    pros::lcd::print(2, "Velocity: %.2f, Accel: %.2f", currVelocity, currAccel);
+    pros::lcd::print(3, "Remaining: %.2f", remainingDist);
+
+    // Acceleration
+    if(remainingDist <= currVelocity * currVelocity / (2 * MAX_ACCEL)){
+      // currAccel = std::max(currAccel - (MAX_JERK * dt), 0);
+      currAccel = - MAX_ACCEL;
+    } else {
+      currAccel = std::min(currAccel + (MAX_JERK * dt), MAX_ACCEL);
+    }
+
+    currVelocity += currAccel * dt;
+    currVelocity = std::min(currVelocity,  MAX_VELOCITY);
+
+    driveFull.moveVelocity(currVelocity);
+
+    traveledDist += currVelocity * dt;
+
+    pros::delay(dt * 1000);
+  }
+
+  driveFull.moveVelocity(0);
+  testEndpoint();
+  #undef time
+}
+
+void turretFollow(){
+  const int TOLERANCE = 20;
+  const int VISION_FIELD_CENTER = 315 / 2;
+  int OBJ_CENTER = 0;
+  PID turretPID = PID(.5, 0, 0);
+  // while(abs(OBJ_CENTER - VISION_FIELD_CENTER) <= TOLERANCE){
+  while(true){
+    auto object = vision_sensor.get_by_sig(0, COLOR);
+    OBJ_CENTER = object.x_middle_coord;
+    double SPEED = turretPID.Output(0, VISION_FIELD_CENTER - OBJ_CENTER);
+    pros::lcd::print(1, "Position: %.2d", turretEncoder.get_angle() / 100);
+
+    if(object.signature == COLOR){
+      if(abs(OBJ_CENTER - VISION_FIELD_CENTER) <= TOLERANCE){
+        turret.moveVelocity(0);
+        pros::lcd::print(2, "Aligned!");
+        break;
+      }
+      else { // Turn Towards Object
+        pros::lcd::print(2, "Turning!");
+        turret.moveVelocity(SPEED);
+      }
+    }
+    pros::delay(10);
+  }
+  turret.moveVelocity(0);
+}
+
+void alignRobotToDisk(){
+  turretFollow();
+  const int TOLERANCE = 10;
+  int difference = 0;
+  #define TURRET_ANGLE turretEncoder.get_angle() / 100
+  while(abs((TURRET_ANGLE)) > TOLERANCE){
+    difference = TURRET_ANGLE < 180 ? TURRET_ANGLE : TURRET_ANGLE - 360;
+    pros::lcd::print(2, "Moving!");
+    double SPEED = turnPID.Output(0, difference) * 40;
+    driveLeft.moveVelocity(SPEED);
+    driveRight.moveVelocity(-SPEED);
+    turretFollow();
+  }
+  driveLeft.moveVelocity(0);
+  driveRight.moveVelocity(0);
 }
 
 
@@ -1011,7 +1126,7 @@ double calculateTurn(Vector target, Vector current) {
  * \param pid The PID used for the driving
  * \param dist The distance to be moved in \b inches
  */
-void MoveDrivePID(PID pid = drivePID, double dist = TILE_WIDTH, const double MAX_SPEED = 100.0) {
+void MoveDrivePID(PID pid = drivePID, double dist = TILE_WIDTH, const double MAX_REVS = 100.0) {
   const int sign = dist / abs(dist); // Getting the direction of the movement
   dist = abs(dist); // Setting the magnitude to positive
 
@@ -1020,7 +1135,7 @@ void MoveDrivePID(PID pid = drivePID, double dist = TILE_WIDTH, const double MAX
   pid.Reset();
   aon::Vector initialPos = aon::odometry::GetPosition();
 
-  const double timeLimit = MAX_SPEED == (int)driveFull.getGearing() ? getTimeToTargetFast(dist) : getTimetoTarget(dist);
+  const double timeLimit = MAX_REVS == (int)driveFull.getGearing() ? getTimeToTargetFast(dist) : getTimetoTarget(dist);
   const double start_time = pros::micros() / 1E6;
   #define time (pros::micros() / 1E6) - start_time //every time the variable is called it is recalculated automatically
 
@@ -1033,7 +1148,7 @@ void MoveDrivePID(PID pid = drivePID, double dist = TILE_WIDTH, const double MAX
 
     pros::lcd::print(0, "%f", currentDisplacement);
 
-    driveFull.moveVelocity(sign * std::clamp(output * (int)driveLeft.getGearing(), -MAX_SPEED, MAX_SPEED));
+    driveFull.moveVelocity(sign * std::clamp(output * (int)driveLeft.getGearing(), -MAX_REVS, MAX_REVS));
 
     pros::delay(10);
   }
@@ -1051,7 +1166,7 @@ void MoveDrivePID(PID pid = drivePID, double dist = TILE_WIDTH, const double MAX
  * \param pid The PID to be used for the turn
  * \param angle The angle to make the robot turn in \b degrees
  */
-void MoveTurnPID(PID pid = turnPID, double angle = 90, const double MAX_SPEED = 50.0){
+void MoveTurnPID(PID pid = turnPID, double angle = 90, const double MAX_REVS = 50.0){
   const int sign = angle/abs(angle); // Getting the direction of the movement
   angle = abs(angle); // Setting the magnitude to positive
   pid.Reset();
@@ -1078,8 +1193,8 @@ void MoveTurnPID(PID pid = turnPID, double angle = 90, const double MAX_SPEED = 
     pros::lcd::print(0, "%f", traveledAngle);
 
     // Taking clockwise rotation as positive (to change this just flip the negative on the sign below)
-    driveLeft.moveVelocity(sign * std::clamp(output * (int)driveLeft.getGearing(), -MAX_SPEED, MAX_SPEED));
-    driveRight.moveVelocity(-sign * std::clamp(output * (int)driveRight.getGearing(), -MAX_SPEED, MAX_SPEED));
+    driveLeft.moveVelocity(sign * std::clamp(output * (int)driveLeft.getGearing(), -MAX_REVS, MAX_REVS));
+    driveRight.moveVelocity(-sign * std::clamp(output * (int)driveRight.getGearing(), -MAX_REVS, MAX_REVS));
 
     pros::delay(10);
   }
