@@ -1,8 +1,8 @@
 name: High Stakes Issue
 description: Template for reporting issues related to AON Robotics' high-stakes repository.
 title: "[Component]: Brief issue title"
-projects: ""
-type: ""
+projects: "Project"
+type: "Type"
 labels: []
 assignees: []
 
