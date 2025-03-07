@@ -7,6 +7,29 @@ labels: []
 assignees: []
 
 body:
+  - type: dropdown
+    id: component
+    attributes:
+      label: "🔩 Component"
+      description: "Which part of the system does this issue pertain to?"
+      options:
+        - Drivetrain
+        - Testing and Debugging System
+        - Vision Sensor
+        - Distance Sensor
+        - GPS
+        - Piston
+        - Intake
+        - Claw
+        - Clamp
+        - Motors
+        - Arms
+        - Graphic User Interface
+        - Documentation
+        - Admin
+        - Other
+    validations:
+      required: true
   - type: textarea
     id: description
     attributes:
@@ -38,29 +61,5 @@ body:
       label: "📅 Expected Time Frame"
       description: "Provide an estimated completion time (e.g., '2 days', '1 week')."
       placeholder: "e.g., 3 days, 1 week"
-    validations:
-      required: true
-
-  - type: dropdown
-    id: component
-    attributes:
-      label: "🔩 Component"
-      description: "Which part of the system does this issue pertain to?"
-      options:
-        - Drivetrain
-        - Testing and Debugging System
-        - Vision Sensor
-        - Distance Sensor
-        - GPS
-        - Piston
-        - Intake
-        - Claw
-        - Clamp
-        - Motors
-        - Arms
-        - Graphic User Interface
-        - Documentation
-        - Admin
-        - Other
     validations:
       required: true
