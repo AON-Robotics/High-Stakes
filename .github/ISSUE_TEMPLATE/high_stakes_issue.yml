@@ -14,6 +14,8 @@ body:
       description: "Which part of the system does this issue pertain to?"
       options:
         - Drivetrain
+        - Odometry
+        - General
         - Testing and Debugging System
         - Vision Sensor
         - Distance Sensor
