@@ -47,6 +47,7 @@ body:
       label: "🔩 Component"
       description: "Which part of the system does this issue pertain to?"
       options:
+        - Drivetrain
         - Testing and Debugging System
         - Vision Sensor
         - Distance Sensor
@@ -56,10 +57,10 @@ body:
         - Claw
         - Clamp
         - Motors
-        - Drivetrain
         - Arms
         - Graphic User Interface
         - Documentation
+        - Admin
         - Other
     validations:
       required: true
