@@ -20,19 +20,6 @@ body:
       required: true
 
   - type: dropdown
-    id: difficulty
-    attributes:
-      label: "⚡ Difficulty Level"
-      description: "Select the estimated difficulty of this issue."
-      options:
-        - Easy
-        - Medium
-        - Hard
-        - Expert
-    validations:
-      required: true
-
-  - type: dropdown
     id: urgency
     attributes:
       label: "⏳ Urgency"
