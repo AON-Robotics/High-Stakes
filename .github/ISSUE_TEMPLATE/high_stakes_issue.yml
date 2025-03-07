@@ -47,12 +47,18 @@ body:
       label: "🔩 Component"
       description: "Which part of the system does this issue pertain to?"
       options:
-        - Control System
-        - Sensors
+        - Testing and Debugging System
+        - Vision Sensor
+        - Distance Sensor
+        - GPS
+        - Piston
+        - Intake
+        - Claw
+        - Clamp
         - Motors
-        - Autonomous
-        - User Interface
-        - Communication
+        - Drivetrain
+        - Arms
+        - Graphic User Interface
         - Documentation
         - Other
     validations:
