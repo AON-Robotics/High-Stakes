@@ -29,6 +29,7 @@ body:
         - Graphic User Interface
         - Documentation
         - Admin
+        - Training
         - Other
     validations:
       required: true
