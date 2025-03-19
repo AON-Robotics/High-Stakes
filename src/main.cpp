@@ -1,13 +1,20 @@
-#include "main.hpp"
+#include "../include/main.hpp"
 #include "../include/aon/competition/state_machine.hpp"
 #include "../include/aon/competition/intake_engine.hpp"
+#include "aon/competition/autonomous-routines.hpp"
+#include "../include/aon/competition/Error_handling.hpp"
+#include "aon/globals.hpp"
 
 void initialize() {
   aon::logging::Initialize();
+  pros::lcd::initialize();
   aon::ConfigureMotors();
   aon::ConfigureColors();
   aon::odometry::Initialize();
   pros::Task gui_task(aon::gui::Initialize);
+  aon::operator_control::Run(aon::operator_control::kManes);
+  aon::error_handling::StartErrorHandlingTask();
+  // aon::error_handling::testMotors();
 }
 
 void disabled() {}
@@ -15,16 +22,6 @@ void disabled() {}
 void competition_initialize() {}
 
 void autonomous() { 
- 
-  // aon::AutonomousReader->ExecuteFunction("autonomous");
-  if(COLOR == RED){
-    aon::RedRingsRoutine();
-  }
-  else {
-    aon::BlueRingsRoutine();
-  }
-  pros::delay(10);
-
  }
 
 // During development
