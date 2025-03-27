@@ -48,91 +48,48 @@ void dropGoal();
 void moveIndexer(bool extend);
 void enableGate();
 
-inline void TurretRotationAbsolute(double targetAngle) { //This fucntion takes an angle as parameter (in degrees)
-  // and spins the turret to said value (absolute rotation).
-  PID turretPID = PID(0.5, 0, 0); //Initialize PID
-  //Uncomment for debugging/testing.
-  // const double maxSpeed = 80.0; // Max motor speed
-  // const double tolerance = 2.0;  // Acceptable error in degrees
-  // const double maxTime = 50000.0;  // Max time in seconds
-  //
-  // //Verify if we have reached target (uncomment for debugging/testing)
-  // bool reachedTarget = false;
+
+
+/**
+ * \brief Rotates the turret a given angle, starting from 0 degrees until desired degrees. (Absolute Rotation)
+ * 
+ * \param targetAngle Angle in degrees we wish to rotate turret.
+ *
+ * \details turretEncoder.get_angle() is divided by 100 for scaling purposes.
+ */
+inline void turretRotationAbsolute(double targetAngle) { 
+  PID turretPID = PID(0.5, 0, 0); 
   while (true) {
-    double currentAngle = turretEncoder.get_angle()/100.0; // Get current angle (divide by 100 for scaling)
-    //Uncomment for debugging/testing
-    // double error = targetAngle - currentAngle;
-    //Uncomment for debugging/ testing:
-    // Check if the angle is close enough
-    // if (fabs(error) <= tolerance) {
-    //   reachedTarget = true;
-    //   break;
-    // }
-    // // Check for timeout
-    // double currentTime = pros::millis() / 1000.0;
-    // if ((currentTime - startTime) > maxTime) {
-    //   pros::lcd::print(0, "Rotation timeout!");
-    //   break;
-    // }
-
-    double output = turretPID.Output(targetAngle, currentAngle); //Use PID to calculate appropiate speed
-    //Uncomment for debuggin/testing
-    // if (output > maxSpeed) output = maxSpeed;
-    // if (output < -maxSpeed) output = -maxSpeed;
-    // pros::lcd::print(1, "Angle: %.2f", currentAngle);
-    // pros::lcd::print(2, "Error: %.2f", error);
-    // pros::lcd::print(3, "Output: %.2f", output);
-
-    turret.moveVelocity(output); //Move the motor in the speed given by the PID
+    double currentAngle = turretEncoder.get_angle()/100.0; 
+    double output = turretPID.Output(targetAngle, currentAngle); 
+    turret.moveVelocity(output); 
     pros::delay(10);
   }
-
   turret.moveVelocity(0);
-  //Uncomment for debugging/testing:
-  // if (reachedTarget) {
-  //   pros::lcd::print(4, "Rotation complete.");
-  // }
 }
 
-inline void TurretRotationRelative(double given_Angle) { //Function takes as parameter angle in degrees to rotate
-  PID turretPID = PID(0.5, 0, 0);
-  //Uncomment for debugging/testing:
-  //const double maxSpeed = 80.0;
-  // const double tolerance = 0.5;
 
-  double currentAngle = turretEncoder.get_angle() / 100.0; //Angle that will be updates as the motor moves
-  double current_current = turretEncoder.get_angle() / 100.0; //Current angle before we start rotating motor
-  double targetAngle = current_current + given_Angle; // Calculate target angle only once.
-  //Uncomment for debugging/testing:
-  // bool reachedTarget = false;
-
+/**
+ * \brief Rotates the turret a given angle, starting from wherever it currently is. (Relative Rotation)
+ * 
+ * \param givenAngle Angle in degrees we wish to rotate turret.
+ *
+ * \details turretEncoder.get_angle() is divided by 100 for scaling purposes.
+ */
+inline void turretRotationRelative(double givenAngle) { 
+  PID turretPID = PID(0.5, 0, 0); 
+  double currentAngle = turretEncoder.get_angle() / 100.0; 
+  double initialAngle = turretEncoder.get_angle() / 100.0; 
+  double targetAngle = initialAngle + givenAngle; 
   while (true) {
     currentAngle = turretEncoder.get_angle() / 100.0;
-    //Uncomment for debugging/testing:
-    // double error = targetAngle - currentAngle;
-    //Uncomment for debugging/testing:
-    // if (fabs(error) <= tolerance) {
-    //   reachedTarget = true;
-    //   break;
-    // }
-
-    double output = turretPID.Output(targetAngle, currentAngle); //Use PID to calculate appropiate speed
-    //Uncomment for debugging/testing:
-    // if (output > maxSpeed) output = maxSpeed;
-    // if (output < -maxSpeed) output = -maxSpeed;
-    // pros::lcd::print(1, "Angle: %.2f", currentAngle);
-    // pros::lcd::print(2, "Error: %.2f", error);
-    // pros::lcd::print(3, "Output: %.2f", output);
-    turret.moveVelocity(output); //Move the motor with the speed calulated by PID
+    double output = turretPID.Output(targetAngle, currentAngle); 
+    turret.moveVelocity(output); 
     pros::delay(10);
   }
-
   turret.moveVelocity(0);
-  //Uncomment for debugging/testing:
-  // if (reachedTarget) {
-  //   pros::lcd::print(4, "Rotation complete.");
-  // }
 }
+
 
 /**
  * \brief Resets odometry and gyro for error accumulation cleanse
