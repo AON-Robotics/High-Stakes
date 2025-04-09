@@ -13,8 +13,9 @@
 #define BLUE 2
 
 // NOT using 15 inch robot = Using 18 inch robot
-#define USING_15_INCH_ROBOT false
-#define COLOR BLUE
+#define USING_15_INCH_ROBOT true
+#define TESTING_AUTONOMOUS false
+#define COLOR RED
 
 #if USING_15_INCH_ROBOT
 
@@ -50,7 +51,7 @@
 #define GPS_INITIAL_Y -0.82
 #define GPS_INITIAL_HEADING 296.86 // Degrees
 
-
+#define MAX_SPEED DRIVE_WHEEL_DIAMETER * M_PI * (int)driveFull.getGearing() / 60
 #define INTAKE_VELOCITY (int)intake.getGearing()
 
 #else

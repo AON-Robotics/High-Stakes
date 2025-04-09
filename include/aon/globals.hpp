@@ -12,6 +12,10 @@
 okapi::MotorGroup driveLeft = okapi::MotorGroup({12, -18, 19});
 okapi::MotorGroup driveRight = okapi::MotorGroup({-3, 16, -17});
 okapi::MotorGroup driveFull = okapi::MotorGroup({12, -18, 19, -3, 16, -17});
+// okapi::MotorGroup driveLeft = okapi::MotorGroup({18});
+// okapi::MotorGroup driveRight = okapi::MotorGroup({-16});
+// okapi::MotorGroup driveFull = okapi::MotorGroup({-18, 16});
+
 
 
 okapi::MotorGroup intake = okapi::MotorGroup({-13, -14});
@@ -22,14 +26,17 @@ okapi::Motor arm = okapi::Motor(10);
 
 okapi::Motor indexer = okapi::Motor(7);
 
-pros::Vision vision_sensor(5);
-pros::vision_signature_s_t RED_SIG = pros::Vision::signature_from_utility(1, 8973, 11143, 10058, -2119, -1053, -1586, 5.4, 0);
-pros::vision_signature_s_t BLUE_SIG = pros::Vision::signature_from_utility(2, -3050, -2000, -2500, 8000, 11000, 9500, 5.4, 0);
-
 //odometry
 pros::Rotation encoderLeft(20, true);
 pros::Rotation encoderRight(-8, true);
 pros::Rotation encoderBack(11, false);
+
+// Turret
+okapi::Motor turret = okapi::Motor({20});
+pros::Rotation turretEncoder(13, false);
+pros::Vision vision_sensor(5); //14 in turret bot
+pros::vision_signature_s_t RED_SIG = pros::Vision::signature_from_utility(1, 8973, 11143, 10058, -2119, -1053, -1586, 5.4, 0);
+pros::vision_signature_s_t BLUE_SIG = pros::Vision::signature_from_utility(2, -3050, -2000, -2500, 8000, 11000, 9500, 5.4, 0);
 
 pros::Gps gps(6, GPS_INITIAL_X, GPS_INITIAL_Y, GPS_INITIAL_HEADING, GPS_X_OFFSET, GPS_Y_OFFSET);
 // pros::Gps gps(6, GPS_INITIAL_X, GPS_INITIAL_Y, GPS_INITIAL_HEADING);
@@ -172,6 +179,11 @@ inline void ConfigureMotors() {
   indexer.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
   indexer.tarePosition();
 
+  turret.setBrakeMode(okapi::AbstractMotor::brakeMode::brake);
+  turret.setGearing(okapi::AbstractMotor::gearset::green);
+  turret.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
+  turret.tarePosition();
+
 #else
   // Configure motors for 18 inch robot
   driveLeft.setBrakeMode(okapi::AbstractMotor::brakeMode::coast);
@@ -218,11 +230,23 @@ inline void ConfigureColors(){
 }
 
 /**
+ * \brief Stops movement from robot
+ */
+void STOP(){
+  driveFull.moveVelocity(0);
+  intake.moveVelocity(0);
+  arm.moveVelocity(0);
+  indexer.moveVelocity(0);
+  turret.moveVelocity(0);
+}
+
+/**
  * \brief Used to make sure a condition is being met or a line of code is being run
 */
 void testEndpoint(int speed = 100){
+  STOP();
   intake.moveVelocity(speed);
-  pros::delay(3000);
+  pros::delay(1000);
   intake.moveVelocity(0);
 }
 
