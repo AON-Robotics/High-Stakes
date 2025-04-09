@@ -93,9 +93,8 @@ int state = 0; // for railing
 pros::Imu gyroscope(5);
 #endif
 
-pros::Rotation encoderLeft(-30, false);
+pros::Rotation encoderLeft(20, true); 
 pros::Rotation encoderRight(11, true);
-pros::Rotation encoderBack(8, true);
 
 okapi::MotorGroup intake = okapi::MotorGroup({13, -14});
 okapi::MotorGroup rail = okapi::MotorGroup({13});
