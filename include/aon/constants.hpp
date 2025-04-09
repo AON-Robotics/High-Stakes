@@ -54,10 +54,11 @@
 #define MAX_SPEED DRIVE_WHEEL_DIAMETER * M_PI * (int)driveFull.getGearing() / 60
 #define INTAKE_VELOCITY (int)intake.getGearing()
 
-#else
-
 #define DISTANCE_BETWEEN_ENCODERS 8.000
 #define HOW_MUCH_TO_THE_FRONT 5.375 
+
+#else
+
 
 #define SENSITIVITY_DECREASE 30 // 20 works good, currently undergoing testing
 #define DRIVE_WHEEL_DIAMETER 3.25
