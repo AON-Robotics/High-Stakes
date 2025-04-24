@@ -18,8 +18,10 @@
  * \par Requisites:
  *    1. Declare the following global constants in `constants.hpp`:
  *       - TRACKING_WHEEL_DIAMETER (measure this)
- *       - DISTANCE_BETWEEN_ENCODERS (measure this)
- *       - HOW_MUCH_TO_THE_FRONT (measure this)
+ *       - OFFSET_Y_ENCODER_MID (measure this)
+ *       - DISTANCE_BACK_TRACKING_WHEEL_CENTER (measure this)
+ *       - GYRO_CONFIDENCE (testing)    } should
+ *       - ENCODER_CONFIDENCE (testing) } sum 1
  *       - DEGREES_PER_REVOLUTION    (= 360)
  *       - INITIAL_ODOMETRY_X ( = 0)
  *       - INITIAL_ODOMETRY_Y ( = 0)
@@ -27,91 +29,95 @@
  *       - GYRO_ENABLED ( = true | = false)
  *    2. Have available the `vector.hpp` header file
  *    3. Have available pros and okapilib
- *    4. Have available the `globals.hpp` header file with `encoderLeft`,
- *    and `encoderRight` objects instantiated and `gyroscope` if
+ *    4. Have available the `globals.hpp` header file with `encoderMid`,
+ *    and `encoderBack` objects instantiated and `gyroscope` if
  *    the GYRO_ENABLED is true.
  *
  *  \par Instructions
  *    1. Call the `Initialize` function
  *    2. Call the `Update` function as frequently as possible to calculate the
  *    pose.
+ *    3. Coordinate gyro with encoder back. Make sure when turning left, they are
+ *       positive.
  * */
 
 namespace aon::odometry {
 
-    // ============================================================================
-    //   __   __        _      _    _
-    //   \ \ / /_ _ _ _(_)__ _| |__| |___ ___
-    //    \ V / _` | '_| / _` | '_ \ / -_|_-<
-    //     \_/\__,_|_| |_\__,_|_.__/_\___/__/
-    //
-    // ============================================================================
+  // ============================================================================
+  //   __   __        _      _    _
+  //   \ \ / /_ _ _ _(_)__ _| |__| |___ ___
+  //    \ V / _` | '_| / _` | '_ \ / -_|_-<
+  //     \_/\__,_|_| |_\__,_|_.__/_\___/__/
+  //
+  // ============================================================================
 
-    /**
-     * \struct STRUCT_encoder
-     *
-     * \brief Store encoder data from current and previous odometry
-     * iterations.
-     * */
-    struct STRUCT_encoder {
-      double current_value;     //> Current value in degrees
-      double previous_value;    //> Previous value in degrees
-      double delta;             //> previous_value - current_value
+  /**
+  * \struct STRUCT_encoder
+  *
+  * \brief Store encoder data from current and previous odometry
+  * iterations.
+  * */
+  struct STRUCT_encoder {
+    double currentValue;     //> Current value in degrees
+    double prevValue;    //> Previous value in degrees
+    double delta;             //> previous_value - current_value
 
-      //> All this 3 variables are in inches
-      double current_distance;  //> Distance that tracking wheel has traveled
-      double previous_distance; //> Previous distance that tracking wheel has traveled
-      double delta_distance;    //> previous_distance - current_distance
-    };
+    //> All this 3 variables are in inches
+    double currentDistance;  //> Distance that tracking wheel has traveled
+    double previousDistance; //> Previous distance that tracking wheel has traveled
+    double deltaDistance;    //> previous_distance - current_distance
+  };
 
-    /**
-     * \struct STRUCT_encoder
-     *
-     * \brief Store gyro data from current and previous odometry
-     * iterations.
-     * */
-    struct STRUCT_gyro {
-      double currentDegrees;
-      double prevDegrees;
+  /**
+   * \struct STRUCT_encoder
+   *
+   * \brief Store gyro data from current and previous odometry
+   * iterations.
+   * */
+  struct STRUCT_gyro {
+    double currentDegrees;
+    double prevDegrees;
 
-      double currentRadians;
+    double currentRadians;
       
-      double deltaRadians;
-      double deltaDegrees;
-    };
+    double deltaRadians;
+    double deltaDegrees;
+  };
     
-    //> Calculate delta angle each iteration using tracking wheel data
-    double deltaTheta;
-    //> Stores the change in position in local reference plane
-    Vector deltaDlocal;
-    //> Final calculated orientation in both \b radians and \b degrees
-    Angle orientation;
-    //> Final calculated position in \b inches
-    Vector position;
+  //> Calculate delta angle each iteration using tracking wheel data
+  double deltaTheta;
+  //> Stores the change in position in local reference plane
+  Vector deltaDlocal;
+  //> Final calculated orientation in both \b radians and \b degrees
+  Angle orientation;
+  //> Final calculated position in \b inches
+  Vector position;
+  //> Conversion factor
+  const double conversionFactor = M_PI * TRACKING_WHEEL_DIAMETER / DEGREES_PER_REVOLUTION;
     
-    //> Mutex for x position to prevent race condition when retrieving value
-    pros::Mutex x_mutex;
-    //> Mutex for y position to prevent race condition when retrieving value
-    pros::Mutex y_mutex;
-    //> Mutex for absolute position
-    pros::Mutex p_mutex;
-    //> Mutex for orientation to prevent race condition when retrieving value
-    pros::Mutex orientation_mutex;
+  //> Mutex for x position to prevent race condition when retrieving value
+  pros::Mutex x_mutex;
+  //> Mutex for y position to prevent race condition when retrieving value
+  pros::Mutex y_mutex;
+  //> Mutex for absolute position
+  pros::Mutex p_mutex;
+  //> Mutex for orientation to prevent race condition when retrieving value
+  pros::Mutex orientation_mutex;
     
-    //> Encoder left struct instance
-    STRUCT_encoder encoderLeft_data;
-    //> Encoder back struct instance
-    STRUCT_encoder encoderRight_data;
-    //> Gyro struct instance
-    STRUCT_gyro gyro_data;
+  //> Encoder left struct instance
+  STRUCT_encoder encoderMid_data;
+  //> Encoder back struct instance
+  STRUCT_encoder encoderBack_data;
+  //> Gyro struct instance
+  STRUCT_gyro gyro_data;
 
-    // ============================================================================
-//     ___     _   _                __       ___      _   _
-//    / __|___| |_| |_ ___ _ _ ___ / _|___  / __| ___| |_| |_ ___ _ _ ___
-//   | (_ / -_)  _|  _/ -_) '_(_-< > _|_ _| \__ \/ -_)  _|  _/ -_) '_(_-<
-//    \___\___|\__|\__\___|_| /__/ \_____|  |___/\___|\__|\__\___|_| /__/
-//
-// ============================================================================
+  // ============================================================================
+  //     ___     _   _                __       ___      _   _
+  //    / __|___| |_| |_ ___ _ _ ___ / _|___  / __| ___| |_| |_ ___ _ _ ___
+  //   | (_ / -_)  _|  _/ -_) '_(_-< > _|_ _| \__ \/ -_)  _|  _/ -_) '_(_-<
+  //    \___\___|\__|\__\___|_| /__/ \_____|  |___/\___|\__|\__\___|_| /__/
+  //
+  // ============================================================================
 
   /**
    * \brief Get current X position in \b inches
@@ -223,43 +229,41 @@ namespace aon::odometry {
  * \param theta Angular position in \b degrees
  */
 inline void ResetCurrent(const double x, const double y, const double theta) {
-    const double currentAngleLeft = encoderLeft.get_position() / 100.0;
-    const double currentAngleRight = encoderRight.get_position() / 100.0;
-    const double currentAngleGyro = gyroscope.get_heading();
-
-    const double conversionFactor = M_PI * TRACKING_WHEEL_DIAMETER / DEGREES_PER_REVOLUTION;
+  const double currentAngleMid = encoderMid.get_position() / 100.0;
+  const double currentAngleBack = encoderBack.get_position() / 100.0;
+  const double currentAngleGyro = gyroscope.get_heading();
   
-    // Reset encoder's struct variables
-    encoderLeft_data = {currentAngleLeft,                       // current position in degrees
-                         currentAngleLeft,                      // previuos position in degrees
-                         0,                                     // delta in degrees
-                         currentAngleLeft * conversionFactor,  // current position in inches 
-                         currentAngleLeft * conversionFactor,  // previuos position in inches
-                         0.0};                                  // delta in inches
+  // Reset encoder's struct variables
+  encoderMid_data = {currentAngleMid,                       // current position in degrees
+                       currentAngleMid,                      // previuos position in degrees
+                       0,                                     // delta in degrees
+                       currentAngleMid * conversionFactor,  // current position in inches 
+                       currentAngleMid * conversionFactor,  // previuos position in inches
+                       0.0};                                  // delta in inches
 
-    encoderRight_data = {currentAngleRight,                      // current position in degrees
-                         currentAngleRight,                      // previuos position in degrees
-                         0,                                      // delta in degrees
-                         currentAngleRight * conversionFactor,  // current position in inches 
-                         currentAngleRight * conversionFactor,  // previuos position in inches
-                         0.0};                                   // delta in inches
+  encoderBack_data = {currentAngleBack,                      // current position in degrees
+                       currentAngleBack,                      // previuos position in degrees
+                       0,                                      // delta in degrees
+                       currentAngleBack * conversionFactor,  // current position in inches 
+                       currentAngleBack * conversionFactor,  // previuos position in inches
+                       0.0};                                   // delta in inches
 
-    gyro_data = {currentAngleGyro,                               // current value degrees
-                 currentAngleGyro,                               // prevuios value degrees
-                 currentAngleGyro * (M_PI / 180.0),              // current radians
-                 0.0,                                            // delta degrees
-                 0.0};                                           // delta radians
+  gyro_data = {currentAngleGyro,                               // current value degrees
+               currentAngleGyro,                               // prevuios value degrees
+               currentAngleGyro * (M_PI / 180.0),              // current radians
+               0.0,                                            // delta degrees
+               0.0};                                           // delta radians
     
-    // Preset odometry values
-    deltaTheta = 0.0;
-    deltaDlocal.SetPosition(0.0, 0.0);
+  // Preset odometry values
+  deltaTheta = 0.0;
+  deltaDlocal.SetPosition(0.0, 0.0);
   
-    SetDegrees(theta);
-    SetPosition(x, y);
-    #if GYRO_ENABLED
-    gyroscope.tare();
-    pros::delay(3000);
-    #endif
+  SetDegrees(theta);
+  SetPosition(x, y);
+  #if GYRO_ENABLED
+  gyroscope.tare();
+  pros::delay(3000);
+  #endif
 }
 
 //> Resets the Odometry values with `INITIAL_ODOMETRY_X`,Y and T constants.
@@ -271,15 +275,15 @@ inline void ResetInitial() {
  * \brief Initialization function to put everything to 0
  */
 inline void Initialize() {
-    encoderLeft.set_position(0);
-    encoderRight.set_position(0);
+  encoderMid.set_position(0);
+  encoderBack.set_position(0);
     
-    encoderLeft.reset();
-    encoderRight.reset();
+  encoderMid.reset();
+  encoderBack.reset();
 
-    // Set initial position with gps
-    // INITIAL_ODOMETRY_X = gps.get_x_position();
-    // INITIAL_ODOMETRY_Y = gps.get_y_position();
+  // Set initial position with gps
+  // INITIAL_ODOMETRY_X = gps.get_x_position();
+  // INITIAL_ODOMETRY_Y = gps.get_y_position();
     
     ResetInitial();
 }
@@ -287,56 +291,59 @@ inline void Initialize() {
 /**
  * \brief Fundamental function for Odometry.
  *
- * \details Uses changes in encoder (left and rigth) and gyro to calculate position
+ * \details Uses changes in encoder (middle and back) and gyro to calculate position
  * 
  * */
 
- inline void Update() {
-  const double conversionFactor = M_PI * TRACKING_WHEEL_DIAMETER / DEGREES_PER_REVOLUTION;
-
+inline void Update() {
   // Read encoder values, divided by 100 to convert centidegrees to degrees
-  encoderLeft_data.current_value = encoderLeft.get_position() / 100.0; 
-  encoderRight_data.current_value = -encoderRight.get_position() / 100.0; // weird things happen if change port to negative
+  encoderMid_data.currentValue = encoderMid.get_position() / 100.0; 
+  encoderBack_data.currentValue = -encoderBack.get_position() / 100.0; 
 
   // Convert to distances
-  encoderLeft_data.current_distance = encoderLeft_data.current_value * conversionFactor;
-  encoderRight_data.current_distance = encoderRight_data.current_value * conversionFactor;
+  encoderMid_data.currentDistance = encoderMid_data.currentValue * conversionFactor;
+  encoderBack_data.currentDistance = encoderBack_data.currentValue * conversionFactor;
+  
+  // Calculate deltas
+  encoderMid_data.delta = encoderMid_data.currentValue - encoderMid_data.prevValue;
+  encoderBack_data.delta = encoderBack_data.currentValue - encoderBack_data.prevValue;
+  
+  encoderMid_data.deltaDistance = encoderMid_data.currentDistance - encoderMid_data.previousDistance;
+  encoderBack_data.deltaDistance = encoderBack_data.currentDistance - encoderBack_data.previousDistance;
 
+  // Calculate delta theta if we dont have gyro
+  double deltaThetaE = encoderBack_data.deltaDistance / DISTANCE_BACK_TRACKING_WHEEL_CENTER;
+  
+  // If we have gyro, get value and calculate delta
+  #if GYRO_ENABLED 
   // Read gyro value
   gyro_data.currentDegrees = gyroscope.get_heading();
   gyro_data.currentRadians = gyro_data.currentDegrees * (M_PI / 180);
-
-  // Calculate deltas
-  encoderLeft_data.delta = encoderLeft_data.current_value - encoderLeft_data.previous_value;
-  encoderRight_data.delta = encoderRight_data.current_value - encoderRight_data.previous_value;
   
-  encoderLeft_data.delta_distance = encoderLeft_data.current_distance - encoderLeft_data.previous_distance;
-  encoderRight_data.delta_distance = encoderRight_data.current_distance - encoderRight_data.previous_distance;
-
+  // Calculate delta
   gyro_data.deltaDegrees = gyro_data.currentDegrees - gyro_data.prevDegrees;
+  
+  // Save current data for future calculations
+  gyro_data.prevDegrees = gyro_data.currentDegrees;
+  
+  // Normalize angle, put it between -180 and 180 (just for first interations)
+  if (gyro_data.deltaDegrees > 180) gyro_data.deltaDegrees -= 360; 
+  else if (gyro_data.deltaDegrees < -180) gyro_data.deltaDegrees += 360; 
+  
   gyro_data.deltaRadians = gyro_data.deltaDegrees * (M_PI / 180.0);
   
-  // Calculate heading change using encoder angles to estimate angle better (test it later)
-  double deltaA = (encoderRight_data.delta - encoderLeft_data.delta) / (DISTANCE_BETWEEN_ENCODERS + (2 * HOW_MUCH_TO_THE_FRONT / DISTANCE_BETWEEN_ENCODERS));
-
-  // Combine gyro and encoder heading (change this later with Kalman filter, giving more priority to gyro or something), test this later
-  // deltaTheta = (gyro_data.deltaRadians + deltaA) / 2.0;
-  deltaTheta = gyro_data.deltaRadians;
+  // Right now, confidence gyro 0.8, encoder cnfidence 0.2 (must sum 1) 
+  deltaTheta = ENCODER_CONFIDENCE * deltaThetaE + GYRO_CONFIDENCE * gyro_data.deltaRadians;
+  #endif
   
   // If we are rotating
-  if (deltaTheta > 0.1) {
-    // Calculate the radius of rotation for each wheel
-    double radiusRight = encoderRight_data.delta_distance / deltaTheta + DISTANCE_RIGHT_TRACKING_WHEEL_CENTER;
-    double radiusLeft = encoderLeft_data.delta_distance / deltaTheta + DISTANCE_LEFT_TRACKING_WHEEL_CENTER;
-    
-    // Calculate deltaX and deltaY during turning (robot moves in circular arcs)
-    deltaDlocal.SetY(2.0 * std::sin(deltaTheta / 2.0) * radiusRight);
-    deltaDlocal.SetX(2.0 * std::sin(deltaTheta / 2.0) * radiusLeft);
+  if (std::abs(deltaTheta) > 0.01) {
+    // Probrably using turn function, working on arc movement
+    deltaDlocal.SetPosition(0, 0);
   }
   else {
     // If the robot is moving straight forward or backward, average encoder values for distance
-    double deltaD = (encoderLeft_data.delta_distance + encoderRight_data.delta_distance) / 2.0;
-    deltaDlocal.SetPosition(deltaD, 0);
+    deltaDlocal.SetPosition(0, encoderMid_data.deltaDistance);
   }
   
   // Updating angle
@@ -347,12 +354,12 @@ inline void Initialize() {
               GetY() + deltaDlocal.GetX() * std::sin(GetRadians()) + deltaDlocal.GetY() * std::cos(GetRadians()));  
 
   // Save current values as previous for future updates
-  encoderLeft_data.previous_value = encoderLeft_data.current_value;
-  encoderRight_data.previous_value = encoderRight_data.current_value;
-  encoderLeft_data.previous_distance = encoderLeft_data.current_distance;
-  encoderRight_data.previous_distance = encoderRight_data.current_distance;
+  encoderMid_data.prevValue = encoderMid_data.currentValue;
+  encoderBack_data.prevValue = encoderBack_data.currentValue;
 
-  gyro_data.prevDegrees = gyro_data.currentDegrees;
+  encoderMid_data.previousDistance = encoderMid_data.currentDistance;
+  encoderBack_data.previousDistance = encoderBack_data.currentDistance;
+
 }
 
 // ============================================================================
@@ -374,20 +381,17 @@ inline void Initialize() {
  * */
 inline void Debug() {
   while (true) {
-    pros::lcd::print(0, "X: %0.3f", GetX());
-    pros::lcd::print(1, "Y: %0.3f", GetY());
-    pros::lcd::print(2, "T: %0.3f", GetDegrees());
+    // pros::lcd::print(0, "X: %0.3f", GetX());
+    // pros::lcd::print(1, "Y: %0.3f", GetY());
+    pros::lcd::print(1, "T: %0.3f", GetDegrees());
 
-    // pros::lcd::print(5, "Enc R: %.2f degrees",
-    //                  encoderFront.get_position() / 100.0);
-    // pros::lcd::print(6, "Enc B: %.2f degrees",
-    //                  encoderBack.get_position() / 100.0);
 
-    // For update 3
-    pros::lcd::print(5, "Enc R: %.2f degrees",
-                     encoderLeft.get_position() / 100.0);
-    pros::lcd::print(6, "Enc B: %.2f degrees",
-                     encoderRight.get_position() / 100.0);
+    pros::lcd::print(2, "Gyro: %.2f degrees",
+                     gyro_data.currentDegrees);
+    // pros::lcd::print(3, "Back Degrees: %.2f degrees",
+    //                  backTracker * (180/M_PI));
+    pros::lcd::print(4, "Encoder Mid: %.2f inches",
+                     (encoderMid.get_position() / 100.0) * conversionFactor);
 
     odometry::Update();
     pros::delay(10);

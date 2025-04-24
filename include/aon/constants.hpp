@@ -24,10 +24,14 @@
 #define TRACKING_WHEEL_DIAMETER 1.959
 #define DISTANCE_LEFT_TRACKING_WHEEL_CENTER 5.650
 #define DISTANCE_RIGHT_TRACKING_WHEEL_CENTER 5.650
-#define DISTANCE_BACK_TRACKING_WHEEL_CENTER 5.650
+#define DISTANCE_BACK_TRACKING_WHEEL_CENTER 5.500 // CHANGE THIS 
 #define GYRO_ENABLED true
-#define GYRO_CONFIDENCE 1.0
+#define GYRO_CONFIDENCE 0.9
 #define GYRO_FILTER_LENGTH 1
+#define ENCODER_CONFIDENCE 0.1
+
+// Testing
+#define OFFSET_X_ENCODER_MID 3.250
 
 #define DRIVE_WIDTH 12.478 //distance between front wheels
 #define DRIVE_LENGTH 10 //distance from back wheel to front wheel
@@ -54,8 +58,6 @@
 #define MAX_SPEED DRIVE_WHEEL_DIAMETER * M_PI * (int)driveFull.getGearing() / 60
 #define INTAKE_VELOCITY (int)intake.getGearing()
 
-#define DISTANCE_BETWEEN_ENCODERS 8.000
-#define HOW_MUCH_TO_THE_FRONT 5.375 
 
 #else
 
