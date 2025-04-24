@@ -73,48 +73,6 @@ void moveIndexer(bool extend);
 void enableGate();
 
 
-
-/**
- * \brief Rotates the turret a given angle, starting from 0 degrees until desired degrees. (Absolute Rotation)
- * 
- * \param targetAngle Angle in degrees we wish to rotate turret.
- *
- * \details turretEncoder.get_angle() is divided by 100 for scaling purposes.
- */
-inline void turretRotationAbsolute(double targetAngle) { 
-  PID turretPID = PID(0.5, 0, 0); 
-  while (true) {
-    double currentAngle = turretEncoder.get_angle()/100.0; 
-    double output = turretPID.Output(targetAngle, currentAngle); 
-    turret.moveVelocity(output); 
-    pros::delay(10);
-  }
-  turret.moveVelocity(0);
-}
-
-
-/**
- * \brief Rotates the turret a given angle, starting from wherever it currently is. (Relative Rotation)
- * 
- * \param givenAngle Angle in degrees we wish to rotate turret.
- *
- * \details turretEncoder.get_angle() is divided by 100 for scaling purposes.
- */
-inline void turretRotationRelative(double givenAngle) { 
-  PID turretPID = PID(0.5, 0, 0); 
-  double currentAngle = turretEncoder.get_angle() / 100.0; 
-  double initialAngle = turretEncoder.get_angle() / 100.0; 
-  double targetAngle = initialAngle + givenAngle; 
-  while (true) {
-    currentAngle = turretEncoder.get_angle() / 100.0;
-    double output = turretPID.Output(targetAngle, currentAngle); 
-    turret.moveVelocity(output); 
-    pros::delay(10);
-  }
-  turret.moveVelocity(0);
-}
-
-
 /**
  * \brief Resets odometry and gyro for error accumulation cleanse
  *
@@ -818,6 +776,46 @@ void alignRobotToDisk(){
   }
   driveLeft.moveVelocity(0);
   driveRight.moveVelocity(0);
+}
+
+/**
+ * \brief Rotates the turret a given angle, starting from 0 degrees until desired degrees. (Absolute Rotation)
+ * 
+ * \param targetAngle Angle in degrees we wish to rotate turret.
+ *
+ * \details turretEncoder.get_angle() is divided by 100 for scaling purposes.
+ */
+inline void turretRotationAbsolute(double targetAngle) { 
+  PID turretPID = PID(0.5, 0, 0); 
+  while (true) {
+    double currentAngle = turretEncoder.get_angle()/100.0; 
+    double output = turretPID.Output(targetAngle, currentAngle); 
+    turret.moveVelocity(output); 
+    pros::delay(10);
+  }
+  turret.moveVelocity(0);
+}
+
+
+/**
+ * \brief Rotates the turret a given angle, starting from wherever it currently is. (Relative Rotation)
+ * 
+ * \param givenAngle Angle in degrees we wish to rotate turret.
+ *
+ * \details turretEncoder.get_angle() is divided by 100 for scaling purposes.
+ */
+inline void turretRotationRelative(double givenAngle) { 
+  PID turretPID = PID(0.5, 0, 0); 
+  double currentAngle = turretEncoder.get_angle() / 100.0; 
+  double initialAngle = turretEncoder.get_angle() / 100.0; 
+  double targetAngle = initialAngle + givenAngle; 
+  while (true) {
+    currentAngle = turretEncoder.get_angle() / 100.0;
+    double output = turretPID.Output(targetAngle, currentAngle); 
+    turret.moveVelocity(output); 
+    pros::delay(10);
+  }
+  turret.moveVelocity(0);
 }
 
 // ============================================================================
