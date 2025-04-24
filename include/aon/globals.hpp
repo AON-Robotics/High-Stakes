@@ -9,9 +9,9 @@
 
 #if USING_15_INCH_ROBOT
 // Motor groups for drivetrain
-okapi::MotorGroup driveLeft = okapi::MotorGroup({12, -18, 19});
-okapi::MotorGroup driveRight = okapi::MotorGroup({-3, 16, -17});
-okapi::MotorGroup driveFull = okapi::MotorGroup({12, -18, 19, -3, 16, -17});
+okapi::MotorGroup driveLeft = okapi::MotorGroup({-1});
+okapi::MotorGroup driveRight = okapi::MotorGroup({16});
+okapi::MotorGroup driveFull = okapi::MotorGroup({16, -1});
 // okapi::MotorGroup driveLeft = okapi::MotorGroup({18});
 // okapi::MotorGroup driveRight = okapi::MotorGroup({-16});
 // okapi::MotorGroup driveFull = okapi::MotorGroup({-18, 16});
@@ -27,8 +27,7 @@ okapi::Motor arm = okapi::Motor(10);
 okapi::Motor indexer = okapi::Motor(7);
 
 //odometry
-pros::Rotation encoderLeft(20, true);
-pros::Rotation encoderRight(-8, true);
+pros::Rotation encoderMid(12, true);
 pros::Rotation encoderBack(11, false);
 
 // Turret
@@ -63,7 +62,7 @@ bool conveyor_auto = true;
 int state = 0; // for railing
 
 #if GYRO_ENABLED
-pros::Imu gyroscope(11);
+pros::Imu gyroscope(15);
 #endif
 
 #else
@@ -100,9 +99,8 @@ int state = 0; // for railing
 pros::Imu gyroscope(5);
 #endif
 
-pros::Rotation encoderLeft(-30, false);
+pros::Rotation encoderLeft(20, true); 
 pros::Rotation encoderRight(11, true);
-pros::Rotation encoderBack(8, true);
 
 okapi::MotorGroup intake = okapi::MotorGroup({13, -14});
 okapi::MotorGroup rail = okapi::MotorGroup({13});
