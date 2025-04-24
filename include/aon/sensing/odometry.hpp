@@ -9,7 +9,7 @@
 #endif
 #include "../tools/vector.hpp"
 #include "../globals.hpp"
-
+ 
 /**
  * \namespace aon::odometry
  *

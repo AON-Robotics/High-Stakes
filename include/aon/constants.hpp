@@ -29,7 +29,7 @@
 #define GYRO_CONFIDENCE 0.9
 #define GYRO_FILTER_LENGTH 1
 #define ENCODER_CONFIDENCE 0.1
-
+ 
 // Testing
 #define OFFSET_X_ENCODER_MID 3.250
 
