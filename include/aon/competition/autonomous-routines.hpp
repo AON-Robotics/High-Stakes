@@ -44,7 +44,7 @@ double initial_heading;
 
 /**
  * \brief Returns position of the robot in the field
- * 
+ *
  * \returns The GPS coordinates as a `Vector`
  */
 Vector POSITION(){
@@ -72,15 +72,58 @@ void dropGoal();
 void moveIndexer(bool extend);
 void enableGate();
 
+
+
+/**
+ * \brief Rotates the turret a given angle, starting from 0 degrees until desired degrees. (Absolute Rotation)
+ * 
+ * \param targetAngle Angle in degrees we wish to rotate turret.
+ *
+ * \details turretEncoder.get_angle() is divided by 100 for scaling purposes.
+ */
+inline void turretRotationAbsolute(double targetAngle) { 
+  PID turretPID = PID(0.5, 0, 0); 
+  while (true) {
+    double currentAngle = turretEncoder.get_angle()/100.0; 
+    double output = turretPID.Output(targetAngle, currentAngle); 
+    turret.moveVelocity(output); 
+    pros::delay(10);
+  }
+  turret.moveVelocity(0);
+}
+
+
+/**
+ * \brief Rotates the turret a given angle, starting from wherever it currently is. (Relative Rotation)
+ * 
+ * \param givenAngle Angle in degrees we wish to rotate turret.
+ *
+ * \details turretEncoder.get_angle() is divided by 100 for scaling purposes.
+ */
+inline void turretRotationRelative(double givenAngle) { 
+  PID turretPID = PID(0.5, 0, 0); 
+  double currentAngle = turretEncoder.get_angle() / 100.0; 
+  double initialAngle = turretEncoder.get_angle() / 100.0; 
+  double targetAngle = initialAngle + givenAngle; 
+  while (true) {
+    currentAngle = turretEncoder.get_angle() / 100.0;
+    double output = turretPID.Output(targetAngle, currentAngle); 
+    turret.moveVelocity(output); 
+    pros::delay(10);
+  }
+  turret.moveVelocity(0);
+}
+
+
 /**
  * \brief Resets odometry and gyro for error accumulation cleanse
- * 
+ *
  * \warning This function takes three (3) \b seconds to complete
  */
 int initialReset(bool gyro = true)
 {
   odometry::ResetInitial();
-  
+ 
   // 3 seconds
   // gyroscope.reset(gyro);
   return 1;
@@ -88,19 +131,19 @@ int initialReset(bool gyro = true)
 
 // ============================================================================
 //    ___   _   _    ___ _   _ _      _ _____ ___ ___  _  _ ___  
-//   / __| /_\ | |  / __| | | | |    /_\_   _|_ _/ _ \| \| / __| 
-//  | (__ / _ \| |_| (__| |_| | |__ / _ \| |  | | (_) | .` \__ \ 
-//   \___/_/ \_\____\___|\___/|____/_/ \_\_| |___\___/|_|\_|___/ 
+//   / __| /_\ | |  / __| | | | |    /_\_   _|_ _/ _ \| \| / __|
+//  | (__ / _ \| |_| (__| |_| | |__ / _ \| |  | | (_) | .` \__ \
+//   \___/_/ \_\____\___|\___/|____/_/ \_\_| |___\___/|_|\_|___/
 //
 // ============================================================================
 
 /**
  * \brief Determines the speed of the robot given drivetrain motors' RPM
- * 
+ *
  * \param RPM The RPM for which to calculate the velocity (default current RPM)
- * 
+ *
  * \returns The speed in \b in/s at which the robot would move at the given RPM
- * 
+ *
  * \note Test the accuracy precision of the `getActualVelocity()` method,
  * \note it may be possible to need to use `get_velocity()` from `encoder` which uses \b centidegrees.
  * \note The distance units depend on the units used for measuring `DRIVE_WHEEL_DIAMETER`
@@ -114,7 +157,7 @@ inline double getSpeed(const double &RPM = (int)driveFull.getActualVelocity()){
 
 /**
  * \brief Calculates time for the robot to reach a given distance
- * 
+ *
  * \param distance Distance from the robot to the target (remains constant) in \b inches
  * \returns The approximate time necessary to reach the target (overestimation) in \b seconds
  */
@@ -129,13 +172,13 @@ inline double getTimeToTargetFast(const double &distance){
 
 /**
  * \brief Calculates time for the robot to turn an angle
- * 
+ *
  * \param radians Angle remaining from the robot's current angle to the target (remains constant) in \b radians
- * 
+ *
  * \details The arc length formula is used as s = theta * radius (theta in radians)
- * 
+ *
  * \returns The approximate time necessary to reach the target (overestimation) in \b seconds
- * 
+ *
  */
 inline double getTimetoTurnRad(const double &radians){
   double arcLength = radians * AVG_DRIVETRAIN_RADIUS; // Of the turn (inches)
@@ -149,23 +192,23 @@ inline double getTimetoTurnRad(const double &radians){
 
 /**
  * \brief Calculates time for the robot to turn an angle
- * 
+ *
  * \param degrees Angle remaining from the robot's current angle to the target (remains constant) in \b degrees
- * 
+ *
  * \returns The approximate time necessary to reach the target (overestimation) in \b seconds
- * 
+ *
  */
 inline double getTimetoTurnDeg(const double &degrees) { return getTimetoTurnRad(degrees * M_PI / 180); }
 
 /**
  * \brief Gets an average of the GPS position
- * 
+ *
  * \returns A Vector representing the position of the robot
  */
 inline Vector getGPSPos(){
   double avg_x = 0;
   double avg_y = 0;
-  
+ 
   // Get the average of the readings from the GPS
   for (int i = 0; i < GPS_SAMPLE_SIZE; i++)
   {
@@ -174,19 +217,19 @@ inline Vector getGPSPos(){
   }
 
   avg_x /= GPS_SAMPLE_SIZE; avg_y /= GPS_SAMPLE_SIZE;
-  
+ 
   return Vector().SetPosition(avg_x, avg_y);
 }
 
 /**
- * \brief Determines the angle needed to turn 
- * 
+ * \brief Determines the angle needed to turn
+ *
  * \param target The point towards which we want to face
- * 
+ *
  * \returns The angle needed to turn in order to face the target
- * 
+ *
  * \warning The units must be meters because a mandatory conversion happens (this can be modified)
- * 
+ *
  * \todo Complete calculations
  */
 inline double getAngleToTurn(Vector target){
@@ -194,7 +237,7 @@ inline double getAngleToTurn(Vector target){
   target.SetY(metersToInches(target.GetY()));
 
   double heading = gps.get_heading();
-  
+ 
   // Vector current = getGPSPos();
   Vector current = odometry::GetPosition(); // If this one is used the INITIAL_ODOMETRY_{COMPONENT} variables must be set and no reset can be done
 
@@ -210,34 +253,34 @@ inline double getAngleToTurn(Vector target){
 
 /**
  * \brief Conversion from \b meters to \b inches
- * 
+ *
  * \param meters The \b meters to be converted
- * 
+ *
  * \returns The distance in \b inches
  */
 inline double metersToInches(double meters) { return meters * 39.3701; }
 
 /**
  * \brief Gets the distance between two points in the field
- * 
+ *
  * \param target The target location
  * \param current The current location
- * 
+ *
  * \returns The distance between the two points
  */
 double findDistance(Vector target, Vector current){
-  double Dist_meters= (target - current).GetMagnitude(); 
-  return metersToInches(Dist_meters); 
+  double Dist_meters= (target - current).GetMagnitude();
+  return metersToInches(Dist_meters);
 }
 
 /**
  * \brief Determines the angle needed to be turned in order to face a specific point in the field
- * 
+ *
  * \param target The point we wish to face
  * \param current Where the robot is now
- * 
+ *
  * \returns The angle the robot needs to turn in order to face the target location
- * 
+ *
  * \note The result must be passed into functions such as turn() and MoveTurnPID() as negative because of their convention
  * \todo Test thoroughly
 */
@@ -278,7 +321,7 @@ double getError(double expected, double actual) {
 }
 
 // ============================================================================
-//   __  __  _____   _____ __  __ ___ _  _ _____ 
+//   __  __  _____   _____ __  __ ___ _  _ _____
 //  |  \/  |/ _ \ \ / / __|  \/  | __| \| |_   _|
 //  | |\/| | (_) \ V /| _|| |\/| | _|| .` | | |  
 //  |_|  |_|\___/ \_/ |___|_|  |_|___|_|\_| |_|  
@@ -288,7 +331,7 @@ double getError(double expected, double actual) {
 
 /**
  * \brief Moves the robot a given distance (default forward)
- * 
+ *
  * \param pid The PID used for the driving
  * \param dist The distance to be moved in \b inches
  */
@@ -328,7 +371,7 @@ void MoveDrivePID(PID pid = drivePID, double dist = TILE_WIDTH, const double MAX
 
 /**
  * \brief Turns the robot by a given angle (default clockwise)
- * 
+ *
  * \param pid The PID to be used for the turn
  * \param angle The angle to make the robot turn in \b degrees
  */
@@ -373,7 +416,7 @@ void MoveTurnPID(PID pid = turnPID, double angle = 90, const double MAX_REVS = 5
 
 /**
  * \brief Turns the robot towards a specific direction
- * 
+ *
  * \param x The x component of the point we wish to face
  * \param y The y component of the point we wish to face
 */
@@ -388,7 +431,7 @@ void turnToTarget(double x, double y){
 
 /**
  * \brief Goes to the target point
- * 
+ *
  * \param x The x component of the place where we want to go using the gps coordinate system (x, y) both needto be in the range (-1.8, 1.8)
  * \param y The y component of the place where we want to go using the gps coordinate system (x, y) both needto be in the range (-1.8, 1.8)
  *  
@@ -455,7 +498,7 @@ void motionProfile(const double dist = TILE_WIDTH){
 }
 
 // ============================================================================
-//   ___ ___ __  __ ___ _    ___   __  __  _____   _____ __  __ ___ _  _ _____ 
+//   ___ ___ __  __ ___ _    ___   __  __  _____   _____ __  __ ___ _  _ _____
 //  / __|_ _|  \/  | _ \ |  | __| |  \/  |/ _ \ \ / / __|  \/  | __| \| |_   _|
 //  \__ \| || |\/| |  _/ |__| _|  | |\/| | (_) \ V /| _|| |\/| | _|| .` | | |  
 //  |___/___|_|  |_|_| |____|___| |_|  |_|\___/ \_/ |___|_|  |_|___|_|\_| |_|  
@@ -465,11 +508,11 @@ void motionProfile(const double dist = TILE_WIDTH){
 
 /**
  * \brief Moves the robot straight accross a given amount of tiles
- * 
+ *
  * \param amt The amount of tiles to be driven
- * 
+ *
  * \attention To move in reverse make the amount negative
- * 
+ *
  * \warning Robot should be aligned properly to achieve desired result
  */
 void moveTilesStraight(int amt = 1) {
@@ -478,11 +521,11 @@ void moveTilesStraight(int amt = 1) {
 
 /**
  * \brief Moves the robot straight accross a given amount of half-tiles
- * 
+ *
  * \param amt The amount of half-tiles to be driven
- * 
+ *
  * \attention To move in reverse make the amount negative
- * 
+ *
  * \warning Robot should be aligned properly to achieve desired result
  */
 void moveHalfTiles(int amt = 1) {
@@ -491,11 +534,11 @@ void moveHalfTiles(int amt = 1) {
 
 /**
  * \brief Moves the robot diagonally accross a given amount of tiles
- * 
+ *
  * \param amt The amount of tiles to be driven
- * 
+ *
  * \attention To move in reverse make the amount negative
- * 
+ *
  * \warning Robot should be aligned properly to achieve desired result
  */
 void moveTilesDiag(int amt = 1) {
@@ -504,11 +547,11 @@ void moveTilesDiag(int amt = 1) {
 
 /**
  * \brief Moves the robot diagonally accross a given amount of half-tiles
- * 
+ *
  * \param amt The amount of half-tiles to be driven
- * 
+ *
  * \attention To move in reverse make the amount negative
- * 
+ *
  * \warning Robot should be aligned properly to achieve desired result
  */
 void moveHalfDiagTiles(int amt = 1) {
@@ -517,9 +560,9 @@ void moveHalfDiagTiles(int amt = 1) {
 
 /**
  * \brief Turns the robot clockwise by 90
- * 
+ *
  * \param amt The amount of 90 degree turns to make
- * 
+ *
  * \attention To move in reverse make the amount negative
  */
 void turn90(int amt = 1){
@@ -528,7 +571,7 @@ void turn90(int amt = 1){
 
 /**
  * \brief Moves the robot a given distance
- * 
+ *
  * \param dist The distance to move in \b inches
  */
 int move(double dist = TILE_WIDTH)
@@ -542,9 +585,9 @@ int move(double dist = TILE_WIDTH)
 
 /**
  * \brief Turn the robot a given angle (default is clockwise)
- * 
+ *
  * \param angle The angle to turn in \b degrees
- * 
+ *
  * \details Clockwise is positive and counter-clockwise is negative
  */
 int turn(double angle = 90)
@@ -560,8 +603,8 @@ int turn(double angle = 90)
 
 
 // ============================================================================|
-//   ____        _       ____             _   _                 
-//  / ___| _   _| |__   |  _ \ ___  _   _| |_(_)_ __   ___  ___ 
+//   ____        _       ____             _   _                
+//  / ___| _   _| |__   |  _ \ ___  _   _| |_(_)_ __   ___  ___
 //  \___ \| | | | '_ \  | |_) / _ \| | | | __| | '_ \ / _ \/ __|
 //   ___) | |_| | |_) | |  _ < (_) | |_| | |_| | | | |  __/\__ \
 //  |____/ \__,_|_.__/  |_| \_\___/ \__,_|\__|_|_| |_|\___||___/
@@ -569,7 +612,7 @@ int turn(double angle = 90)
 
 /**
  * \brief This small subroutine moves the intake such that a ring is scored on the mobile goal being carried
- * 
+ *
  * \param delay The time in \b milliseconds to leave the intake running
 */
 void pickUpRing(int delay = 1000){
@@ -580,7 +623,7 @@ void pickUpRing(int delay = 1000){
 
 /**
  * \brief This small subroutine moves the rail such that a ring is scored on the mobile goal being carried
- * 
+ *
  * \param delay The time in \b milliseconds to leave the intake running
 */
 void scoreRing(int delay = 1500){
@@ -591,9 +634,9 @@ void scoreRing(int delay = 1500){
 
 /**
  * \brief This subroutine follows an object (in our case a ring) with a given color signature and picks it up
- * 
+ *
  * \param SIGNATURE The id number of the vision signature of the object to follow and pick up
- * 
+ *
  * \todo Add time constraint in case a ring is never found
 */
 void driveIntoRing(const int SIGNATURE){
@@ -647,11 +690,11 @@ void driveIntoRing(const int SIGNATURE){
 
 /**
  * \brief This small subroutine grabs a goal (stake)
- * 
+ *
  * \param delay The amount of time in \b milliseconds you will be moving back (500-600 is quick and works)
- * 
+ *
  * \warning You must already be very close to the goal and facing away (with the clamp towards it)
- * 
+ *
  * \details This routine uses timing but ideally there would be a way of knowing when we have the goal within our grasp
 */
 void grabGoal(int delay = 600){
@@ -666,22 +709,22 @@ void grabGoal(int delay = 600){
 
 /**
  * \brief Discards disk at beginning of match
- * 
+ *
  * \note This function is really meant for routines that will focus on enemy rings
  */
 void discardDisk(){
   intake.moveVelocity(-INTAKE_VELOCITY);
-  pros::delay(1000); 
+  pros::delay(1000);
   intake.moveVelocity(0);
 }
 
 /**
  * \brief This subroutine moves toward a mobile goal IN REVERSE
- * 
+ *
  * \param dist This is the absolute value of the distance the mobile goal is from the robot in \b inches
- * 
+ *
  * \details The function already converts the distance to negative so the robot drives into the goal backwards
- * 
+ *
 */
 void raceToGoal(double dist = 40){
   dist = abs(dist);
@@ -698,7 +741,7 @@ void dropGoal(){
 
 /**
  * \brief Extends or retracts indexer to later knock down rings
- * 
+ *
  * \param extend If true, indexer will extend, if false, it will retract
  */
 void moveIndexer(bool extend = true){
@@ -708,9 +751,9 @@ void moveIndexer(bool extend = true){
 }
 
 /**
- * 
+ *
  * \brief This small subroutine removes the top ring of a stack of two and scores the ring at top. use ONLY when the indexer is at the right side of stack.
- * 
+ *
 */
 void RemoveTop(){
   moveIndexer();
@@ -778,7 +821,7 @@ void alignRobotToDisk(){
 }
 
 // ============================================================================
-//   _____ ___ ___ _____ ___ 
+//   _____ ___ ___ _____ ___
 //  |_   _| __/ __|_   _/ __|
 //    | | | _|\__ \ | | \__ \
 //    |_| |___|___/ |_| |___/
@@ -831,10 +874,10 @@ void speedTest(double RPM = (double)driveFull.getGearing()){
 
 /**
  * \brief This routine is if WE ARE RED and want to grab RED RINGS
- * 
+ *
  * \note Designed for being in the third quadrant
  * \note Starting Position (-0.34, -0.82) \b m facing towards 296.86 \b deg
- * 
+ *
  * \author Kevin Gomez
 */
 int RedRingsRoutine(){
@@ -874,16 +917,16 @@ int RedRingsRoutine(){
   goToTarget(-1.8, -1.2);
   moveIndexer();
   turn90(-1);
-  
+ 
   return 1;
 }
 
 /**
  * \brief This routine is if WE ARE BLUE and want to grab BLUE RINGS
- * 
+ *
  * \note Designed for being in the first quadrant
  * \note Starting Position (0.34, 0.82) \b m facing towards 116.86 \b deg
- * 
+ *
  * \author Kevin Gomez
 */
 int BlueRingsRoutine(){
@@ -929,13 +972,13 @@ int BlueRingsRoutine(){
 
 /**
  * \brief This routine is if WE ARE BLUE and want to grab BLUE RINGS
- * 
+ *
  * \author Jorge Luis
 */    
 
 int BlueRingsRoutineJorgeLuna() {
   /*
-    go for negative side mobile goal, score rings, and prepare for go enemy double side 
+    go for negative side mobile goal, score rings, and prepare for go enemy double side
   */
   // go to the side mobile goal
   raceToGoal();
@@ -975,7 +1018,7 @@ void quickMiddleScore(){
   scoreRing();
   move(10);
   turn(360 * 10);
-  
+ 
 }
 
 #else
@@ -995,7 +1038,7 @@ void enableGate();
 
 /**
  * \brief Resets odometry and gyro for error accumulation cleanse
- * 
+ *
  * \warning This function takes three (3) \b seconds to complete
  */
 int initialReset(bool gyro = true)
@@ -1003,7 +1046,7 @@ int initialReset(bool gyro = true)
   odometry::ResetInitial();
   drivePID.Reset();
   turnPID.Reset();
-  
+ 
   // 3 seconds
   gyroscope.reset(gyro);
   return 1;
@@ -1011,16 +1054,16 @@ int initialReset(bool gyro = true)
 
 // ============================================================================
 //    ___   _   _    ___ _   _ _      _ _____ ___ ___  _  _ ___  
-//   / __| /_\ | |  / __| | | | |    /_\_   _|_ _/ _ \| \| / __| 
-//  | (__ / _ \| |_| (__| |_| | |__ / _ \| |  | | (_) | .` \__ \ 
-//   \___/_/ \_\____\___|\___/|____/_/ \_\_| |___\___/|_|\_|___/ 
+//   / __| /_\ | |  / __| | | | |    /_\_   _|_ _/ _ \| \| / __|
+//  | (__ / _ \| |_| (__| |_| | |__ / _ \| |  | | (_) | .` \__ \
+//   \___/_/ \_\____\___|\___/|____/_/ \_\_| |___\___/|_|\_|___/
 //
 // ============================================================================
 
 
 /**
  * \brief Calculates time for the robot to reach a given distance
- * 
+ *
  * \param distance Distance from the robot to the target (remains constant) in \b inches
  * \returns The approximate time necessary to reach the target (overestimation) in \b seconds
  */
@@ -1038,13 +1081,13 @@ inline double getTimeToTargetFast(const double &distance){
 
 /**
  * \brief Calculates time for the robot to turn an angle
- * 
+ *
  * \param radians Angle remaining from the robot's current angle to the target (remains constant) in \b radians
- * 
+ *
  * \details The arc length formula is used as s = theta * radius (theta in radians)
- * 
+ *
  * \returns The approximate time necessary to reach the target (overestimation) in \b seconds
- * 
+ *
  */
 inline double getTimetoTurnRad(const double &radians){
   double arcLength = radians * AVG_DRIVETRAIN_RADIUS; // Of the turn (inches)
@@ -1058,23 +1101,23 @@ inline double getTimetoTurnRad(const double &radians){
 
 /**
  * \brief Calculates time for the robot to turn an angle
- * 
+ *
  * \param degrees Angle remaining from the robot's current angle to the target (remains constant) in \b degrees
- * 
+ *
  * \returns The approximate time necessary to reach the target (overestimation) in \b seconds
- * 
+ *
  */
 inline double getTimetoTurnDeg(const double &degrees) { return getTimetoTurnRad(degrees * M_PI / 180); }
 
 /**
  * \brief Gets an average of the GPS position
- * 
+ *
  * \returns A Vector representing the position of the robot
  */
 inline Vector getGPSPos(){
   double avg_x = 0;
   double avg_y = 0;
-  
+ 
   // Get the average of the readings from the GPS
   for (int i = 0; i < GPS_SAMPLE_SIZE; i++)
   {
@@ -1083,19 +1126,19 @@ inline Vector getGPSPos(){
   }
 
   avg_x /= GPS_SAMPLE_SIZE; avg_y /= GPS_SAMPLE_SIZE;
-  
+ 
   return Vector().SetPosition(avg_x, avg_y);
 }
 
 /**
- * \brief Determines the angle needed to turn 
- * 
+ * \brief Determines the angle needed to turn
+ *
  * \param target The point towards which we want to face
- * 
+ *
  * \returns The angle needed to turn in order to face the target
- * 
+ *
  * \warning The units must be meters because a mandatory conversion happens (this can be modified)
- * 
+ *
  * \todo Complete calculations
  */
 inline double getAngleToTurn(Vector target){
@@ -1103,7 +1146,7 @@ inline double getAngleToTurn(Vector target){
   target.SetY(metersToInches(target.GetY()));
 
   double heading = gps.get_heading();
-  
+ 
   // Vector current = getGPSPos();
   Vector current = odometry::GetPosition(); // If this one is used the INITIAL_ODOMETRY_{COMPONENT} variables must be set and no reset can be done
 
@@ -1120,34 +1163,34 @@ inline double getAngleToTurn(Vector target){
 
 /**
  * \brief Conversion from \b meters to \b inches
- * 
+ *
  * \param meters The \b meters to be converted
- * 
+ *
  * \returns The distance in \b inches
  */
 inline double metersToInches(double meters) { return meters * 39.3701; }
 
 /**
  * \brief Gets the distance between two points in the field
- * 
+ *
  * \param target The target location
  * \param current The current location
- * 
+ *
  * \returns The distance between the two points
  */
 double findDistance(Vector target, Vector current){
-  double Dist_meters= (target - current).GetMagnitude(); 
-  return metersToInches(Dist_meters); 
+  double Dist_meters= (target - current).GetMagnitude();
+  return metersToInches(Dist_meters);
 }
 
 /**
  * \brief Determines the angle needed to be turned in order to face a specific point in the field
- * 
+ *
  * \param target The point we wish to face
  * \param current Where the robot is now
- * 
+ *
  * \returns The angle the robot needs to turn in order to face the target location
- * 
+ *
  * \note The result must be passed into functions such as turn() and MoveTurnPID() as negative because of their convention
  * \todo Test thoroughly
 */
@@ -1176,7 +1219,7 @@ double calculateTurn(Vector target, Vector current) {
 }
 
 // ============================================================================
-//   __  __  _____   _____ __  __ ___ _  _ _____ 
+//   __  __  _____   _____ __  __ ___ _  _ _____
 //  |  \/  |/ _ \ \ / / __|  \/  | __| \| |_   _|
 //  | |\/| | (_) \ V /| _|| |\/| | _|| .` | | |  
 //  |_|  |_|\___/ \_/ |___|_|  |_|___|_|\_| |_|  
@@ -1186,7 +1229,7 @@ double calculateTurn(Vector target, Vector current) {
 
 /**
  * \brief Moves the robot a given distance (default forward)
- * 
+ *
  * \param pid The PID used for the driving
  * \param dist The distance to be moved in \b inches
  */
@@ -1226,7 +1269,7 @@ void MoveDrivePID(PID pid = drivePID, double dist = TILE_WIDTH, const double MAX
 
 /**
  * \brief Turns the robot by a given angle (default clockwise)
- * 
+ *
  * \param pid The PID to be used for the turn
  * \param angle The angle to make the robot turn in \b degrees
  */
@@ -1235,6 +1278,8 @@ void MoveTurnPID(PID pid = turnPID, double angle = 90, const double MAX_REVS = 5
   angle = abs(angle); // Setting the magnitude to positive
   pid.Reset();
   gyroscope.tare(); // .tare() or .reset(true) depending on the time issue
+  aon::odometry::gyro_data.prevDegrees = 0;
+  
   const double startAngle = gyroscope.get_heading(); // Angle relative to the start
 
   if(sign == -1) { angle = 360.0 - angle + CLOCKWISE_ROTATION_DEGREES_OFFSET; }
@@ -1271,7 +1316,7 @@ void MoveTurnPID(PID pid = turnPID, double angle = 90, const double MAX_REVS = 5
 
 /**
  * \brief Turns the robot towards a specific direction
- * 
+ *
  * \param x The x component of the point we wish to face
  * \param y The y component of the point we wish to face
 */
@@ -1286,7 +1331,7 @@ void turnToTarget(double x, double y){
 
 /**
  * \brief Goes to the target point
- * 
+ *
  * \param x The x component of the place where we want to go using the gps coordinate system (x, y) both needto be in the range (-1.8, 1.8)
  * \param y The y component of the place where we want to go using the gps coordinate system (x, y) both needto be in the range (-1.8, 1.8)
  *  
@@ -1303,7 +1348,7 @@ void goToTarget(double x, double y){
 
 
 // ============================================================================
-//   ___ ___ __  __ ___ _    ___   __  __  _____   _____ __  __ ___ _  _ _____ 
+//   ___ ___ __  __ ___ _    ___   __  __  _____   _____ __  __ ___ _  _ _____
 //  / __|_ _|  \/  | _ \ |  | __| |  \/  |/ _ \ \ / / __|  \/  | __| \| |_   _|
 //  \__ \| || |\/| |  _/ |__| _|  | |\/| | (_) \ V /| _|| |\/| | _|| .` | | |  
 //  |___/___|_|  |_|_| |____|___| |_|  |_|\___/ \_/ |___|_|  |_|___|_|\_| |_|  
@@ -1313,11 +1358,11 @@ void goToTarget(double x, double y){
 
 /**
  * \brief Moves the robot straight accross a given amount of tiles
- * 
+ *
  * \param amt The amount of tiles to be driven
- * 
+ *
  * \attention To move in reverse make the amount negative
- * 
+ *
  * \warning Robot should be aligned properly to achieve desired result
  */
 void moveTilesStraight(int amt = 1) {
@@ -1326,11 +1371,11 @@ void moveTilesStraight(int amt = 1) {
 
 /**
  * \brief Moves the robot straight accross a given amount of half-tiles
- * 
+ *
  * \param amt The amount of half-tiles to be driven
- * 
+ *
  * \attention To move in reverse make the amount negative
- * 
+ *
  * \warning Robot should be aligned properly to achieve desired result
  */
 void moveHalfTiles(int amt = 1) {
@@ -1339,11 +1384,11 @@ void moveHalfTiles(int amt = 1) {
 
 /**
  * \brief Moves the robot diagonally accross a given amount of tiles
- * 
+ *
  * \param amt The amount of tiles to be driven
- * 
+ *
  * \attention To move in reverse make the amount negative
- * 
+ *
  * \warning Robot should be aligned properly to achieve desired result
  */
 void moveTilesDiag(int amt = 1) {
@@ -1352,11 +1397,11 @@ void moveTilesDiag(int amt = 1) {
 
 /**
  * \brief Moves the robot diagonally accross a given amount of half-tiles
- * 
+ *
  * \param amt The amount of half-tiles to be driven
- * 
+ *
  * \attention To move in reverse make the amount negative
- * 
+ *
  * \warning Robot should be aligned properly to achieve desired result
  */
 void moveHalfDiagTiles(int amt = 1) {
@@ -1365,9 +1410,9 @@ void moveHalfDiagTiles(int amt = 1) {
 
 /**
  * \brief Turns the robot clockwise by 90
- * 
+ *
  * \param amt The amount of 90 degree turns to make
- * 
+ *
  * \attention To move in reverse make the amount negative
  */
 void turn90(int amt = 1){
@@ -1376,7 +1421,7 @@ void turn90(int amt = 1){
 
 /**
  * \brief Moves the robot a given distance
- * 
+ *
  * \param dist The distance to move in \b inches
  */
 int move(double dist = TILE_WIDTH)
@@ -1390,9 +1435,9 @@ int move(double dist = TILE_WIDTH)
 
 /**
  * \brief Turn the robot a given angle (default is clockwise)
- * 
+ *
  * \param angle The angle to turn in \b degrees
- * 
+ *
  * \details Clockwise is positive and counter-clockwise is negative
  */
 int turn(double angle = 90)
@@ -1408,8 +1453,8 @@ int turn(double angle = 90)
 
 
 // ============================================================================|
-//   ____        _       ____             _   _                 
-//  / ___| _   _| |__   |  _ \ ___  _   _| |_(_)_ __   ___  ___ 
+//   ____        _       ____             _   _                
+//  / ___| _   _| |__   |  _ \ ___  _   _| |_(_)_ __   ___  ___
 //  \___ \| | | | '_ \  | |_) / _ \| | | | __| | '_ \ / _ \/ __|
 //   ___) | |_| | |_) | |  _ < (_) | |_| | |_| | | | |  __/\__ \
 //  |____/ \__,_|_.__/  |_| \_\___/ \__,_|\__|_|_| |_|\___||___/
@@ -1417,7 +1462,7 @@ int turn(double angle = 90)
 
 /**
  * \brief This small subroutine moves the intake such that a ring is scored on the mobile goal being carried
- * 
+ *
  * \param delay The time in \b milliseconds to leave the intake running
 */
 void pickUpRing(int delay = 1000){
@@ -1428,7 +1473,7 @@ void pickUpRing(int delay = 1000){
 
 /**
  * \brief This small subroutine moves the rail such that a ring is scored on the mobile goal being carried
- * 
+ *
  * \param delay The time in \b milliseconds to leave the intake running
 */
 void scoreRing(int delay = 1500){
@@ -1439,9 +1484,9 @@ void scoreRing(int delay = 1500){
 
 /**
  * \brief This subroutine follows an object (in our case a ring) with a given color signature and picks it up
- * 
+ *
  * \param SIGNATURE The id number of the vision signature of the object to follow and pick up
- * 
+ *
  * \todo Add time constraint in case a ring is never found
 */
 void driveIntoRing(const int SIGNATURE){
@@ -1495,11 +1540,11 @@ void driveIntoRing(const int SIGNATURE){
 
 /**
  * \brief This small subroutine grabs a goal (stake)
- * 
+ *
  * \param delay The amount of time in \b milliseconds you will be moving back (500-600 is quick and works)
- * 
+ *
  * \warning You must already be very close to the goal and facing away (with the clamp towards it)
- * 
+ *
  * \details This routine uses timing but ideally there would be a way of knowing when we have the goal within our grasp
 */
 void grabGoal(int delay = 600){
@@ -1514,22 +1559,22 @@ void grabGoal(int delay = 600){
 
 /**
  * \brief Discards disk at beginning of match
- * 
+ *
  * \note This function is really meant for routines that will focus on enemy rings
  */
 void discardDisk(){
   intake.moveVelocity(-INTAKE_VELOCITY);
-  pros::delay(1000); 
+  pros::delay(1000);
   intake.moveVelocity(0);
 }
 
 /**
  * \brief This subroutine moves toward a mobile goal IN REVERSE
- * 
+ *
  * \param dist This is the absolute value of the distance the mobile goal is from the robot in \b inches
- * 
+ *
  * \details The function already converts the distance to negative so the robot drives into the goal backwards
- * 
+ *
  * \todo Change the internal move() function to directly use the MoveDrivePid() function with a specific PID and speed
 */
 void raceToGoal(double dist = 40){
@@ -1547,7 +1592,7 @@ void dropGoal(){
 
 /**
  * \brief Extends or retracts indexer to later knock down rings
- * 
+ *
  * \param extend If true, indexer will extend, if false, it will retract
  */
 void moveIndexer(bool extend = true){
@@ -1557,9 +1602,9 @@ void moveIndexer(bool extend = true){
 }
 
 /**
- * 
+ *
  * \brief This small subroutine removes the top ring of a stack of two and scores the ring at top. use ONLY when the indexer is at the right side of stack.
- * 
+ *
 */
 void RemoveTop(){
   moveIndexer();
@@ -1578,7 +1623,7 @@ void enableGate(){
 
 
 // ============================================================================
-//   _____ ___ ___ _____ ___ 
+//   _____ ___ ___ _____ ___
 //  |_   _| __/ __|_   _/ __|
 //    | | | _|\__ \ | | \__ \
 //    |_| |___|___/ |_| |___/
@@ -1608,18 +1653,18 @@ void testGPS() {
 
 /**
  * \brief This routine is if WE ARE BLUE and want to grab BLUE RINGS
- * 
- * \author Solimar Cruz 
+ *
+ * \author Solimar Cruz
 */              
 int BlueRingsRoutine(){
   // This routine focuses on team rings (no duh)
   // Rush to one of the side mobile goals (the one on the side of the double points) and secure it on team side
   // Starting point at (2.5, 1.5) facing 90 degrees (the blue area)
   // Rush to one of the side mobile goals (the one on the side of the negative points) and secure it on team side
-  //scores one ring onto side mobile goal and drops it 
+  //scores one ring onto side mobile goal and drops it
   raceToGoal(45);
   move(9);
-  scoreRing(2000); 
+  scoreRing(2000);
   dropGoal();
   enableGate();
 
@@ -1652,7 +1697,7 @@ int BlueRingsRoutine(){
 
 /**
  * \brief This routine is if WE ARE BLUE and want to grab BLUE RINGS on positive side.
- * 
+ *
  * \author Jorge Guzmán
 */              
 int BlueRingsRoutineJorgeGuzman(){
@@ -1672,15 +1717,15 @@ int BlueRingsRoutineJorgeGuzman(){
 
 /**
  * \brief This routine is if WE ARE RED and want to grab BLUE RINGS
- * 
+ *
  * \author Solimar Cruz
 */
 int RedRingsRoutine(){
   // Rush to one of the side mobile goals (the one on the side of the negative points) and secure it on team side
-  //scores one ring onto side mobile goal and drops it 
+  //scores one ring onto side mobile goal and drops it
   raceToGoal(40);
   move(8);
-  scoreRing(2000); 
+  scoreRing(2000);
   dropGoal();
   enableGate();
 
@@ -1688,7 +1733,7 @@ int RedRingsRoutine(){
   goToTarget(-0.3, 0.3);
   turnToTarget(-0.6, 0.6);
   move(-3);
-  grabGoal();//grabs middle goal 
+  grabGoal();//grabs middle goal
 
   goToTarget(-0.75,1.05 );
   turnToTarget(-1.2,1.2);
@@ -1718,8 +1763,10 @@ void quickMiddleScore(){
   scoreRing();
   dropGoal();
   pros::delay(30000);
-  
+ 
 }
 
 #endif
 };  // namespace aon
+
+
