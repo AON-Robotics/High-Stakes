@@ -9,13 +9,25 @@
 
 #if USING_15_INCH_ROBOT
 // Motor groups for drivetrain
-okapi::MotorGroup driveLeft = okapi::MotorGroup({12, -18, 19});
-okapi::MotorGroup driveRight = okapi::MotorGroup({-3, 16, -17});
-okapi::MotorGroup driveFull = okapi::MotorGroup({12, -18, 19, -3, 16, -17});
-// okapi::MotorGroup driveLeft = okapi::MotorGroup({18});
-// okapi::MotorGroup driveRight = okapi::MotorGroup({-16});
-// okapi::MotorGroup driveFull = okapi::MotorGroup({-18, 16});
+// DISMANTLED BOT
+// okapi::MotorGroup driveLeft = okapi::MotorGroup({12, -18, 19});
+// okapi::MotorGroup driveRight = okapi::MotorGroup({-3, 16, -17});
+// okapi::MotorGroup driveFull = okapi::MotorGroup({12, -18, 19, -3, 16, -17});
 
+// TURRET BOT
+okapi::MotorGroup driveRight = okapi::MotorGroup({16});
+okapi::MotorGroup driveLeft = okapi::MotorGroup({-1});
+okapi::MotorGroup driveFull = okapi::MotorGroup({16, -1});
+
+// NEW DRIVETRAIN BOT
+// okapi::MotorGroup driveLeft = okapi::MotorGroup({-7, -19, 17});
+// okapi::MotorGroup driveRight = okapi::MotorGroup({2, 12, -14});
+// okapi::MotorGroup driveFull = okapi::MotorGroup({-16, 1});
+
+// SMALL BOT
+// okapi::MotorGroup driveLeft = okapi::MotorGroup({12, -6, 19});
+// okapi::MotorGroup driveRight = okapi::MotorGroup({-15, 16, -17});
+// okapi::MotorGroup driveFull = okapi::MotorGroup({12, -15, 16, -17, -6, 19});
 
 
 okapi::MotorGroup intake = okapi::MotorGroup({-13, -14});
@@ -32,7 +44,7 @@ pros::Rotation encoderRight(-8, true);
 pros::Rotation encoderBack(11, false);
 
 // Turret
-okapi::Motor turret = okapi::Motor({20});
+okapi::Motor turret = okapi::Motor({18});
 pros::Rotation turretEncoder(13, false);
 pros::Vision vision_sensor(5); //14 in turret bot
 pros::vision_signature_s_t RED_SIG = pros::Vision::signature_from_utility(1, 8973, 11143, 10058, -2119, -1053, -1586, 5.4, 0);

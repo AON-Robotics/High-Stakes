@@ -7,6 +7,30 @@
 #include "../sensing/odometry.hpp"
 #include "../controls/pid/pid.hpp"
 #include "../controls/holonomic-motion.hpp"
+#include <queue>
+
+// For speed testing but may prove useful otherwise
+class MovingAverage {
+  public:
+      MovingAverage(int period) : period(period), sum(0.0) {}
+  
+      double update(double new_value) {
+          window.push(new_value);
+          sum += new_value;
+  
+          if (window.size() > period) {
+              sum -= window.front();
+              window.pop();
+          }
+  
+          return window.size() == period ? sum / period : -1.0; // -1.0 means not enough data yet
+      }
+  
+  private:
+      int period;
+      double sum;
+      std::queue<double> window;
+};
 
 /**
  * For GPS coord system: https://pros.cs.purdue.edu/v5/tutorials/topical/gps.html
@@ -83,7 +107,7 @@ int initialReset(bool gyro = true)
  */
 inline double getSpeed(const double &RPM = (int)driveFull.getActualVelocity()){
   double circumference = DRIVE_WHEEL_DIAMETER * M_PI;
-  double RPS = RPM / 60;
+  double RPS = MOTOR_TO_DRIVE_RATIO * RPM / 60;
   double speed = circumference * RPS;
   return speed;
 }
@@ -240,6 +264,19 @@ double calculateTurn(Vector target, Vector current) {
 
   return angle;
 }
+
+/**
+ * \brief Calculates the error percentage for an actual given the expected value
+ * 
+ * \param expected Usually a calculated value
+ * \param actual Usually the measured value
+ * 
+ * \returns The error percentage for the measured value
+ */
+double getError(double expected, double actual) {
+  return ((expected - actual) / expected) * 100;
+}
+
 // ============================================================================
 //   __  __  _____   _____ __  __ ___ _  _ _____ 
 //  |  \/  |/ _ \ \ / / __|  \/  | __| \| |_   _|
@@ -366,6 +403,56 @@ void goToTarget(double x, double y){
   move(metersToInches(abs((target - current).GetMagnitude())));
 }
 
+/**
+ * \brief S-graph motion profile testing
+ */
+void motionProfile(const double dist = TILE_WIDTH){
+  const double MAX_VELOCITY = (double)driveFull.getGearing(); // (RPM)
+  const double MAX_ACCEL = 100; // (RPM/s)
+  const double MAX_JERK = 300; // (RPM/s^2)
+  double currVelocity = 0;
+  double currAccel = 0;
+  double traveledDist = 0;
+  // Vector startPos = aon::odometry::GetPosition();
+  double dt = 0.02; // (s)
+
+  double startTime = pros::micros() / 1E6;
+  double secs = 5;
+  #define time (pros::micros() / 1E6) - startTime
+
+  while(traveledDist < dist){
+    // aon::odometry::Update();
+    // traveledDist = (aon::odometry::GetPosition() - startPos).GetMagnitude();
+    double remainingDist = dist - traveledDist;
+
+    // Debugging output to brain
+    pros::lcd::print(1, "Traveled: %.2f / %.2f", traveledDist, dist);
+    pros::lcd::print(2, "Velocity: %.2f, Accel: %.2f", currVelocity, currAccel);
+    pros::lcd::print(3, "Remaining: %.2f", remainingDist);
+    pros::lcd::print(4, "Calculated Velocity: %.2f", getSpeed(currVelocity));
+
+    // Acceleration
+    if(remainingDist <= currVelocity * currVelocity / (2 * MAX_ACCEL)){
+      // currAccel = std::max(currAccel - (MAX_JERK * dt), 0);
+      currAccel = - 10;
+    } else {
+      currAccel = std::min(currAccel + (MAX_JERK * dt), MAX_ACCEL);
+    }
+
+    currVelocity += currAccel * dt;
+    currVelocity = std::min(currVelocity,  MAX_VELOCITY);
+
+    driveFull.moveVelocity(currVelocity);
+
+    traveledDist += getSpeed(currVelocity) * dt; // TODO: Use Odometry
+
+    pros::delay(dt * 1000);
+  }
+
+  driveFull.moveVelocity(0);
+  testEndpoint();
+  #undef time
+}
 
 // ============================================================================
 //   ___ ___ __  __ ___ _    ___   __  __  _____   _____ __  __ ___ _  _ _____ 
@@ -640,6 +727,56 @@ void enableGate(){
   gate.moveVelocity(0);
 }
 
+/**
+ * \brief Aligns TURRET only to the item with the set `COLOR`
+ */
+void turretFollow(){
+  const int TOLERANCE = 20;
+  const int VISION_FIELD_CENTER = 315 / 2;
+  int OBJ_CENTER = 0;
+  PID turretPID = PID(.5, 0, 0);
+  while(true){
+    auto object = vision_sensor.get_by_sig(0, COLOR);
+    OBJ_CENTER = object.x_middle_coord;
+    double SPEED = turretPID.Output(0, VISION_FIELD_CENTER - OBJ_CENTER);
+    pros::lcd::print(1, "Position: %.2d", turretEncoder.get_angle() / 100);
+
+    if(object.signature == COLOR){
+      if(abs(OBJ_CENTER - VISION_FIELD_CENTER) <= TOLERANCE){
+        turret.moveVelocity(0);
+        pros::lcd::print(2, "Aligned!");
+        break;
+      }
+      else { // Turn Towards Object
+        pros::lcd::print(2, "Turning!");
+        turret.moveVelocity(SPEED);
+      }
+    }
+    pros::delay(10);
+  }
+  turret.moveVelocity(0);
+}
+
+/**
+ * \brief Aligns TURRET and DRIVETRAIN to the item with the set `COLOR`
+ */
+void alignRobotToDisk(){
+  turretFollow();
+  const int TOLERANCE = 10;
+  int difference = 0;
+  #define TURRET_ANGLE turretEncoder.get_angle() / 100
+  while(abs((TURRET_ANGLE)) > TOLERANCE){
+    difference = TURRET_ANGLE < 180 ? TURRET_ANGLE : TURRET_ANGLE - 360;
+    pros::lcd::print(2, "Moving!");
+    double SPEED = turnPID.Output(0, difference) * 40;
+    driveLeft.moveVelocity(SPEED);
+    driveRight.moveVelocity(-SPEED);
+    turretFollow();
+  }
+  driveLeft.moveVelocity(0);
+  driveRight.moveVelocity(0);
+}
+
 // ============================================================================
 //   _____ ___ ___ _____ ___ 
 //  |_   _| __/ __|_   _/ __|
@@ -664,96 +801,23 @@ void testGPS() {
   aon::goToTarget(1.2, -.6);
 }
 
-void testMotionProfile(const double dist = TILE_WIDTH){
-  const double MAX_VELOCITY = (double)driveFull.getGearing(); // (RPM)
-  const double MAX_ACCEL = 100; // (RPM/s)
-  const double MAX_JERK = 300; // (RPM/s^2)
-  double currVelocity = 0;
-  double currAccel = 0;
-  double traveledDist = 0;
-  // Vector startPos = aon::odometry::GetPosition();
-  double dt = 0.02; // (s)
-
-  double startTime = pros::micros() / 1E6;
-  double secs = 5;
-  #define time (pros::micros() / 1E6) - startTime
-
-  while(traveledDist < dist){
-    // aon::odometry::Update();
-    // traveledDist = (aon::odometry::GetPosition() - startPos).GetMagnitude();
-    double remainingDist = dist - traveledDist;
-
-    // Debugging output to brain
-    pros::lcd::print(1, "Traveled: %.2f / %.2f", traveledDist, dist);
-    pros::lcd::print(2, "Velocity: %.2f, Accel: %.2f", currVelocity, currAccel);
-    pros::lcd::print(3, "Remaining: %.2f", remainingDist);
-
-    // Acceleration
-    if(remainingDist <= currVelocity * currVelocity / (2 * MAX_ACCEL)){
-      // currAccel = std::max(currAccel - (MAX_JERK * dt), 0);
-      currAccel = - MAX_ACCEL;
-    } else {
-      currAccel = std::min(currAccel + (MAX_JERK * dt), MAX_ACCEL);
-    }
-
-    currVelocity += currAccel * dt;
-    currVelocity = std::min(currVelocity,  MAX_VELOCITY);
-
-    driveFull.moveVelocity(currVelocity);
-
-    traveledDist += currVelocity * dt;
-
-    pros::delay(dt * 1000);
-  }
-
-  driveFull.moveVelocity(0);
-  testEndpoint();
-  #undef time
-}
-
-void turretFollow(){
-  const int TOLERANCE = 20;
-  const int VISION_FIELD_CENTER = 315 / 2;
-  int OBJ_CENTER = 0;
-  PID turretPID = PID(.5, 0, 0);
-  // while(abs(OBJ_CENTER - VISION_FIELD_CENTER) <= TOLERANCE){
-  while(true){
-    auto object = vision_sensor.get_by_sig(0, COLOR);
-    OBJ_CENTER = object.x_middle_coord;
-    double SPEED = turretPID.Output(0, VISION_FIELD_CENTER - OBJ_CENTER);
-    pros::lcd::print(1, "Position: %.2d", turretEncoder.get_angle() / 100);
-
-    if(object.signature == COLOR){
-      if(abs(OBJ_CENTER - VISION_FIELD_CENTER) <= TOLERANCE){
-        turret.moveVelocity(0);
-        pros::lcd::print(2, "Aligned!");
-        break;
-      }
-      else { // Turn Towards Object
-        pros::lcd::print(2, "Turning!");
-        turret.moveVelocity(SPEED);
-      }
-    }
+/**
+ * \brief Speed calculation test using the distance sensor
+ */
+void speedTest(double RPM = (double)driveFull.getGearing()){
+  MovingAverage mav(50);
+  while(true) {
+    driveFull.moveVelocity(RPM);
+    double measured = metersToInches(distanceSensor.get_object_velocity());
+    double calculated = getSpeed(RPM);
+    double error = abs(getError(calculated, measured));
+    double avg = mav.update(error);
+    pros::lcd::print(1, "RPM: %.2f", RPM);
+    pros::lcd::print(2, "Calculated Velocity: %.2f", calculated);
+    pros::lcd::print(3, "Measured Velocity: %.2f", measured);
+    pros::lcd::print(4, "Error %: %.2f%", avg);
     pros::delay(10);
   }
-  turret.moveVelocity(0);
-}
-
-void alignRobotToDisk(){
-  turretFollow();
-  const int TOLERANCE = 10;
-  int difference = 0;
-  #define TURRET_ANGLE turretEncoder.get_angle() / 100
-  while(abs((TURRET_ANGLE)) > TOLERANCE){
-    difference = TURRET_ANGLE < 180 ? TURRET_ANGLE : TURRET_ANGLE - 360;
-    pros::lcd::print(2, "Moving!");
-    double SPEED = turnPID.Output(0, difference) * 40;
-    driveLeft.moveVelocity(SPEED);
-    driveRight.moveVelocity(-SPEED);
-    turretFollow();
-  }
-  driveLeft.moveVelocity(0);
-  driveRight.moveVelocity(0);
 }
 
 

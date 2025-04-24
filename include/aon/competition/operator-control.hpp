@@ -85,8 +85,8 @@ inline void _OpControlManes() {
   const double vertical = AnalogInputScaling(main_controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y) / 127.0, SENSITIVITY_DECREASE);
   const double turn = AnalogInputScaling(main_controller.get_analog(::pros::E_CONTROLLER_ANALOG_RIGHT_X) / 127.0, SENSITIVITY_DECREASE);
 
-  driveLeft.moveVelocity(static_cast<int>(driveLeft.getGearing()) * std::clamp(vertical + turn, -1.0, 1.0));
-  driveRight.moveVelocity(static_cast<int>(driveRight.getGearing()) * std::clamp(vertical - turn, -1.0, 1.0));
+  driveLeft.moveVelocity(static_cast<int>(driveLeft.getGearing()) * std::clamp(vertical - turn, -1.0, 1.0));
+  driveRight.moveVelocity(static_cast<int>(driveRight.getGearing()) * std::clamp(vertical + turn, -1.0, 1.0));
 
   //////////// INTAKE ////////////
   

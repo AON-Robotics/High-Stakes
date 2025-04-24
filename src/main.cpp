@@ -31,13 +31,15 @@ void autonomous() {
 // During development
 // Program slot 1 with Pizza Icon is for opcontrol
 // Program slot 2 with Planet Icon is for autonomous routine
+// Program slot 3 with Alien Icon is for tests or miscellaneous components
 void opcontrol() {
   while (true) {
     #if TESTING_AUTONOMOUS
     // aon::move(12);
-    // aon::testMotionProfile(60 * 2);
+    aon::motionProfile(12 * 5);
+    // aon::speedTest(100);
     // pros::delay(30000);
-    aon::alignRobotToDisk();
+    // aon::alignRobotToDisk();
     // aon::turretFollow();
     #else
     aon::operator_control::Run(aon::operator_control::kManes);
