@@ -37,8 +37,12 @@ void opcontrol() {
     // aon::move(12);
     // aon::testMotionProfile(60 * 2);
     // pros::delay(30000);
-    aon::alignRobotToDisk();
-    // aon::turretFollow();
+    //aon::FollowWithTurret();
+    //aon::AlignRobotToStake();
+    //aon::turretFollow();
+    //aon::alignRobotToDisk();
+    aon::continuous_scan();
+    
     #else
     aon::operator_control::Run(aon::operator_control::kManes);
     #endif

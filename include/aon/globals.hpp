@@ -9,12 +9,12 @@
 
 #if USING_15_INCH_ROBOT
 // Motor groups for drivetrain
-okapi::MotorGroup driveLeft = okapi::MotorGroup({12, -18, 19});
-okapi::MotorGroup driveRight = okapi::MotorGroup({-3, 16, -17});
-okapi::MotorGroup driveFull = okapi::MotorGroup({12, -18, 19, -3, 16, -17});
-// okapi::MotorGroup driveLeft = okapi::MotorGroup({18});
-// okapi::MotorGroup driveRight = okapi::MotorGroup({-16});
-// okapi::MotorGroup driveFull = okapi::MotorGroup({-18, 16});
+// okapi::MotorGroup driveLeft = okapi::MotorGroup({12, -18, 19});
+// okapi::MotorGroup driveRight = okapi::MotorGroup({-3, 16, -17});
+// okapi::MotorGroup driveFull = okapi::MotorGroup({12, -18, 19, -3, 16, -17});
+okapi::MotorGroup driveLeft = okapi::MotorGroup({-1});
+okapi::MotorGroup driveRight = okapi::MotorGroup({16});
+okapi::MotorGroup driveFull = okapi::MotorGroup({-1, 16});
 
 
 
@@ -32,12 +32,12 @@ pros::Rotation encoderRight(-8, true);
 pros::Rotation encoderBack(11, false);
 
 // Turret
-okapi::Motor turret = okapi::Motor({20});
+okapi::Motor turret = okapi::Motor({18});
 pros::Rotation turretEncoder(13, false);
-pros::Vision vision_sensor(5); //14 in turret bot
+pros::Vision vision_sensor(7); //14 in turret bot
 pros::vision_signature_s_t RED_SIG = pros::Vision::signature_from_utility(1, 8973, 11143, 10058, -2119, -1053, -1586, 5.4, 0);
 pros::vision_signature_s_t BLUE_SIG = pros::Vision::signature_from_utility(2, -3050, -2000, -2500, 8000, 11000, 9500, 5.4, 0);
-
+pros::vision_signature_s_t STAKE_SIG = pros::Vision::signature_from_utility(3, -2247, -1833, -2040, -5427, -4727, -5077, 4.600, 0); // RGB 4.600
 pros::Gps gps(6, GPS_INITIAL_X, GPS_INITIAL_Y, GPS_INITIAL_HEADING, GPS_X_OFFSET, GPS_Y_OFFSET);
 // pros::Gps gps(6, GPS_INITIAL_X, GPS_INITIAL_Y, GPS_INITIAL_HEADING);
 // pros::Gps gps(6);
@@ -228,6 +228,7 @@ inline bool toggle(bool &boolean) {
 inline void ConfigureColors(){
   vision_sensor.set_signature(1, &RED_SIG);
   vision_sensor.set_signature(2, &BLUE_SIG);
+  vision_sensor.set_signature(3, &STAKE_SIG);
 }
 
 /**

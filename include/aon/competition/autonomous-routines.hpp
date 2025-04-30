@@ -755,7 +755,169 @@ void alignRobotToDisk(){
   driveLeft.moveVelocity(0);
   driveRight.moveVelocity(0);
 }
+/**
 
+* \brief Rotates the turret a given angle, starting from 0 degrees until desired degrees. (Absolute Rotation)
+
+*
+
+ * \param targetAngle Angle in degrees we wish to rotate turret.
+
+*
+
+* \details turretEncoder.get_angle() is divided by 100 for scaling purposes.
+
+*/
+
+ 
+
+inline void turretRotationAbsolute(double targetAngle) {
+
+  PID turretPID(0.5, 0, 0);
+
+  while (true) {
+
+    double currentAngle = turretEncoder.get_angle() / 100.0;
+
+    double error = targetAngle - currentAngle;
+
+    double output = turretPID.Output(targetAngle, currentAngle);
+
+    turret.moveVelocity(output);
+
+    if (fabs(error) <= 3.0) break;  // Tolerance of 1 degree
+
+    pros::delay(10);
+
+
+  }
+
+  turret.moveVelocity(0);
+
+}
+
+ 
+
+ 
+
+ 
+
+/**
+
+* \brief Rotates the turret a given angle, starting from wherever it currently is. (Relative Rotation)
+
+*
+
+ * \param givenAngle Angle in degrees we wish to rotate turret.
+
+*
+
+* \details turretEncoder.get_angle() is divided by 100 for scaling purposes.
+
+*/
+
+inline void turretRotationRelative(double givenAngle) {
+
+  double startAngle = turretEncoder.get_angle() / 100.0;
+
+  double targetAngle = startAngle + givenAngle;
+
+  turretRotationAbsolute(targetAngle);
+
+}
+
+void AlignRobotToStake(){//align back of robot to the steak
+  //Change color TO NEW YELLOW STAKE 
+  turretFollow(); 
+  const int TOLERANCE = 10;
+  #define TURRET_ANGLE turretEncoder.get_angle()/100
+  int difference = (TURRET_ANGLE +180)% 360;
+
+    if (difference >180){
+      difference-= 360;}
+    if (difference< -180){
+      difference +=360;}
+
+    while (abs(difference)>TOLERANCE) {
+        //process of aligning booty 
+        turretFollow(); 
+        double SPEED = turnPID.Output(0, difference) * 40;
+        driveLeft.moveVelocity(SPEED);
+        driveRight.moveVelocity(-SPEED);
+        pros::delay(10);
+        difference=(TURRET_ANGLE+180)% 360;
+        if (difference>180){
+          difference-=360;}
+
+        if (difference<-180){
+          difference+=360;}
+    }
+
+    driveLeft.moveVelocity(0);
+    driveRight.moveVelocity(0);
+    //butt should be aligned 
+}
+
+
+void FollowWithTurret() {
+    const int TURRET_TOLERANCE = 5;  // Allowable turret misalignment
+    const int BODY_ADJUST_THRESHOLD = 30; // If turret turns beyond this, body must adjust
+    const int FORWARD_SPEED = 40;  // Speed to move forward
+
+    while (true) {  
+        turretFollow();  // Make turret track the object
+
+        int turret_angle = turretEncoder.get_angle()/100;  // Angle of turret relative to the body
+         int angle = (turret_angle + 180) % 360; // Shift the range to [0, 360] and wrap around
+         if (angle > 180){ angle -= 360;} // Convert to [-180, 180] range
+        int bodyDifference = angle;  
+
+        // Move forward at a steady pace
+        driveLeft.moveVelocity(FORWARD_SPEED);
+        driveRight.moveVelocity(FORWARD_SPEED);
+
+        // If the turret turns too much, adjust the body to reduce strain on the turret
+        if (abs(bodyDifference) > BODY_ADJUST_THRESHOLD) {
+            double turnSpeed = turnPID.Output(0, bodyDifference) * 40;
+            driveLeft.moveVelocity(FORWARD_SPEED + turnSpeed);
+            driveRight.moveVelocity(FORWARD_SPEED - turnSpeed);
+        }
+
+        // Stop if the target is lost
+        if (vision_sensor.get_object_count()==0) {  //might have to find another solution to this 
+            break;
+        }
+
+        pros::delay(10); 
+    }
+
+    // Stop the robot when done
+    driveLeft.moveVelocity(0);
+    driveRight.moveVelocity(0);
+}
+
+bool continuous_scan(){
+  turretRotationAbsolute(180);
+  pros::lcd::print(1, "Aligned 180");
+  pros::delay(1000);
+  while(true){
+
+    turretRotationRelative(90);
+    pros::lcd::print(2, "turning 1");
+    pros::delay(1000);
+    turretRotationRelative(-0);
+    pros::lcd::print(2, "turning 2");
+    pros::delay(1000);
+
+    auto object= vision_sensor.get_by_sig(0,COLOR);
+    
+    if(object.signature == COLOR){
+      pros::lcd::print(2, "object found");
+      pros::delay(20);
+      break;
+    }
+  }
+}
 
 // ============================================================================|
 //   ___  ___  _   _ _____ ___ _  _ ___ ___                                    |

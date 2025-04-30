@@ -11,10 +11,11 @@
 // Colors
 #define RED 1
 #define BLUE 2
+#define STAKE 3
 
 // NOT using 15 inch robot = Using 18 inch robot
 #define USING_15_INCH_ROBOT true
-#define TESTING_AUTONOMOUS false
+#define TESTING_AUTONOMOUS true
 #define COLOR RED
 
 #if USING_15_INCH_ROBOT
