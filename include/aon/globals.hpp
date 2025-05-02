@@ -7,15 +7,29 @@
 #include "controls/pid/pid.hpp"
 #include "okapi/impl/device/motor/motor.hpp"
 #include <vector>
-
+#include <map>
 
 #if USING_15_INCH_ROBOT
 // Motor groups for drivetrain
 okapi::Motor Right1(17), Right2(-16), Right3(15);
 okapi::Motor Left1(-19), Left2(6), Left3(-12);
+
+std::vector<okapi::Motor> leftMotors = {
+  okapi::Motor(1, true, okapi::AbstractMotor::gearset::green, okapi::AbstractMotor::encoderUnits::degrees),
+  okapi::Motor(2,  false, okapi::AbstractMotor::gearset::green, okapi::AbstractMotor::encoderUnits::degrees),
+ //okapi::Motor(12, true,  okapi::AbstractMotor::gearset::green, okapi::AbstractMotor::encoderUnits::degrees)
+};
+
+std::vector<okapi::Motor> rightMotors = {
+  okapi::Motor(6, false, okapi::AbstractMotor::gearset::green, okapi::AbstractMotor::encoderUnits::degrees),
+  okapi::Motor(8, true,  okapi::AbstractMotor::gearset::green, okapi::AbstractMotor::encoderUnits::degrees),
+  //okapi::Motor(15, false, okapi::AbstractMotor::gearset::green, okapi::AbstractMotor::encoderUnits::degrees)
+};
+std::unordered_map<int,bool> disabledMotors;
 okapi::MotorGroup driveLeft = okapi::MotorGroup({Left1, Left2, Left3});
 okapi::MotorGroup driveRight = okapi::MotorGroup({Right1, Right2, Right3});
 okapi::MotorGroup driveFull = okapi::MotorGroup({Left1, Left2, Left3, Right1, Right2, Right3});
+bool disableMotors = false;
 
 okapi::MotorGroup intake = okapi::MotorGroup({-13, -14});
 okapi::MotorGroup rail = okapi::MotorGroup({-13});
@@ -25,7 +39,7 @@ okapi::Motor arm = okapi::Motor(10);
 
 okapi::Motor indexer = okapi::Motor(7);
 
-//odometry
+// Odometry
 pros::Rotation encoderLeft(20, true);
 pros::Rotation encoderRight(-8, true);
 pros::Rotation encoderBack(11, false);
@@ -33,17 +47,11 @@ pros::Rotation encoderBack(11, false);
 // Turret
 okapi::Motor turret = okapi::Motor({20});
 pros::Rotation turretEncoder(13, false);
-pros::Vision vision_sensor(5); //14 in turret bot
+pros::Vision vision_sensor(5); // For turret bot, sometimes port 14 is used
 pros::vision_signature_s_t RED_SIG = pros::Vision::signature_from_utility(1, 8973, 11143, 10058, -2119, -1053, -1586, 5.4, 0);
 pros::vision_signature_s_t BLUE_SIG = pros::Vision::signature_from_utility(2, -3050, -2000, -2500, 8000, 11000, 9500, 5.4, 0);
 
 pros::Gps gps(6, GPS_INITIAL_X, GPS_INITIAL_Y, GPS_INITIAL_HEADING, GPS_X_OFFSET, GPS_Y_OFFSET);
-// pros::Gps gps(6, GPS_INITIAL_X, GPS_INITIAL_Y, GPS_INITIAL_HEADING);
-// pros::Gps gps(6);
-// Center of the field is (0,0), uses 4 quadrant cartesian system for coordinates
-// 7.5 in = 0.1905 m
-// approx 110 deg
-// pros::Gps gps(6, 1.5, .3, 110, 0.1905, 0.1905); // measure the values to be certain
 
 aon::PID drivePID = aon::PID(0.1, 0, 0);
 aon::PID turnPID = aon::PID(0.01, 0, 0);
@@ -59,7 +67,7 @@ bool piston_on = false;
 bool indexerOut = false;
 
 bool conveyor_auto = true;
-int state = 0; // for railing
+int state = 0; // For railing
 
 #if GYRO_ENABLED
 pros::Imu gyroscope(11);
@@ -73,11 +81,10 @@ okapi::MotorGroup driveLeft = okapi::MotorGroup({Left1, Left2, Left3});
 okapi::MotorGroup driveRight = okapi::MotorGroup({Right1, Right2, Right3});
 okapi::MotorGroup driveFull = okapi::MotorGroup({Left1, Left2, Left3, Right1, Right2, Right3});
 
-//SIGNATURE COLOR
+// Signature color for vision sensor
 pros::Vision vision_sensor(7);
 pros::vision_signature_s_t RED_SIG = pros::Vision::signature_from_utility(1, 8973, 11143, 10058, -2119, -1053, -1586, 5.4, 0);
 pros::vision_signature_s_t BLUE_SIG = pros::Vision::signature_from_utility(2, -3050, -2000, -2500, 8000, 11000, 9500, 5.4, 0);
-
 
 pros::Gps gps(9, GPS_INITIAL_X, GPS_INITIAL_Y, GPS_INITIAL_HEADING, GPS_X_OFFSET, GPS_Y_OFFSET);
 
@@ -95,7 +102,7 @@ bool piston_on = false;
 bool indexerOut = false;
  
 bool conveyor_auto = true;
-int state = 0; // for railing
+int state = 0; // For railing
 
 #if GYRO_ENABLED
 pros::Imu gyroscope(5);
@@ -123,17 +130,13 @@ inline double flywheel_tbh_error = 0;
 inline double flywheel_tbh_output = 0;
 
 #if USING_15_INCH_ROBOT
-
 inline double flywheel_rpm = 480;
 inline double flywheel_tbh = 4300;
 const double flywheel_tbh_gain = 1.5;
-
 #else
-
 inline double flywheel_rpm = 480;
 inline double flywheel_tbh = 4300;
 const double flywheel_tbh_gain = 1.5;
-
 #endif
 
 /// Driver profiles for all robots
@@ -151,20 +154,20 @@ namespace aon {
 inline void ConfigureMotors() {
 #if USING_15_INCH_ROBOT
   // Configure motors for 15 inch robot
-  driveLeft.setBrakeMode(okapi::AbstractMotor::brakeMode::coast);
-  driveLeft.setGearing(okapi::AbstractMotor::gearset::green);
-  driveLeft.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
-  driveLeft.tarePosition();
+  // driveLeft.setBrakeMode(okapi::AbstractMotor::brakeMode::coast);
+  // driveLeft.setGearing(okapi::AbstractMotor::gearset::green);
+  // driveLeft.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
+  // driveLeft.tarePosition();
 
-  driveRight.setBrakeMode(okapi::AbstractMotor::brakeMode::coast);
-  driveRight.setGearing(okapi::AbstractMotor::gearset::green);
-  driveRight.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
-  driveRight.tarePosition();
+  // driveRight.setBrakeMode(okapi::AbstractMotor::brakeMode::coast);
+  // driveRight.setGearing(okapi::AbstractMotor::gearset::green);
+  // driveRight.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
+  // driveRight.tarePosition();
 
-  driveFull.setBrakeMode(okapi::AbstractMotor::brakeMode::coast);
-  driveFull.setGearing(okapi::AbstractMotor::gearset::green);
-  driveFull.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
-  driveFull.tarePosition();
+  // driveFull.setBrakeMode(okapi::AbstractMotor::brakeMode::coast);
+  // driveFull.setGearing(okapi::AbstractMotor::gearset::green);
+  // driveFull.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
+  // driveFull.tarePosition();
 
   intake.setBrakeMode(okapi::AbstractMotor::brakeMode::coast);
   intake.setGearing(okapi::AbstractMotor::gearset::green);
@@ -225,7 +228,7 @@ inline bool toggle(bool &boolean) {
 
 /**
  * \brief Adds the colors to the vision sensor
-*/
+ */
 inline void ConfigureColors(){
   vision_sensor.set_signature(1, &RED_SIG);
   vision_sensor.set_signature(2, &BLUE_SIG);
@@ -235,7 +238,7 @@ inline void ConfigureColors(){
  * \brief Stops movement from robot
  */
 void STOP(){
-  driveFull.moveVelocity(0);
+  // driveFull.moveVelocity(0);
   intake.moveVelocity(0);
   arm.moveVelocity(0);
   indexer.moveVelocity(0);
@@ -243,7 +246,7 @@ void STOP(){
 
 /**
  * \brief Used to make sure a condition is being met or a line of code is being run
-*/
+ */
 void testEndpoint(int speed = 100){
   STOP();
   intake.moveVelocity(speed);

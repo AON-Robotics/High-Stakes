@@ -13,7 +13,7 @@
 #define BLUE 2
 
 // NOT using 15 inch robot = Using 18 inch robot
-#define USING_15_INCH_ROBOT false
+#define USING_15_INCH_ROBOT true
 #define COLOR BLUE
 
 #if USING_15_INCH_ROBOT
@@ -27,6 +27,7 @@
 #define GYRO_ENABLED true
 #define GYRO_CONFIDENCE 1.0
 #define GYRO_FILTER_LENGTH 1
+#define TICKS_PER_REV 900.0
 
 #define DRIVE_WIDTH 12.478 //distance between front wheels
 #define DRIVE_LENGTH 10 //distance from back wheel to front wheel
