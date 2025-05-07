@@ -949,22 +949,6 @@ void turretFollow_restricted (){
 }
 
 
-void alignRobotToDisk(){
-  turretFollow();
-  const int TOLERANCE = 10;
-  int difference = 0;
-  #define TURRET_ANGLE turretEncoder.get_angle() / 100
-  while(abs((TURRET_ANGLE)) > TOLERANCE){
-    difference = TURRET_ANGLE < 180 ? TURRET_ANGLE : TURRET_ANGLE - 360;
-    pros::lcd::print(2, "Moving!");
-    double SPEED = turnPID.Output(0, difference) * 40;
-    driveLeft.moveVelocity(SPEED);
-    driveRight.moveVelocity(-SPEED);
-    turretFollow();
-  }
-  driveLeft.moveVelocity(0);
-  driveRight.moveVelocity(0);
-}
 
 
 

@@ -27,7 +27,6 @@ pros::Rotation encoderMid(4, true);
 // pros::Rotation encoderRight(4, true);
 // pros::Rotation encoderLeft(-3, true);
 pros::Rotation encoderBack(11, false);
-pros::Rotation encoderMid(4, false);
 
 // Turret
 okapi::Motor turret = okapi::Motor({-15});
