@@ -4,7 +4,7 @@
 //  * \brief Implementation of holonomic motion and some control algorithms that
 //  * make use of it.
 //  * */
-// #if !USING_15_INCH_ROBOT
+// #if !USING_BLACK_ROBOT
 
 // #pragma once
 

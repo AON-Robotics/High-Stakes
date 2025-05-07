@@ -12,12 +12,12 @@
 #define RED 1
 #define BLUE 2
 
-// NOT using 15 inch robot = Using 18 inch robot
-#define USING_15_INCH_ROBOT true
+// NOT using black robot = Using green robot
+#define USING_BLACK_ROBOT true
 #define TESTING_AUTONOMOUS false 
 #define COLOR RED
 
-#if USING_15_INCH_ROBOT
+#if USING_BLACK_ROBOT
 
 #define SENSITIVITY 3 // 3-10 works good, currently undergoing testing // Higher is more sensitivity
 #define DRIVE_WHEEL_DIAMETER 3.25

@@ -56,7 +56,7 @@ Vector POSITION(){
   return current;
 }
 
-#if USING_15_INCH_ROBOT
+#if USING_BLACK_ROBOT
 
 int move(double dist);
 int turn(double angle);
@@ -693,7 +693,7 @@ void discardDisk(){
  * \details The function already converts the distance to negative so the robot drives into the goal backwards
  *
 */
-void raceToGoal(double dist = 40){
+void raceToGoal(double dist = 57){
   dist = abs(dist);
   MoveDrivePID(fastPID, -dist, (int)driveFull.getGearing());
   grabGoal(300);

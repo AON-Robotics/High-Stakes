@@ -7,7 +7,7 @@
 #include "controls/pid/pid.hpp"
 
 
-#if USING_15_INCH_ROBOT
+#if USING_BLACK_ROBOT
 // Motor groups for drivetrain
 okapi::MotorGroup driveLeft = okapi::MotorGroup({-20, 19, -18});
 okapi::MotorGroup driveRight = okapi::MotorGroup({9, -8, 7});
@@ -50,7 +50,7 @@ aon::PID turnPID = aon::PID(0.002, 0, 0);
 aon::PID fastPID = aon::PID(1, 0, 0);
 
 pros::ADIDigitalIn limit_switch ('C');
-pros::ADIDigitalIn dist_sensor ('B');
+pros::ADIDigitalIn lineTracker ('B');
 pros::Distance distanceSensor(1);
 bool rail_on = false;
 
@@ -84,7 +84,7 @@ aon::PID turnPID = aon::PID(0.01, 0, 0);
 aon::PID fastPID = aon::PID(1, 0, 0);
 
 pros::ADIDigitalIn limit_switch ('C');
-pros::ADIDigitalIn dist_sensor ('B');
+pros::ADIDigitalIn lineTracker ('B');
 pros::Distance distanceSensor(10);
 bool rail_on = false;
 
@@ -119,7 +119,7 @@ inline double flywheel_tbh_last_error = 0;
 inline double flywheel_tbh_error = 0;
 inline double flywheel_tbh_output = 0;
 
-#if USING_15_INCH_ROBOT
+#if USING_BLACK_ROBOT
 
 inline double flywheel_rpm = 480;
 inline double flywheel_tbh = 4300;
@@ -145,20 +145,24 @@ pros::Controller main_controller = pros::Controller(pros::E_CONTROLLER_MASTER);
 
 namespace aon {
 
-inline void ConfigureMotors() {
-#if USING_15_INCH_ROBOT
+inline void ConfigureMotors(const bool opcontrol = true) {
+  // Test this line to ensure all is well
+  // HOLD for AUTONOMOUS ||| COAST for OPERATOR CONTROL
+  okapi::AbstractMotor::brakeMode brakeMode = opcontrol ? okapi::AbstractMotor::brakeMode::coast : okapi::AbstractMotor::brakeMode::hold;
+
+  #if USING_BLACK_ROBOT
   // Configure motors for 15 inch robot
-  driveLeft.setBrakeMode(okapi::AbstractMotor::brakeMode::coast);
+  driveLeft.setBrakeMode(brakeMode); 
   driveLeft.setGearing(okapi::AbstractMotor::gearset::blue);
   driveLeft.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
   driveLeft.tarePosition();
 
-  driveRight.setBrakeMode(okapi::AbstractMotor::brakeMode::coast);
+  driveRight.setBrakeMode(brakeMode);
   driveRight.setGearing(okapi::AbstractMotor::gearset::blue);
   driveRight.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
   driveRight.tarePosition();
 
-  driveFull.setBrakeMode(okapi::AbstractMotor::brakeMode::coast);
+  driveFull.setBrakeMode(brakeMode);
   driveFull.setGearing(okapi::AbstractMotor::gearset::blue);
   driveFull.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
   driveFull.tarePosition();

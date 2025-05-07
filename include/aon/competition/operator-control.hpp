@@ -10,7 +10,7 @@
  *
  * \details Practically uses Singleton design pattern, but classes would have
  * made it more complicated for beginners to understand. Also makes extensive
- * use of USING_15_INCH_ROBOT global constant and preprocessor directives to
+ * use of USING_BLACK_ROBOT global constant and preprocessor directives to
  * make switching between robots not require separate branches, which could make
  * fixes and updates to one branch not apply to the other. Finally, it includes
  * tests for practically all of the fundamental functions except the driver
@@ -73,13 +73,13 @@ void kickBackRail(){
 
 /// Enrique's Operator Control configuration
 inline void _OpControlEnrique() {
-#if USING_15_INCH_ROBOT
+#if USING_BLACK_ROBOT
 #endif
 }
 
 /// Manes's Operator Control configuration
 inline void _OpControlManes() {
-#if USING_15_INCH_ROBOT
+#if USING_BLACK_ROBOT
 
   //////////// DRIVE ////////////
   const double vertical = AnalogInputScaling(main_controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y) / 127.0, SENSITIVITY);

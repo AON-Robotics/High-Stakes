@@ -15,7 +15,7 @@ namespace aon {
 
 #define SAMPLE_SIZE 50
 
-#if USING_15_INCH_ROBOT
+#if USING_BLACK_ROBOT
 
 double pos_x, pos_y, heading;
 

@@ -30,13 +30,13 @@ void rail_state_machine ()
     {
         if (conveyor_auto)
         {
-            // State 1: Wait for dist_sensor activation
+            // State 1: Wait for lineTracker activation
             if (state == 0)
             {
                 gate.moveVelocity(0);
                 rail.moveVelocity(0);
                 
-                if (dist_sensor.get_value())
+                if (lineTracker.get_value())
                 {
                     state = 1;
                 }
@@ -88,13 +88,13 @@ void rail_state_machine ()
 
 void railing()
 {
-    // State 1: Wait for dist_sensor activation
+    // State 1: Wait for lineTracker activation
     if (state == 0)
     {
         gate.moveVelocity(0);
         rail.moveVelocity(0);
         
-        if (dist_sensor.get_value())
+        if (lineTracker.get_value())
         {
             state = 1;
         }
