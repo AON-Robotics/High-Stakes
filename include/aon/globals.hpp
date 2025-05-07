@@ -9,26 +9,29 @@
 
 #if USING_15_INCH_ROBOT
 // Motor groups for drivetrain
-okapi::MotorGroup driveLeft = okapi::MotorGroup({-1});
-okapi::MotorGroup driveRight = okapi::MotorGroup({16});
-okapi::MotorGroup driveFull = okapi::MotorGroup({16, -1});
+okapi::MotorGroup driveLeft = okapi::MotorGroup({-20, 19, -18});
+okapi::MotorGroup driveRight = okapi::MotorGroup({9, -8, 7});
+okapi::MotorGroup driveFull = okapi::MotorGroup({-20, 19, -18, 9, -8, 7});
 // okapi::MotorGroup driveLeft = okapi::MotorGroup({18});
 // okapi::MotorGroup driveRight = okapi::MotorGroup({-16});
 // okapi::MotorGroup driveFull = okapi::MotorGroup({-18, 16});
 
 
 
-okapi::MotorGroup intake = okapi::MotorGroup({-13, -14});
-okapi::MotorGroup rail = okapi::MotorGroup({-13});
-okapi::Motor gate = okapi::Motor(-14);
+okapi::MotorGroup intake = okapi::MotorGroup({-16, 17});
+okapi::MotorGroup rail = okapi::MotorGroup({17});
+okapi::Motor gate = okapi::Motor(-16);
 
-okapi::Motor arm = okapi::Motor(10);
+okapi::Motor arm = okapi::Motor(-11);
 
-okapi::Motor indexer = okapi::Motor(7);
+okapi::Motor indexer = okapi::Motor('A');
 
 //odometry
-pros::Rotation encoderMid(12, true);
-pros::Rotation encoderBack(11, false);
+// pros::Rotation encoderMid(12, true);
+// pros::Rotation encoderBack(11, false);
+
+pros::Rotation encoderRight(4, true);
+pros::Rotation encoderLeft(3, false);
 
 // Turret
 okapi::Motor turret = okapi::Motor({20});
@@ -62,7 +65,7 @@ bool conveyor_auto = true;
 int state = 0; // for railing
 
 #if GYRO_ENABLED
-pros::Imu gyroscope(15);
+pros::Imu gyroscope(5);
 #endif
 
 #else
@@ -168,10 +171,21 @@ inline void ConfigureMotors() {
   intake.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
   intake.tarePosition();
 
-  arm.setBrakeMode(okapi::AbstractMotor::brakeMode::brake);
+  // arm.setBrakeMode(okapi::AbstractMotor::brakeMode::brake);
+  // arm.setGearing(okapi::AbstractMotor::gearset::red);
+  // arm.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
+  // arm.tarePosition();
+  
+  // while(arm.getPosition() < 100) {
+  //   arm.moveVelocity(ARM_VELOCITY);
+  // }
+  // arm.moveVelocity(0);
+  
+  arm.setBrakeMode(okapi::AbstractMotor::brakeMode::hold);
   arm.setGearing(okapi::AbstractMotor::gearset::red);
   arm.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
   arm.tarePosition();
+
 
   indexer.setBrakeMode(okapi::AbstractMotor::brakeMode::brake);
   indexer.setGearing(okapi::AbstractMotor::gearset::green);

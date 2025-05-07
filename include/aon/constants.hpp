@@ -14,7 +14,7 @@
 
 // NOT using 15 inch robot = Using 18 inch robot
 #define USING_15_INCH_ROBOT true
-#define TESTING_AUTONOMOUS false
+#define TESTING_AUTONOMOUS true
 #define COLOR RED
 
 #if USING_15_INCH_ROBOT
@@ -22,13 +22,13 @@
 #define SENSITIVITY_DECREASE 30 // 20 works good, currently undergoing testing
 #define DRIVE_WHEEL_DIAMETER 3.25
 #define TRACKING_WHEEL_DIAMETER 1.959
-#define DISTANCE_LEFT_TRACKING_WHEEL_CENTER 5.650
-#define DISTANCE_RIGHT_TRACKING_WHEEL_CENTER 5.650
+#define DISTANCE_LEFT_TRACKING_WHEEL_CENTER 1.572
+#define DISTANCE_RIGHT_TRACKING_WHEEL_CENTER 1.572
 #define DISTANCE_BACK_TRACKING_WHEEL_CENTER 5.500
 #define GYRO_ENABLED true
-#define GYRO_CONFIDENCE 1
-#define GYRO_FILTER_LENGTH 1
-#define ENCODER_CONFIDENCE 1 - GYRO_CONFIDENCE
+#define GYRO_CONFIDENCE 1.0
+#define GYRO_FILTER_LENGTH 0.9
+#define ENCODER_CONFIDENCE 0.1
 #define OFFSET_X_ENCODER_MID 3.250
 
 #define DRIVE_WIDTH 12.478 //distance between front wheels
@@ -55,6 +55,7 @@
 
 #define MAX_SPEED DRIVE_WHEEL_DIAMETER * M_PI * (int)driveFull.getGearing() / 60
 #define INTAKE_VELOCITY (int)intake.getGearing()
+#define ARM_VELOCITY (int)arm.getGearing()
 
 
 #else

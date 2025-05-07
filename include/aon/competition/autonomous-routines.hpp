@@ -298,7 +298,7 @@ double calculateTurn(Vector target, Vector current) {
  * \param pid The PID used for the driving
  * \param dist The distance to be moved in \b inches
  */
-void MoveDrivePID(PID pid = drivePID, double dist = TILE_WIDTH, const double MAX_REVS = 100.0) {
+void MoveDrivePID(PID pid = drivePID, double dist = TILE_WIDTH, const double MAX_REVS = 30.0) {
   const int sign = dist / abs(dist); // Getting the direction of the movement
   dist = abs(dist); // Setting the magnitude to positive
 
@@ -343,6 +343,7 @@ void MoveTurnPID(PID pid = turnPID, double angle = 90, const double MAX_REVS = 5
   angle = abs(angle); // Setting the magnitude to positive
   pid.Reset();
   gyroscope.tare(); // .tare() or .reset(true) depending on the time issue
+  aon::odometry::gyro_data.prevDegrees = 0; // Restart gyro data everytime gyro is restart
   const double startAngle = gyroscope.get_heading(); // Angle relative to the start
 
   if(sign == -1) { angle = 360.0 - angle + CLOCKWISE_ROTATION_DEGREES_OFFSET; }
@@ -367,9 +368,12 @@ void MoveTurnPID(PID pid = turnPID, double angle = 90, const double MAX_REVS = 5
     // Taking clockwise rotation as positive (to change this just flip the negative on the sign below)
     driveLeft.moveVelocity(sign * std::clamp(output * (int)driveLeft.getGearing(), -MAX_REVS, MAX_REVS));
     driveRight.moveVelocity(-sign * std::clamp(output * (int)driveRight.getGearing(), -MAX_REVS, MAX_REVS));
-
+    
     pros::delay(10);
   }
+  std::cout << "Ends rotation function.\nlkfpaosurfkqnadipfuhasoidnf;ipasdhfo9uasd\n;asohfcpoiaiw coiphawiuehfipuawhifnd\n;aliowhyefiuanijdfchasiuhefcipuawhiufasdldifyqipenc\naijhfdpianoifphawoiwpenfipawhc9pawe\nolahyfpio awiupghecijawneicuhaslijefch9p;a9enc\n;aoiweyrfa;wcjniahef9phacn\npaiuisdhcaiwchiaewrbfuhawbce8ohawibfpiaw\nalishjefiuauwencilasgfciawboliecbasilfh\nlifhaelkncias";
+
+  // aon::odometry::UpdateTurn(gyroscope.get_heading());
 
   driveLeft.moveVelocity(0);
   driveRight.moveVelocity(0);
