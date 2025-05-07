@@ -35,12 +35,18 @@ void autonomous() {
 void opcontrol() {
   while (true) {
     #if TESTING_AUTONOMOUS
-    // aon::move(12);
-    aon::motionProfile(12 * 5);
-    // aon::speedTest(100);
-    // pros::delay(30000);
-    // aon::alignRobotToDisk();
-    // aon::turretFollow();
+    // driveLeft.setBrakeMode(okapi::AbstractMotor::brakeMode::hold); // Currently testinug hold, usually used BRAKE for autonomous and coast for driver
+    // driveRight.setBrakeMode(okapi::AbstractMotor::brakeMode::hold); // Currently testinug hold, usually used BRAKE for autonomous and coast for driver
+    // driveFull.setBrakeMode(okapi::AbstractMotor::brakeMode::hold); // Currently testinug hold, usually used BRAKE for autonomous and coast for driver
+
+    // if(COLOR == RED){
+    //   aon::RedRingsRoutine();
+    // }
+    // else {
+    //   aon::BlueRingsRoutine();
+    // }
+
+    aon::testIndexer();
     #else
     aon::operator_control::Run(aon::operator_control::kManes);
     #endif
