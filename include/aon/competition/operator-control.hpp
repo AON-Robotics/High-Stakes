@@ -37,7 +37,7 @@ namespace aon::operator_control {
  *     movements can be done without as much of a hassle.
  *
  * \param x The controller's user input between -1 and 1
- * \param t Decrease in sensitivity
+ * \param t Sensitivity (higher is more sensible and vice-versa)
  *
  * <a href="https://www.desmos.com/calculator/uhjyivyj4r">Demonstration of
  * scaling function in Desmos.</a>
@@ -82,11 +82,11 @@ inline void _OpControlManes() {
 #if USING_15_INCH_ROBOT
 
   //////////// DRIVE ////////////
-  const double vertical = AnalogInputScaling(main_controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y) / 127.0, SENSITIVITY_DECREASE);
-  const double turn = AnalogInputScaling(main_controller.get_analog(::pros::E_CONTROLLER_ANALOG_RIGHT_X) / 127.0, SENSITIVITY_DECREASE);
+  const double vertical = AnalogInputScaling(main_controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y) / 127.0, SENSITIVITY);
+  const double turn = AnalogInputScaling(main_controller.get_analog(::pros::E_CONTROLLER_ANALOG_RIGHT_X) / 127.0, SENSITIVITY);
 
-  driveLeft.moveVelocity(static_cast<int>(driveLeft.getGearing()) * std::clamp(vertical - turn, -1.0, 1.0));
-  driveRight.moveVelocity(static_cast<int>(driveRight.getGearing()) * std::clamp(vertical + turn, -1.0, 1.0));
+  driveLeft.moveVelocity(static_cast<int>(driveLeft.getGearing()) * std::clamp(vertical + turn, -1.0, 1.0));
+  driveRight.moveVelocity(static_cast<int>(driveRight.getGearing()) * std::clamp(vertical - turn, -1.0, 1.0));
 
   //////////// INTAKE ////////////
   
@@ -108,8 +108,11 @@ inline void _OpControlManes() {
     kickBackRail();
   }
 
-  if(main_controller.get_digital_new_press(DIGITAL_Y)){
-    moveIndexer(toggle(indexerOut));
+  if(main_controller.get_digital(DIGITAL_Y)){
+    indexer.set_value(true);
+  } 
+  else {
+    indexer.set_value(false);
   }
 
   if (main_controller.get_digital(DIGITAL_L1)) {
@@ -122,8 +125,8 @@ inline void _OpControlManes() {
 
 #else
   //////////// DRIVE ////////////
-  const double vertical = AnalogInputScaling(main_controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y) / 127.0, SENSITIVITY_DECREASE);
-  const double turn = AnalogInputScaling(main_controller.get_analog(::pros::E_CONTROLLER_ANALOG_RIGHT_X) / 127.0, SENSITIVITY_DECREASE);
+  const double vertical = AnalogInputScaling(main_controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y) / 127.0, SENSITIVITY);
+  const double turn = AnalogInputScaling(main_controller.get_analog(::pros::E_CONTROLLER_ANALOG_RIGHT_X) / 127.0, SENSITIVITY);
 
   driveLeft.moveVelocity(static_cast<int>(driveLeft.getGearing()) * std::clamp(vertical + turn, -1.0, 1.0));
   driveRight.moveVelocity(static_cast<int>(driveRight.getGearing()) * std::clamp(vertical - turn, -1.0, 1.0));
