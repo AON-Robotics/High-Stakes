@@ -177,20 +177,18 @@ inline void ConfigureMotors(const bool opcontrol = true) {
   intake.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
   intake.tarePosition();
 
-  // arm.setBrakeMode(okapi::AbstractMotor::brakeMode::brake);
-  // arm.setGearing(okapi::AbstractMotor::gearset::red);
-  // arm.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
-  // arm.tarePosition();
-  
-  // while(arm.getPosition() < 100) {
-  //   arm.moveVelocity(ARM_VELOCITY);
-  // }
-  // arm.moveVelocity(0);
-  
-  arm.setBrakeMode(okapi::AbstractMotor::brakeMode::hold);
-  arm.setGearing(okapi::AbstractMotor::gearset::red);
+  // ARM HAVE TO BE IN HIS NATURAL FORM, CLOSE TO THE ROBOT
+  // Elevate arm as default
+  arm.setBrakeMode(okapi::AbstractMotor::brakeMode::brake);
   arm.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
   arm.tarePosition();
+  
+  while(arm.getPosition() < 100) {
+    arm.moveVelocity(ARM_VELOCITY);
+  }
+  arm.moveVelocity(0);
+  
+  arm.setBrakeMode(okapi::AbstractMotor::brakeMode::hold);
 
   turret.setBrakeMode(okapi::AbstractMotor::brakeMode::brake);
   turret.setGearing(okapi::AbstractMotor::gearset::green);

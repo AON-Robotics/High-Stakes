@@ -115,8 +115,8 @@ inline void _OpControlManes() {
     indexer.set_value(false);
   }
 
-  std::cout << "Motor encoder: " << arm.getPosition() << "\n";
-
+  
+  // Limit how much down you go with the arm
   if (main_controller.get_digital(DIGITAL_L1) && arm.getPosition() > 0) {
     arm.moveVelocity(-ARM_VELOCITY);
   } else if (main_controller.get_digital(DIGITAL_L2)) {
@@ -125,6 +125,8 @@ inline void _OpControlManes() {
     arm.moveVelocity(0);
   }
 
+  // Add combination to lower the arm to grab ring
+  
 
 #else
   //////////// DRIVE ////////////

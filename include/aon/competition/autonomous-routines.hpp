@@ -338,6 +338,7 @@ void MoveTurnPID(PID pid = turnPID, double angle = 90, const double &MAX_REVS = 
   angle = abs(angle); // Setting the magnitude to positive
   pid.Reset();
   gyroscope.tare(); // .tare() or .reset(true) depending on the time issue
+  aon::odometry::gyro_data.prevDegrees = 0;
   const double startAngle = gyroscope.get_heading(); // Angle relative to the start
   
   double timeLimit = getTimetoTurnDeg(angle);
