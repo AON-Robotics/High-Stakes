@@ -10,7 +10,7 @@
  *
  * \details Practically uses Singleton design pattern, but classes would have
  * made it more complicated for beginners to understand. Also makes extensive
- * use of USING_15_INCH_ROBOT global constant and preprocessor directives to
+ * use of USING_BLACK_ROBOT global constant and preprocessor directives to
  * make switching between robots not require separate branches, which could make
  * fixes and updates to one branch not apply to the other. Finally, it includes
  * tests for practically all of the fundamental functions except the driver
@@ -19,73 +19,71 @@
  */
 namespace aon::operator_control {
   
-  // ============================================================================
-  //    _  _     _                 ___             _   _
-  //   | || |___| |_ __  ___ _ _  | __|  _ _ _  __| |_(_)___ _ _  ___
-  //   | __ / -_) | '_ \/ -_) '_| | _| || | ' \/ _|  _| / _ \ ' \(_-<
-  //   |_||_\___|_| .__/\___|_|   |_| \_,_|_||_\__|\__|_\___/_||_/__/
-  //              |_|
-  // ============================================================================
-  
-  /**
-   * \brief Scales analog joystick input for easier control.
-   *
-   * \details Fine joystick control can be difficult, specially for tasks like
-   *     rotating. After researching the forums I found that teams scale their
-   *     joystick inputs using an exponential function of sorts. This makes small
-   *     inputs produce a smaller output and bigger inputs increase speed, so fine
-   *     movements can be done without as much of a hassle.
-   *
-   * \param x The controller's user input between -1 and 1
-   * \param t Decrease in sensitivity
-   *
-   * <a href="https://www.desmos.com/calculator/uhjyivyj4r">Demonstration of
-   * scaling function in Desmos.</a>
-   *
-   * \return double
-   *
-   * \warning Make sure that the input x is between -1 and 1!!!
-   */
-  inline double AnalogInputScaling(const double x, const double t) {
-    const double z = 127.0 * x;
-    const double a = ::std::exp(-::std::fabs(t) / 10.0);
-    const double b = ::std::exp((::std::fabs(z) - 127.0) / 10.0);
-    
-    return (a + b * (1 - a)) * z / 127.0;
-  }
-  
-  /**
-   * \brief Makes the rail go slightly back
-   */
-  void kickBackRail(){
-    rail.moveVelocity(-100);
-    pros::delay(150);
-    rail.moveVelocity(0);
-  }
+// ============================================================================
+//    _  _     _                 ___             _   _
+//   | || |___| |_ __  ___ _ _  | __|  _ _ _  __| |_(_)___ _ _  ___
+//   | __ / -_) | '_ \/ -_) '_| | _| || | ' \/ _|  _| / _ \ ' \(_-<
+//   |_||_\___|_| .__/\___|_|   |_| \_,_|_||_\__|\__|_\___/_||_/__/
+//              |_|
+// ============================================================================
 
-  bool retreat = false;
-  
-  // ============================================================================
-  //    ___      _
-  //   |   \ _ _(_)_ _____ _ _ ___
-  //   | |) | '_| \ V / -_) '_(_-<
-  //   |___/|_| |_|\_/\___|_| /__/
-  //
-  // ============================================================================
-  
-  /// Enrique's Operator Control configuration
-  inline void _OpControlEnrique() {
-    #if USING_15_INCH_ROBOT
-    #endif
-  }
-  
-  /// Manes's Operator Control configuration
-  inline void _OpControlManes() {
-    #if USING_15_INCH_ROBOT
+/**
+ * \brief Scales analog joystick input for easier control.
+ *
+ * \details Fine joystick control can be difficult, specially for tasks like
+ *     rotating. After researching the forums I found that teams scale their
+ *     joystick inputs using an exponential function of sorts. This makes small
+ *     inputs produce a smaller output and bigger inputs increase speed, so fine
+ *     movements can be done without as much of a hassle.
+ *
+ * \param x The controller's user input between -1 and 1
+ * \param t Sensitivity (higher is more sensible and vice-versa)
+ *
+ * <a href="https://www.desmos.com/calculator/uhjyivyj4r">Demonstration of
+ * scaling function in Desmos.</a>
+ *
+ * \return double
+ *
+ * \warning Make sure that the input x is between -1 and 1!!!
+ */
+inline double AnalogInputScaling(const double x, const double t) {
+  const double z = 127.0 * x;
+  const double a = ::std::exp(-::std::fabs(t) / 10.0);
+  const double b = ::std::exp((::std::fabs(z) - 127.0) / 10.0);
+
+  return (a + b * (1 - a)) * z / 127.0;
+}
+
+/**
+ * \brief Makes the rail go slightly back
+ */
+void kickBackRail(){
+  rail.moveVelocity(-100);
+  pros::delay(150);
+  rail.moveVelocity(0);
+}
+
+// ============================================================================
+//    ___      _
+//   |   \ _ _(_)_ _____ _ _ ___
+//   | |) | '_| \ V / -_) '_(_-<
+//   |___/|_| |_|\_/\___|_| /__/
+//
+// ============================================================================
+
+/// Enrique's Operator Control configuration
+inline void _OpControlEnrique() {
+#if USING_BLACK_ROBOT
+#endif
+}
+
+/// Manes's Operator Control configuration
+inline void _OpControlManes() {
+#if USING_BLACK_ROBOT
 
   //////////// DRIVE ////////////
-  const double vertical = AnalogInputScaling(main_controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y) / 127.0, SENSITIVITY_DECREASE);
-  const double turn = AnalogInputScaling(main_controller.get_analog(::pros::E_CONTROLLER_ANALOG_RIGHT_X) / 127.0, SENSITIVITY_DECREASE);
+  const double vertical = AnalogInputScaling(main_controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y) / 127.0, SENSITIVITY);
+  const double turn = AnalogInputScaling(main_controller.get_analog(::pros::E_CONTROLLER_ANALOG_RIGHT_X) / 127.0, SENSITIVITY);
 
   driveLeft.moveVelocity(static_cast<int>(driveLeft.getGearing()) * std::clamp(vertical + turn, -1.0, 1.0));
   driveRight.moveVelocity(static_cast<int>(driveRight.getGearing()) * std::clamp(vertical - turn, -1.0, 1.0));
@@ -110,8 +108,11 @@ namespace aon::operator_control {
     kickBackRail();
   }
 
-  if(main_controller.get_digital_new_press(DIGITAL_Y)){
-    moveIndexer(toggle(indexerOut));
+  if(main_controller.get_digital(DIGITAL_Y)){
+    indexer.set_value(true);
+  } 
+  else {
+    indexer.set_value(false);
   }
 
   std::cout << "Motor encoder: " << arm.getPosition() << "\n";
@@ -127,8 +128,8 @@ namespace aon::operator_control {
 
 #else
   //////////// DRIVE ////////////
-  const double vertical = AnalogInputScaling(main_controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y) / 127.0, SENSITIVITY_DECREASE);
-  const double turn = AnalogInputScaling(main_controller.get_analog(::pros::E_CONTROLLER_ANALOG_RIGHT_X) / 127.0, SENSITIVITY_DECREASE);
+  const double vertical = AnalogInputScaling(main_controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y) / 127.0, SENSITIVITY);
+  const double turn = AnalogInputScaling(main_controller.get_analog(::pros::E_CONTROLLER_ANALOG_RIGHT_X) / 127.0, SENSITIVITY);
 
   driveLeft.moveVelocity(static_cast<int>(driveLeft.getGearing()) * std::clamp(vertical + turn, -1.0, 1.0));
   driveRight.moveVelocity(static_cast<int>(driveRight.getGearing()) * std::clamp(vertical - turn, -1.0, 1.0));

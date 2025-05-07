@@ -21,7 +21,7 @@
 #include "./controls/exponential-profile.hpp"
 #include "./sensing/odometry.hpp"
 
-#if !USING_15_INCH_ROBOT
+#if !USING_BLACK_ROBOT
 #include "./controls/holonomic-motion.hpp"
 #endif
 

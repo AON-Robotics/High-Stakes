@@ -5,7 +5,7 @@
 void initialize() {
   // aon::logging::Initialize();
   pros::lcd::initialize();
-  aon::ConfigureMotors();
+  aon::ConfigureMotors(false);
   aon::ConfigureColors();
   aon::odometry::Initialize();
   // pros::Task gui_task(aon::gui::Initialize);
@@ -15,9 +15,8 @@ void disabled() {}
 
 void competition_initialize() {}
 
-void autonomous() { 
- 
-  // aon::AutonomousReader->ExecuteFunction("autonomous");
+void autonomous() {
+
   if(COLOR == RED){
     aon::RedRingsRoutine();
   }
@@ -31,14 +30,22 @@ void autonomous() {
 // During development
 // Program slot 1 with Pizza Icon is for opcontrol
 // Program slot 2 with Planet Icon is for autonomous routine
+// Program slot 3 with Alien Icon is for tests or miscellaneous components
 void opcontrol() {
+  aon::ConfigureMotors();
   while (true) {
     #if TESTING_AUTONOMOUS
-    // aon::move(12);
-    // aon::testMotionProfile(60 * 2);
-    // pros::delay(30000);
-    aon::alignRobotToDisk();
-    // aon::turretFollow();
+    aon::ConfigureMotors(false); // Set drivetrain to hold for auton testing
+
+    if(COLOR == RED){
+      aon::RedRingsRoutine();
+    }
+    else {
+      aon::BlueRingsRoutine();
+    }
+
+    // aon::testIndexer();
+    aon::odomTest();
     #else
     aon::operator_control::Run(aon::operator_control::kManes);
     #endif
