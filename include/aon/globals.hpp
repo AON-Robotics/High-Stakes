@@ -9,7 +9,6 @@
 
 #if USING_15_INCH_ROBOT
 // Motor groups for drivetrain
-// DISMANTLED BOT
 okapi::MotorGroup driveLeft = okapi::MotorGroup({-20, 19, -18});
 okapi::MotorGroup driveRight = okapi::MotorGroup({9, -8, 7});
 okapi::MotorGroup driveFull = okapi::MotorGroup({-20, 19, -18, 9, -8, 7});
@@ -28,6 +27,7 @@ pros::Rotation encoderMid(4, true);
 // pros::Rotation encoderRight(4, true);
 // pros::Rotation encoderLeft(-3, true);
 pros::Rotation encoderBack(11, false);
+pros::Rotation encoderMid(4, false);
 
 // Turret
 okapi::Motor turret = okapi::Motor({-15});
@@ -35,8 +35,10 @@ pros::Rotation turretEncoder(14, false);
 pros::Vision vision_sensor(12); //14 in turret bot
 pros::vision_signature_s_t RED_SIG = pros::Vision::signature_from_utility(1, 8973, 11143, 10058, -2119, -1053, -1586, 5.4, 0);
 pros::vision_signature_s_t BLUE_SIG = pros::Vision::signature_from_utility(2, -3050, -2000, -2500, 8000, 11000, 9500, 5.4, 0);
-
+pros::vision_signature_s_t STAKE_SIG = pros::Vision::signature_from_utility(3, -2247, -1833, -2040, -5427, -4727, -5077, 4.600, 0); // RGB 4.600
 pros::Gps gps(13, GPS_INITIAL_X, GPS_INITIAL_Y, GPS_INITIAL_HEADING, GPS_X_OFFSET, GPS_Y_OFFSET);
+
+
 // pros::Gps gps(6, GPS_INITIAL_X, GPS_INITIAL_Y, GPS_INITIAL_HEADING);
 // pros::Gps gps(6);
 // Center of the field is (0,0), uses 4 quadrant cartesian system for coordinates
