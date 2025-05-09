@@ -1214,6 +1214,25 @@ void quickMiddleScore(){
  
 }
 
+/**
+ * Routine when everything works
+ * 
+ * Positive side robot
+ *  goes for the middle stake
+ *  pick rings from the left and try to take the ones in the corner
+ * 
+ * Negative side robot 
+ *  goes for the left robot
+ *  might try to take the ring to the left ring
+ *  takes the bottom rings and tries corner
+ *  then orientent itself to the positive side of the rival team
+ * 
+ * Objective:
+ *  Clear middle
+ *  So robot that goes in negative side can rush to their positive side
+ */
+
+
 #else
 
 int move(double dist);
