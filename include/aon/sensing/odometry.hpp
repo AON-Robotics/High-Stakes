@@ -565,34 +565,26 @@ void Update() {
 
   // If we are rotating
   if (std::abs(deltaTheta) > 0.01) {
-    // Calculate the radius of rotation for each wheel
     if ((encoderLeft_data.deltaDistance * encoderRight_data.deltaDistance) <= 0) {
       // Turning in its own axis
-      std::cout << "Turning in own axis, No movement. Update angle.\n";
       deltaDlocal.SetPosition(0.0, 0.0);
     }
     else {
-      std::cout << "Arc movement\n";
       double radiusLeft;
       double radiusRight;
+      // Calculate the radius of rotation for each wheel
   
-      // CHANGE DELTA DEPENDING OF WHAT IS POSITIVE
       double sign = (deltaTheta > 0) ? 1 : -1;
       radiusLeft  = (encoderLeft_data.deltaDistance / deltaTheta)  - sign * DISTANCE_LEFT_TRACKING_WHEEL_CENTER;
       radiusRight = (encoderRight_data.deltaDistance / deltaTheta) + sign * DISTANCE_RIGHT_TRACKING_WHEEL_CENTER;
-      std::cout << "Radius: " << radiusLeft << ", " << radiusRight << "\n\n";
 
       double averageR = (encoderLeft_data.deltaDistance + encoderRight_data.deltaDistance) / (2.0 * deltaTheta);
   
-      // Calculate deltaX and deltaY during turning (robot moves in circular arcs)
-      // deltaDlocal.SetY(2.0 * std::sin(deltaTheta / 2.0) * radiusRight);
-      // deltaDlocal.SetX(2.0 * std::sin(deltaTheta / 2.0) * radiusLeft);
       deltaDlocal.SetPosition(averageR * std::sin(deltaTheta), averageR * (1 - std::cos(deltaTheta)));
     }
   }
   else {
     // If the robot is moving straight forward or backward, average encoder values for distance
-    std::cout << "There is no turning\n";
     double deltaD = (encoderLeft_data.deltaDistance + encoderRight_data.deltaDistance) / 2.0;
     deltaDlocal.SetPosition(deltaD, 0);
   } 
