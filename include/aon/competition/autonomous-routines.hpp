@@ -968,7 +968,7 @@ bool continuous_scan(){
 }
 
 
-void FollowWthTurret() {
+void FollowWithTurret() {
   const int TURRET_TOLERANCE = 5;
   const int BODY_ADJUST = 30;
   const double FORWARD_SPEED = 300;
