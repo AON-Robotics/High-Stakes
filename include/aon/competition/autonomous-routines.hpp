@@ -72,6 +72,7 @@ void dropGoal();
 void moveIndexer(bool extend);
 void enableGate();
 void motionProfile(double dist);
+inline void turretRotationAbsolute(double targetAngle);
 
 
 /**
@@ -289,8 +290,8 @@ double getError(double expected, double actual) {
  * \param MAX_REVS The maximum RPM to send to the movement
  */
 void MoveDrivePID(PID pid = drivePID, double dist = TILE_WIDTH, const double &MAX_REVS = 100.0) {
-  // motionProfile(dist);
-  // return;
+  motionProfile(dist);
+  return;
   const int sign = dist / abs(dist); // Getting the direction of the movement
   dist = abs(dist); // Setting the magnitude to positive
 
@@ -417,22 +418,21 @@ void motionProfile(double dist = TILE_WIDTH){
   dist = abs(dist); // Setting the magnitude to positive
 
   const double MAX_VELOCITY = (double)driveFull.getGearing(); // (RPM)
-  const double MAX_ACCEL = MAX_VELOCITY; // (RPM/s)
-  const double MAX_DECCEL = 100; // (RPM/s)
-  const double MAX_JERK = 300; // (RPM/s^2)
+  const double MAX_ACCEL = MAX_VELOCITY * 3; // Try * 4 // (RPM/s)
+  const double MAX_DECCEL = 200; //100 has worked in the past // (RPM/s)
+  const double MAX_JERK = MAX_ACCEL; //300; // (RPM/s^2)
+  double dt = 0.02; // (s)
   double currVelocity = 0;
   double currAccel = 0;
   double traveledDist = 0;
-  Vector startPos = aon::odometry::GetPosition(); // Odom test
-  double dt = 0.02; // (s)
+  Vector startPos = aon::odometry::GetPosition();
 
   double startTime = pros::micros() / 1E6;
-  double secs = 5;
   #define time (pros::micros() / 1E6) - startTime
 
   while(traveledDist < dist){
-    aon::odometry::Update(); // Odom test
-    traveledDist = (aon::odometry::GetPosition() - startPos).GetMagnitude(); // Odom test
+    aon::odometry::Update();
+    traveledDist = (aon::odometry::GetPosition() - startPos).GetMagnitude();
     double remainingDist = dist - traveledDist;
 
     // Debugging output to brain
@@ -693,7 +693,7 @@ void discardDisk(){
  * \details The function already converts the distance to negative so the robot drives into the goal backwards
  *
 */
-void raceToGoal(double dist = 57){
+void raceToGoal(double dist = 48){
   dist = abs(dist);
   MoveDrivePID(fastPID, -dist, (int)driveFull.getGearing());
   grabGoal(300);
@@ -736,30 +736,48 @@ void enableGate(){
 }
 
 /**
- * \brief Aligns TURRET only to the item with the set `COLOR`
+ * \brief Aligns TURRET only to the item with the set `color`
+ * 
+ * \param color The vision sensor signature id of the object tio which we want to align, defaults to `COLOR`
  */
-void turretFollow(){
-  const int TOLERANCE = 20;
+void turretFollow(uint32_t color = COLOR){
+  const int TOLERANCE = 10; // 20
   const int VISION_FIELD_CENTER = 315 / 2;
   int OBJ_CENTER = 0;
-  PID turretPID = PID(.5, 0, 0);
+  // PID turretPID = PID(.25, 0, 0);
+  double position, lastPos;
+  
   while(true){
-    auto object = vision_sensor.get_by_sig(0, COLOR);
+    auto object = vision_sensor.get_by_sig(0, color);
     OBJ_CENTER = object.x_middle_coord;
     double SPEED = turretPID.Output(0, VISION_FIELD_CENTER - OBJ_CENTER);
-    pros::lcd::print(1, "Position: %.2d", turretEncoder.get_angle() / 100);
+    position = turretEncoder.get_angle() / 100;
+    pros::lcd::print(1, "Position: %.2f", position);
+    pros::lcd::print(3, "Last Pos: %.2f, Curr Pos %.2f", lastPos, position);
+    pros::lcd::print(4, "Right Limit: %d, Left Limit %d", ORBIT_RIGHT_LIMIT, ORBIT_LEFT_LIMIT);
+    pros::lcd::print(5, "Right cond: %d, Left cond %d", lastPos > ORBIT_RIGHT_LIMIT && position <= ORBIT_RIGHT_LIMIT, lastPos < ORBIT_LEFT_LIMIT && position >= ORBIT_LEFT_LIMIT);
 
-    if(object.signature == COLOR){
+    if(object.signature == color){
       if(abs(OBJ_CENTER - VISION_FIELD_CENTER) <= TOLERANCE){
         turret.moveVelocity(0);
         pros::lcd::print(2, "Aligned!");
         break;
+      }
+      // Limiting to protect hardware
+      else if (ORBIT_LIMITED && ((lastPos > ORBIT_RIGHT_LIMIT && position <= ORBIT_RIGHT_LIMIT) || (lastPos < ORBIT_LEFT_LIMIT && position >= ORBIT_LEFT_LIMIT)) && abs(position - lastPos) < 20) {
+        turret.moveVelocity(0);
+        // turretRotationAbsolute(0);
       }
       else { // Turn Towards Object
         pros::lcd::print(2, "Turning!");
         turret.moveVelocity(SPEED);
       }
     }
+    // Dont move if nothing is there
+    else {
+      turret.moveVelocity(0);
+    }
+    lastPos = position;
     pros::delay(10);
   }
   turret.moveVelocity(0);
@@ -768,21 +786,34 @@ void turretFollow(){
 /**
  * \brief Aligns TURRET and DRIVETRAIN to the item with the set `COLOR`
  */
-void alignRobotToDisk(){
-  turretFollow();
+void alignRobotTo(uint32_t color = COLOR){
+  turretFollow(color);
   const int TOLERANCE = 10;
   int difference = 0;
   #define TURRET_ANGLE turretEncoder.get_angle() / 100
   while(abs((TURRET_ANGLE)) > TOLERANCE){
     difference = TURRET_ANGLE < 180 ? TURRET_ANGLE : TURRET_ANGLE - 360;
     pros::lcd::print(2, "Moving!");
-    double SPEED = turnPID.Output(0, difference) * 40;
+    double SPEED = turnPID.Output(0, difference) * 400;
+    pros::lcd::print(3, "Speed: %.2f", SPEED);
     driveLeft.moveVelocity(SPEED);
     driveRight.moveVelocity(-SPEED);
-    turretFollow();
+    turretFollow(color);
   }
   driveLeft.moveVelocity(0);
   driveRight.moveVelocity(0);
+  if(color == STAKE){
+    turn(180);
+  }
+}
+
+/**
+ * \brief Aligns front of robot and turns around to grab de stake
+ */
+void dumbAlignToStake(){
+  alignRobotTo(STAKE);
+  move(-6);
+  grabGoal();
 }
 
 /**
@@ -793,7 +824,7 @@ void alignRobotToDisk(){
  * \details turretEncoder.get_angle() is divided by 100 for scaling purposes.
  */
 inline void turretRotationAbsolute(double targetAngle) { 
-  PID turretPID = PID(0.5, 0, 0); 
+  // PID turretPID = PID(0.5, 0, 0); 
   while (true) {
     double currentAngle = turretEncoder.get_angle()/100.0; 
     double output = turretPID.Output(targetAngle, currentAngle); 
@@ -809,10 +840,10 @@ inline void turretRotationAbsolute(double targetAngle) {
  * 
  * \param givenAngle Angle in degrees we wish to rotate turret.
  *
- * \details turretEncoder.get_angle() is divided by 100 for scaling purposes.
+ * \details `turretEncoder.get_angle()` is divided by 100 for scaling purposes.
  */
 inline void turretRotationRelative(double givenAngle) { 
-  PID turretPID = PID(0.5, 0, 0); 
+  // PID turretPID = PID(0.5, 0, 0); 
   double currentAngle = turretEncoder.get_angle() / 100.0; 
   double initialAngle = turretEncoder.get_angle() / 100.0; 
   double targetAngle = initialAngle + givenAngle; 
@@ -874,6 +905,7 @@ void odomTest(){
   pros::delay(1000);
   motionProfile(-12 * 3);
   pros::delay(1000);
+  return;
 
   // PID Forward
   move(12 * 3);
@@ -911,7 +943,7 @@ void turretFollow_restricted (){
   const int VISION_FIELD_CENTER = 315 / 2;
   const int RESTRICT_MIN = 150;
   const int RESTRICT_MAX = 280;
-  PID turretPID = PID(.5, 0, 0);
+  // PID turretPID = PID(.5, 0, 0);
 
   while(true){
     auto object = vision_sensor.get_by_sig(0, COLOR);
@@ -1202,6 +1234,35 @@ int BlueRingsRoutineJorgeLuna() {
   move(-6);
   turnToTarget(1.8, 1.8);
 }
+
+/**
+ * \author Solimar
+ */
+int SkillsGreenBotSoli(){
+
+}
+
+/**
+ * \author Jorge G
+ */
+int SkillsGreenBotJorge(){
+
+}
+
+/**
+ * \author Jorge L
+ */
+int SkillsBlackBotJorge(){
+
+}
+
+/**
+ * \author Kevin
+ */
+int SkillsBlackBotKevin(){
+
+}
+
 
 /**
  * \brief This is a safety routine to at least grab one goal and score on it

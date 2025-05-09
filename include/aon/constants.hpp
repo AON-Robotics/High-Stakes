@@ -11,6 +11,7 @@
 // Colors
 #define RED 1
 #define BLUE 2
+#define STAKE 3
 
 // NOT using black robot = Using green robot
 #define USING_BLACK_ROBOT true
@@ -32,8 +33,8 @@
 #define ENCODER_CONFIDENCE 0
 #define OFFSET_X_ENCODER_MID 3.250
 
-#define DRIVE_WIDTH 12.15 //distance between front wheels
-#define DRIVE_LENGTH 9 //distance from back wheel to front wheel
+#define DRIVE_WIDTH 12.15 // distance between front wheels
+#define DRIVE_LENGTH 9 // distance from back wheel to front wheel
 #define DISTANCE_FRONT_LEFT_DRIVE_WHEEL_CENTER 7.55
 #define DISTANCE_BACK_LEFT_DRIVE_WHEEL_CENTER 7.55
 #define DISTANCE_FRONT_RIGHT_DRIVE_WHEEL_CENTER 7.55 //PYTHAG
@@ -49,13 +50,18 @@
 
 // These next four (4) are in meters (all else is inches)
 #define GPS_X_OFFSET 0 // CAD
-#define GPS_Y_OFFSET 0.154304916675 // CAD
+#define GPS_Y_OFFSET 0.193878095306 // CAD
 #define GPS_INITIAL_X -0.34 // Field
 #define GPS_INITIAL_Y -0.82 // Field
 #define GPS_INITIAL_HEADING 296.86 // Field (in Degrees)
 
 #define MAX_RPM (int)driveFull.getGearing()
 #define INTAKE_VELOCITY (int)intake.getGearing()
+
+// ORBIT Limiting to protect when it does not have 360° of freedom
+#define ORBIT_LIMITED true
+#define ORBIT_LEFT_LIMIT 155
+#define ORBIT_RIGHT_LIMIT 285
 
 
 #else

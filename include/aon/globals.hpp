@@ -48,6 +48,8 @@ pros::Gps gps(13, GPS_INITIAL_X, GPS_INITIAL_Y, GPS_INITIAL_HEADING, GPS_X_OFFSE
 aon::PID drivePID = aon::PID(0.02, 0, 0);
 aon::PID turnPID = aon::PID(0.002, 0, 0);
 aon::PID fastPID = aon::PID(1, 0, 0);
+aon::PID turretPID = aon::PID(0.25, 0, 0);
+
 
 pros::ADIDigitalIn limit_switch ('C');
 pros::ADIDigitalIn lineTracker ('B');
@@ -146,12 +148,11 @@ pros::Controller main_controller = pros::Controller(pros::E_CONTROLLER_MASTER);
 namespace aon {
 
 inline void ConfigureMotors(const bool opcontrol = true) {
-  // Test this line to ensure all is well
   // HOLD for AUTONOMOUS ||| COAST for OPERATOR CONTROL
   okapi::AbstractMotor::brakeMode brakeMode = opcontrol ? okapi::AbstractMotor::brakeMode::coast : okapi::AbstractMotor::brakeMode::hold;
 
   #if USING_BLACK_ROBOT
-  // Configure motors for 15 inch robot
+  // Configure motors for black robot
   driveLeft.setBrakeMode(brakeMode); 
   driveLeft.setGearing(okapi::AbstractMotor::gearset::blue);
   driveLeft.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
@@ -172,7 +173,7 @@ inline void ConfigureMotors(const bool opcontrol = true) {
   intake.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
   intake.tarePosition();
 
-  arm.setBrakeMode(okapi::AbstractMotor::brakeMode::brake);
+  arm.setBrakeMode(okapi::AbstractMotor::brakeMode::hold);
   arm.setGearing(okapi::AbstractMotor::gearset::red);
   arm.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
   arm.tarePosition();
@@ -225,6 +226,7 @@ inline bool toggle(bool &boolean) {
 inline void ConfigureColors(){
   vision_sensor.set_signature(1, &RED_SIG);
   vision_sensor.set_signature(2, &BLUE_SIG);
+  vision_sensor.set_signature(3, &STAKE_SIG);
 }
 
 /**

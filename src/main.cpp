@@ -37,15 +37,21 @@ void opcontrol() {
     #if TESTING_AUTONOMOUS
     aon::ConfigureMotors(false); // Set drivetrain to hold for auton testing
 
-    if(COLOR == RED){
-      aon::RedRingsRoutine();
-    }
-    else {
-      aon::BlueRingsRoutine();
-    }
+    // if(COLOR == RED){
+    //   aon::RedRingsRoutine();
+    // }
+    // else {
+    //   aon::BlueRingsRoutine();
+    // }
 
     // aon::testIndexer();
-    aon::odomTest();
+    // aon::odomTest();
+    // aon::alignRobotTo(STAKE);
+    aon::dumbAlignToStake();
+    // aon::turretFollow(STAKE);
+    // aon::turretRotationAbsolute(0);
+    // turretPID.Reset();
+    // pros::delay(3000);
     #else
     aon::operator_control::Run(aon::operator_control::kManes);
     #endif
