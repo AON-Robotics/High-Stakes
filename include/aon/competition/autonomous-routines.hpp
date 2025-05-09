@@ -9,6 +9,7 @@
 #include "../controls/holonomic-motion.hpp"
 #include <queue>
 
+
 // For speed testing but may prove useful otherwise
 class MovingAverage {
   public:
@@ -72,6 +73,7 @@ void dropGoal();
 void moveIndexer(bool extend);
 void enableGate();
 void motionProfile(double dist);
+void turretTrackRestricted();
 
 
 /**
@@ -906,52 +908,6 @@ void testIndexer(){
   grabGoal();
 }
 
-void turretFollow_restricted (){
-  const int TOLERANCE = 20;
-  const int VISION_FIELD_CENTER = 315 / 2;
-  const int RESTRICT_MIN = 150;
-  const int RESTRICT_MAX = 280;
-  PID turretPID = PID(.5, 0, 0);
-
-  while(true){
-    auto object = vision_sensor.get_by_sig(0, COLOR);
-    int OBJ_CENTER = object.x_middle_coord;
-    double SPEED = turretPID.Output(0, VISION_FIELD_CENTER - OBJ_CENTER);
-
-    int turret_angle = turretEncoder.get_angle() / 100;
-
-    pros::lcd::print(1, "Position: %d", turret_angle);
-
-    if (object.signature == COLOR){
-      if (abs(OBJ_CENTER - VISION_FIELD_CENTER) <= TOLERANCE){
-        turret.moveVelocity(0);
-        pros::lcd::print(2, "Aligned!");
-        break;
-      } else {
-        // Check if the turret is trying to move into restricted zone
-        if ((turret_angle >= RESTRICT_MIN && turret_angle <= RESTRICT_MAX) &&
-            ((SPEED > 0 && turret_angle < RESTRICT_MAX) || (SPEED < 0 && turret_angle > RESTRICT_MIN))) {
-          // Prevent motion further into restricted area
-          turret.moveVelocity(0);
-          pros::lcd::print(2, "Blocked");
-          turretRotationAbsolute(0);
-        } else {
-          pros::lcd::print(2, "Turning!");
-          turret.moveVelocity(SPEED);
-        }
-      }
-    }
-
-    pros::delay(10);
-  }
-
-  turret.moveVelocity(0);
-}
-
-
-
-
-
 void AlignRobotToStake(){//align back of robot to the steak
   // First, align turret to the new target (e.g., yellow stake)
   turretFollow(); 
@@ -987,42 +943,6 @@ void AlignRobotToStake(){//align back of robot to the steak
     //back of robot should be aligned 
 }
 
-void FollowWithTurret() {//cant go past 280 and 150
-    const int TURRET_TOLERANCE = 5;  // Allowable turret misalignment
-    const int BODY_ADJUST_THRESHOLD = 30; // If turret turns beyond this, body must adjust
-    const int FORWARD_SPEED = 20;  // Speed to move forward
-
-    while (true) {
-      turretFollow_restricted();  // Make turret track the object
-
-        int turret_angle = turretEncoder.get_angle()/100;  // Angle of turret relative to the body
-        int difference = turret_angle < 180 ? turret_angle : turret_angle - 360;
-        int bodyDifference = difference ;
-
-        // Move forward at a steady pace
-
-        // If the turret turns too much, adjust the body to reduce strain on the turret
-        if (abs(bodyDifference) > BODY_ADJUST_THRESHOLD) {
-            double turnSpeed = turnPID.Output(0, bodyDifference) * 30;//was originally 40 
-            driveLeft.moveVelocity(FORWARD_SPEED + turnSpeed);
-            driveRight.moveVelocity(FORWARD_SPEED - turnSpeed);
-        }
-        else{
-          driveFull.moveVelocity(10);
-        }
-
-        // Stop if the target is lost
-        if (vision_sensor.get_object_count()==0) {  //might have to find another solution to this
-            break;
-        }
-
-        pros::delay(10); 
-    }
-
-    // Stop the robot when done
-    driveLeft.moveVelocity(0);
-    driveRight.moveVelocity(0);
-}
 
 bool continuous_scan(){
   turretRotationAbsolute(180);
@@ -1047,13 +967,89 @@ bool continuous_scan(){
   }
 }
 
-void eject_or_score(){
-  if(limit_switch.get_value()==1){
-    turretRotationAbsolute(150);
-    auto object= vision_sensor.get_by_sig(0,COLOR);
-    if(object.signature != COLOR){
-      intake.moveVelocity(0);
-    }
+
+void FollowWithTurret() {
+  const int TURRET_TOLERANCE = 5;
+  const int BODY_ADJUST = 30;
+  const double FORWARD_SPEED = 300;
+  const int DISTANCE = 100;
+
+  while (true) {
+      // Single step turret adjustment (should be non-blocking)
+      turretTrackRestricted();
+
+      int turret_angle = turretEncoder.get_angle() / 100;
+      int difference = TURRET_ANGLE < 180 ? TURRET_ANGLE : TURRET_ANGLE - 360;
+
+      // Adjust body if turret deviates too much
+      if (abs(difference) > BODY_ADJUST) {
+          double turnSpeed = turnPID.Output(0, difference) * 500;
+          turnSpeed = std::clamp(turnSpeed, -FORWARD_SPEED, FORWARD_SPEED);
+          driveLeft.moveVelocity(FORWARD_SPEED - turnSpeed);
+          driveRight.moveVelocity(FORWARD_SPEED + turnSpeed);
+      } else {
+          driveFull.moveVelocity(FORWARD_SPEED);
+      }
+
+      // Stop and pick up if close
+      if (distanceSensor.get() <= DISTANCE) {
+          driveFull.moveVelocity(0);
+          pickUpRing(3000);
+          break;
+      }
+
+      // Stop if no objects detected
+      if (vision_sensor.get_object_count() == 0) {
+          break;
+      }
+
+      pros::delay(10);
+  }
+
+  driveLeft.moveVelocity(0);
+  driveRight.moveVelocity(0);
+}
+
+
+void turretTrackRestricted() {
+  const int TOLERANCE = 20;
+  const int VISION_FIELD_CENTER = 315 / 2;
+  const int BOUND_1 = 270; // max right
+  const int BOUND_2 = 120; // max left
+  static PID turretPID = PID(0.5, 0, 0);
+
+  auto object = vision_sensor.get_by_sig(0, COLOR);
+
+  // If no valid object found
+  if (object.signature != COLOR) {
+      turret.moveVelocity(0);
+      //pros::lcd::print(2, "No Object");
+      return;
+  }
+
+  int OBJ_CENTER = object.x_middle_coord;
+  int turret_angle = turretEncoder.get_angle() / 100;
+  double SPEED = turretPID.Output(0, VISION_FIELD_CENTER - OBJ_CENTER);
+
+  //pros::lcd::print(1, "Turret Pos: %d", turret_angle);
+  //pros::lcd::print(3, "Center Diff: %d", VISION_FIELD_CENTER - OBJ_CENTER);
+
+  // If already aligned
+  if (abs(OBJ_CENTER - VISION_FIELD_CENTER) <= TOLERANCE) {
+      turret.moveVelocity(0);
+      //pros::lcd::print(2, "Turret Aligned");
+      return;
+  }
+
+  // Predict next angle
+  int projected_angle = turret_angle + (SPEED > 0 ? 1 : -1) * 5;
+
+  if (projected_angle >= BOUND_2 && projected_angle <= BOUND_1) {
+      turret.moveVelocity(SPEED);
+      //pros::lcd::print(2, "Turret Turning");
+  } else {
+      turret.moveVelocity(0);
+      //pros::lcd::print(2, "Turret Out of Bounds");
   }
 }
 
