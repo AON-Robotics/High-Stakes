@@ -303,7 +303,23 @@ inline void ResetCurrent(const double x, const double y, const double theta) {
 
 //> Resets the Odometry values with `INITIAL_ODOMETRY_X`,Y and T constants.
 inline void ResetInitial() {
-    ResetCurrent(INITIAL_ODOMETRY_X, INITIAL_ODOMETRY_Y, INITIAL_ODOMETRY_THETA);
+  // Test if we are going to use the odometry more
+  // Get position from the encoder at the beggining of the match and assign it to the encoder
+  // to be able to keep track of the position at all times
+  UpdatePositionGPS();
+  ResetCurrent(GetX(), GetY(), INITIAL_ODOMETRY_THETA);
+
+  // normal initial
+  // ResetCurrent(INITIAL_ODOMETRY_X, INITIAL_ODOMETRY_Y, INITIAL_ODOMETRY_THETA);
+}
+
+//> Update the position using the gps for accuracy
+inline void UpdatePositionGPS() {
+  Vector newPosition = getGPSPos();
+  double newAngle = gps.get_heading();
+
+  SetPosition(newPosition.GetX(), newPosition.GetY());
+  SetDegrees(newAngle);
 }
 
 /**
@@ -325,7 +341,7 @@ inline void Initialize() {
   // INITIAL_ODOMETRY_X = gps.get_x_position();
   // INITIAL_ODOMETRY_Y = gps.get_y_position();
     
-    ResetInitial();
+  ResetInitial();
 }
 
 /**
@@ -556,11 +572,10 @@ void Update() {
   // Save current data for future calculations
   gyro_data.prevDegrees = gyro_data.currentDegrees;
 
-  // Right now, confidence gyro 0.9, encoder confidence 0.1 (must sum 1) 
+  // Right now, confidence gyro 1.0, encoder confidence 0 (must sum 1) 
   deltaTheta = (1 - GYRO_CONFIDENCE) * deltaThetaA + GYRO_CONFIDENCE * gyro_data.deltaRadians;
   std::cout << "Delta Theta: " << deltaTheta * (180/M_PI) << "\n";
   std::cout << "\n";
-  // deltaTheta = gyro_data.deltaRadians;
   #endif
 
   // If we are rotating
@@ -598,8 +613,21 @@ void Update() {
 
  std::cout << "X: " << GetX() << ", Y: " << GetY() << ", Angle: " << GetDegrees() << "\n\n";
  pros::lcd::print(1, "X: ", GetX());
- pros::lcd::print(1, "Y: ", GetY());
- pros::lcd::print(1, "Angle: ", GetDegrees());
+ pros::lcd::print(2, "Y: ", GetY());
+ pros::lcd::print(3, "Angle: ", GetDegrees());
+
+
+ // It works only if we set the initial position with GPS
+ if (COLOR == BLUE) {
+  if (GetY() > -10) {
+    pros::lcd::print(4, "IT SUPER CLOSE TO SURPASS THE AUTONOMOUS LINE");
+  }
+ }
+ else if (COLOR == RED) {
+  if (GetY() < 10) {
+    pros::lcd::print(4, "IT SUPER CLOSE TO SURPASS THE AUTONOMOUS LINE");
+  }
+ }
 
   // Save current values as previous for future updates
   encoderLeft_data.prevValue = encoderLeft_data.currentValue;
