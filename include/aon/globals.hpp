@@ -12,26 +12,21 @@
 okapi::MotorGroup driveLeft = okapi::MotorGroup({-20, 19, -18});
 okapi::MotorGroup driveRight = okapi::MotorGroup({9, -8, 7});
 okapi::MotorGroup driveFull = okapi::MotorGroup({-20, 19, -18, 9, -8, 7});
-// okapi::MotorGroup driveLeft = okapi::MotorGroup({18});
-// okapi::MotorGroup driveRight = okapi::MotorGroup({-16});
-// okapi::MotorGroup driveFull = okapi::MotorGroup({-18, 16});
-
-
 
 okapi::MotorGroup intake = okapi::MotorGroup({-16, 17});
 okapi::MotorGroup rail = okapi::MotorGroup({17});
 okapi::Motor gate = okapi::Motor(-16);
 
-okapi::Motor arm = okapi::Motor(-11);
+okapi::Motor arm = okapi::Motor(11);
 
 pros::ADIDigitalOut indexer ('A');
 
-//odometry
-// pros::Rotation encoderMid(12, true);
-// pros::Rotation encoderBack(11, false);
 
-pros::Rotation encoderRight(4, true);
-pros::Rotation encoderLeft(3, false);
+// odometry
+pros::Rotation encoderMid(4, true);
+// pros::Rotation encoderRight(4, true);
+// pros::Rotation encoderLeft(-3, true);
+pros::Rotation encoderBack(11, false);
 
 // Turret
 okapi::Motor turret = okapi::Motor({-15});
@@ -177,18 +172,10 @@ inline void ConfigureMotors(const bool opcontrol = true) {
   intake.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
   intake.tarePosition();
 
-  // ARM HAVE TO BE IN HIS NATURAL FORM, CLOSE TO THE ROBOT
-  // Elevate arm as default
   arm.setBrakeMode(okapi::AbstractMotor::brakeMode::brake);
+  arm.setGearing(okapi::AbstractMotor::gearset::red);
   arm.setEncoderUnits(okapi::AbstractMotor::encoderUnits::degrees);
   arm.tarePosition();
-  
-  while(arm.getPosition() < 100) {
-    arm.moveVelocity(ARM_VELOCITY);
-  }
-  arm.moveVelocity(0);
-  
-  arm.setBrakeMode(okapi::AbstractMotor::brakeMode::hold);
 
   turret.setBrakeMode(okapi::AbstractMotor::brakeMode::brake);
   turret.setGearing(okapi::AbstractMotor::gearset::green);
