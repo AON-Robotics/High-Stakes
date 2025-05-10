@@ -18,7 +18,7 @@
  *
  */
 namespace aon::operator_control {
-  
+
 // ============================================================================
 //    _  _     _                 ___             _   _
 //   | || |___| |_ __  ___ _ _  | __|  _ _ _  __| |_(_)___ _ _  ___
@@ -115,18 +115,13 @@ inline void _OpControlManes() {
     indexer.set_value(false);
   }
 
-  
-  // Limit how much down you go with the arm
-  if (main_controller.get_digital(DIGITAL_L1) && arm.getPosition() > 0) {
-    arm.moveVelocity(-ARM_VELOCITY);
+  if (main_controller.get_digital(DIGITAL_L1)) {
+    arm.moveVelocity(INTAKE_VELOCITY);
   } else if (main_controller.get_digital(DIGITAL_L2)) {
-    arm.moveVelocity(ARM_VELOCITY);
+    arm.moveVelocity(-INTAKE_VELOCITY);
   } else {
     arm.moveVelocity(0);
   }
-
-  // Add combination to lower the arm to grab ring
-  
 
 #else
   //////////// DRIVE ////////////
