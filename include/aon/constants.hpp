@@ -56,6 +56,7 @@
 
 #define MAX_RPM (int)driveFull.getGearing()
 #define INTAKE_VELOCITY (int)intake.getGearing()
+#define ARM_VELOCITY (int)arm.getGearing()
 
 
 #else

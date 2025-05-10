@@ -340,6 +340,7 @@ void MoveTurnPID(PID pid = turnPID, double angle = 90, const double &MAX_REVS = 
   angle = abs(angle); // Setting the magnitude to positive
   pid.Reset();
   gyroscope.tare(); // .tare() or .reset(true) depending on the time issue
+  aon::odometry::gyro_data.prevDegrees = 0;
   const double startAngle = gyroscope.get_heading(); // Angle relative to the start
   
   double timeLimit = getTimetoTurnDeg(angle);
@@ -1213,6 +1214,25 @@ void quickMiddleScore(){
  
 }
 
+/**
+ * Routine when everything works
+ * 
+ * Positive side robot
+ *  goes for the middle stake
+ *  pick rings from the left and try to take the ones in the corner
+ * 
+ * Negative side robot 
+ *  goes for the left robot
+ *  might try to take the ring to the left ring
+ *  takes the bottom rings and tries corner
+ *  then orientent itself to the positive side of the rival team
+ * 
+ * Objective:
+ *  Clear middle
+ *  So robot that goes in negative side can rush to their positive side
+ */
+
+
 #else
 
 int move(double dist);
@@ -1960,5 +1980,3 @@ void quickMiddleScore(){
 
 #endif
 };  // namespace aon
-
-
