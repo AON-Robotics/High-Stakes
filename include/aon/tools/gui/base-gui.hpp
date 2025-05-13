@@ -373,21 +373,21 @@ static void HandleButtonPress() {
           // AUT1
           DrawNABlock(blocks_x[0], blocks_y[3], blocks_x[1], blocks_y[4],
                       lower_block_1_text_x, lower_block_text_y);
-          AutonomousReader->AddFunction("autonomous", aon::RedRingsRoutine);  //
+          AutonomousReader->AddFunction("autonomous", aon::RedRingsRoutine);
           pros::delay(200);
 
         } else if (TouchStatus.x < blocks_x[2]) {
           // AUT2
           DrawNABlock(blocks_x[1], blocks_y[3], blocks_x[2], blocks_y[4],
                       lower_block_2_text_x, lower_block_text_y);
-          AutonomousReader->AddFunction("autonomous", aon::RedRingsRoutine);  //
+          AutonomousReader->AddFunction("autonomous", aon::RedRingsRoutine);
           pros::delay(200);
 
         } else {
           // AUT3
           DrawNABlock(blocks_x[2], blocks_y[3], blocks_x[3], blocks_y[4],
                       lower_block_3_text_x, lower_block_text_y);
-          AutonomousReader->AddFunction("autonomous", aon::RedRingsRoutine);  //
+          AutonomousReader->AddFunction("autonomous", aon::RedRingsRoutine);
           pros::delay(200);
         }
       }
@@ -450,7 +450,7 @@ static void HandleButtonPress() {
           // AUT1
           DrawNABlock(blocks_x[0], blocks_y[3], blocks_x[1], blocks_y[4],
                       lower_block_1_text_x, lower_block_text_y);
-          aon::operator_control::Run(aon::operator_control::kManes);
+          aon::operator_control::Run(aon::operator_control::DEFAULT);
           pros::delay(200);
 
         }

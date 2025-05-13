@@ -197,7 +197,7 @@ namespace aon::odometry {
    * \param radians Input value to set the current angle to
    *
    * \warning Sets angles in units of \b radians. INPUT MUST BE IN \b RADIANS
-   * */
+   */
   inline void SetRadians(const double radians) {
     orientation_mutex.take(1);
     orientation.SetRadians(radians);
@@ -293,7 +293,7 @@ inline void Initialize() {
  *
  * \details Uses changes in encoder (middle and back) and gyro to calculate position
  * 
- * */
+ */
 
 inline void Update() {
   // Read encoder values, divided by 100 to convert centidegrees to degrees
