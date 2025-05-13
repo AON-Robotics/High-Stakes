@@ -1,12 +1,12 @@
 #include "main.hpp"
 
 void initialize() {
-  // aon::logging::Initialize();
-  pros::lcd::initialize();
+  pros::Task gui_task(aon::gui::Initialize);
+  aon::logging::Initialize();
+  // pros::lcd::initialize();
   aon::ConfigureMotors(false);
   aon::ConfigureColors();
   aon::odometry::Initialize();
-  // pros::Task gui_task(aon::gui::Initialize);
 }
 
 void disabled() {}
@@ -14,13 +14,13 @@ void disabled() {}
 void competition_initialize() {}
 
 void autonomous() {
-  // aon::AutonomousReader->ExecuteFunction("autonomous");
-  if(COLOR == RED){
-    aon::RedRingsRoutine();
-  }
-  else {
-    aon::BlueRingsRoutine();
-  }
+  aon::AutonomousReader->ExecuteFunction("autonomous");
+  // if(COLOR == RED){
+  //   aon::RedRingsRoutine();
+  // }
+  // else {
+  //   aon::BlueRingsRoutine();
+  // }
   pros::delay(10);
 
 }
