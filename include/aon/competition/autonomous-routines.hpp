@@ -198,8 +198,7 @@ double findDistance(Vector target, Vector current){
  * \returns The angle the robot needs to turn in order to face the target location
  *
  * \note The result must be passed into functions such as turn() and MoveTurnPID() as negative because of their convention
- * \todo Test thoroughly
-*/
+ */
 double calculateTurn(Vector target, Vector current) {
   // Get and change the heading to the common cartesian plane
   double heading = 90 - gps.get_heading();
@@ -384,7 +383,7 @@ void motionProfile(double dist = TILE_WIDTH){
   dist = abs(dist); // Setting the magnitude to positive
 
   const double MAX_VELOCITY = MAX_RPM;//(double)driveFull.getGearing(); // (RPM)
-  const double MAX_ACCEL = MAX_VELOCITY * 3; // Try * 4 // (RPM/s)
+  // const double MAX_ACCEL = MAX_VELOCITY * 3; // Try * 4 // (RPM/s)
   const double MAX_DECCEL = 200; //100 has worked in the past // (RPM/s)
   const double MAX_JERK = MAX_ACCEL; //300; // (RPM/s^2)
   double dt = 0.02; // (s)

@@ -55,6 +55,9 @@
 #define MAX_RPM (int)driveFull.getGearing()
 #define INTAKE_VELOCITY (int)intake.getGearing() * .8
 
+// https://www.desmos.com/calculator/fftt0psrwk 
+#define MAX_ACCEL 4991.46340024
+
 // ORBIT Limiting to protect when it does not have 360° of freedom
 #define ORBIT_LIMITED true
 #define ORBIT_LEFT_LIMIT 155
