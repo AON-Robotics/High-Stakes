@@ -1,12 +1,14 @@
 #include "main.hpp"
 
 void initialize() {
-  pros::Task gui_task(aon::gui::Initialize);
+  pros::Task guiTask(aon::gui::Initialize);
   aon::logging::Initialize();
-  // pros::lcd::initialize();
+  pros::lcd::initialize();
   aon::ConfigureMotors(false);
   aon::ConfigureColors();
   aon::odometry::Initialize();
+  pros::Task odomTask(aon::odometry::Odometry);
+  pros::Task safetyTask(aon::autonSafety);
 }
 
 void disabled() {}
@@ -15,14 +17,7 @@ void competition_initialize() {}
 
 void autonomous() {
   aon::AutonomousReader->ExecuteFunction("autonomous");
-  // if(COLOR == RED){
-  //   aon::RedRingsRoutine();
-  // }
-  // else {
-  //   aon::BlueRingsRoutine();
-  // }
   pros::delay(10);
-
 }
 
 // During development
@@ -34,14 +29,8 @@ void opcontrol() {
   while (true) {
     #if TESTING_AUTONOMOUS
     aon::ConfigureMotors(false); // Set drivetrain to hold for auton testing
-    // aon::AutonomousReader->ExecuteFunction("autonomous");
 
-    if(COLOR == RED){
-      aon::RedRingsRoutine();
-    }
-    else {
-      aon::BlueRingsRoutine();
-    }
+    aon::AutonomousReader->ExecuteFunction("autonomous");
 
     pros::delay(3000);
     #else
