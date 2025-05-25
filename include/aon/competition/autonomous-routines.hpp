@@ -88,13 +88,13 @@ int initialReset(bool gyro = true)
  * \returns The speed in \b in/s at which the robot would move at the given RPM
  *
  * \note Test the accuracy precision of the `getActualVelocity()` method,
- * \note it may be possible to need to use `get_velocity()` from `encoder` which uses \b centidegrees.
+ * \note it may be possible to need to use `get_velocity()` from `pros::Rotation` which uses \b centidegrees.
  * \note The distance units depend on the units used for measuring `DRIVE_WHEEL_DIAMETER`
  */
 inline double getSpeed(const double &RPM = (int)driveFull.getActualVelocity()){
   double circumference = DRIVE_WHEEL_DIAMETER * M_PI;
-  double RPS = MOTOR_TO_DRIVE_RATIO * RPM / 60;
-  double speed = circumference * RPS;
+  double RPS = RPM / 60;
+  double speed = MOTOR_TO_DRIVE_RATIO * circumference * RPS;
   return speed;
 }
 
@@ -185,8 +185,8 @@ inline double metersToInches(double meters) { return meters * 39.3701; }
  * \returns The distance between the two points
  */
 double findDistance(Vector target, Vector current){
-  double Dist_meters= (target - current).GetMagnitude();
-  return metersToInches(Dist_meters);
+  double distInMeters= (target - current).GetMagnitude();
+  return metersToInches(distInMeters);
 }
 
 /**
@@ -315,7 +315,6 @@ void MoveTurnPID(PID pid = turnPID, double angle = 90, const double &MAX_REVS = 
 
   // while(time < 1.7 * timeLimit){
   while(time < 3 * timeLimit){
-      aon::odometry::Update();
 
     double traveledAngle = gyroscope.get_heading() - startAngle;
 
@@ -383,8 +382,6 @@ void motionProfile(double dist = TILE_WIDTH){
   dist = abs(dist); // Setting the magnitude to positive
 
   const double MAX_VELOCITY = MAX_RPM;//(double)driveFull.getGearing(); // (RPM)
-  // const double MAX_ACCEL = MAX_VELOCITY * 3; // Try * 4 // (RPM/s)
-  const double MAX_DECCEL = 200; //100 has worked in the past // (RPM/s)
   const double MAX_JERK = MAX_ACCEL; //300; // (RPM/s^2)
   double dt = 0.02; // (s)
   double currVelocity = 0;
@@ -392,13 +389,13 @@ void motionProfile(double dist = TILE_WIDTH){
   double traveledDist = 0;
   Vector startPos = aon::odometry::GetPosition();
 
-  double startTime = pros::micros() / 1E6;
-  #define time (pros::micros() / 1E6) - startTime
+  double lastTime = pros::micros() / 1E6;
 
   while(traveledDist < dist){
-    aon::odometry::Update();
     traveledDist = (aon::odometry::GetPosition() - startPos).GetMagnitude();
     double remainingDist = dist - traveledDist;
+    dt = (pros::micros() / 1E6) - lastTime;
+    lastTime = pros::micros() / 1E6;
 
     // Debugging output to brain
     pros::lcd::print(1, "Traveled: %.2f / %.2f", traveledDist, dist);
@@ -408,9 +405,10 @@ void motionProfile(double dist = TILE_WIDTH){
     pros::lcd::print(5, "Max Velocity: %.2f", getSpeed(MAX_RPM));
 
     // Acceleration
-    if(remainingDist <= getSpeed(currVelocity) * getSpeed(currVelocity) / (2 * getSpeed(MAX_DECCEL))){
+    // For the condition, consider half the deceleration for accuracy (there is an error of half an inch almost constant when not used, I have to investigate a bit further on that part but if works fine like this)
+    if(remainingDist <= getSpeed(currVelocity) * getSpeed(currVelocity) / (2 * getSpeed(MAX_DECEL * .5))){
       // currAccel = std::max(currAccel - (MAX_JERK * dt), 0);
-      currAccel = - MAX_DECCEL * 1.5;
+      currAccel = - MAX_DECEL;
     } else {
       currAccel = std::min(currAccel + (MAX_JERK * dt), MAX_ACCEL);
     }
@@ -421,12 +419,12 @@ void motionProfile(double dist = TILE_WIDTH){
     driveFull.moveVelocity(sign * currVelocity);
 
     // traveledDist += getSpeed(currVelocity) * dt; // TODO: Use Odometry
+    if(traveledDist >= dist) { break; } // Overshoot prevention
 
-    pros::delay(dt * 1000);
+    pros::delay(20);
   }
 
   driveFull.moveVelocity(0);
-  #undef time
 }
 
 // ============================================================================
@@ -546,7 +544,7 @@ int turn(double angle = 90)
  * \brief This small subroutine moves the intake such that a ring is scored on the mobile goal being carried
  *
  * \param delay The time in \b milliseconds to leave the intake running
-*/
+ */
 void pickUpRing(int delay = 1000){
   intake.moveVelocity(INTAKE_VELOCITY / .8);
   pros::delay(delay);
@@ -557,11 +555,28 @@ void pickUpRing(int delay = 1000){
  * \brief This small subroutine moves the rail such that a ring is scored on the mobile goal being carried
  *
  * \param delay The time in \b milliseconds to leave the intake running
-*/
+ */
 void scoreRing(int delay = 1500){
   rail.moveVelocity(INTAKE_VELOCITY);
   pros::delay(delay);
   rail.moveVelocity(0);
+}
+
+volatile bool intakeRunning = true;
+
+/**
+ * \brief Asynchronous task for activating the intake when a ring is encountered
+ */
+void intakeScanning(){
+  while(true){
+    intake.moveVelocity(0);
+    if (intakeRunning && distanceSensor.get() <= DISTANCE) {
+      pickUpRing();
+      driveFull.moveVelocity(0); // may need a mutex
+      scoreRing();
+    }
+    pros::delay(20);
+  }
 }
 
 /**
@@ -570,13 +585,12 @@ void scoreRing(int delay = 1500){
  * \param SIGNATURE The id number of the vision signature of the object to follow and pick up
  *
  * \todo Add time constraint in case a ring is never found
-*/
+ */
 void driveIntoRing(const short &color = COLOR){
   const int TOLERANCE = 20;
   const int VISION_FIELD_CENTER = 315 / 2;
   const int SPEED = 150; // 200 is max
   const int ADJUSTMENT = 30;
-  const int DISTANCE = 90;
   while(true){
     auto object = vision_sensor.get_by_sig(0, color);
     const int OBJ_CENTER = object.x_middle_coord;
@@ -622,7 +636,7 @@ void driveIntoRing(const short &color = COLOR){
  * \warning You must already be very close to the goal and facing away (with the clamp towards it)
  *
  * \details This routine uses timing but ideally there would be a way of knowing when we have the goal within our grasp
-*/
+ */
 void grabGoal(const short &delay = 600){
   driveFull.moveVelocity(-100);
   pros::delay(delay * 5 / 6);
@@ -651,7 +665,7 @@ void discardDisk(){
  *
  * \details The function already converts the distance to negative so the robot drives into the goal backwards
  *
-*/
+ */
 void raceToGoal(double dist = 47){
   dist = abs(dist);
   MoveDrivePID(fastPID, -dist, (int)driveFull.getGearing());
@@ -678,7 +692,7 @@ void moveIndexer(bool extend = true){
  *
  * \brief This small subroutine removes the top ring of a stack of two and scores the ring at top. use ONLY when the indexer is at the right side of stack.
  *
-*/
+ */
 void RemoveTop(){
   moveIndexer();
   turn(-45);
@@ -699,7 +713,7 @@ void enableGate(){
  * 
  * \param color The vision sensor signature id of the object tio which we want to align, defaults to `COLOR`
  */
-void turretFollow(uint32_t color = COLOR){
+void turretFollow(const short &color = COLOR){
   const int TOLERANCE = 10; // 20
   const int VISION_FIELD_CENTER = 315 / 2;
   int OBJ_CENTER = 0;
@@ -722,7 +736,7 @@ void turretFollow(uint32_t color = COLOR){
         break;
       }
       // Limiting to protect hardware
-      else if (ORBIT_LIMITED && ((lastPos > ORBIT_RIGHT_LIMIT && position <= ORBIT_RIGHT_LIMIT) || (lastPos < ORBIT_LEFT_LIMIT && position >= ORBIT_LEFT_LIMIT)) && abs(position - lastPos) < 20) {
+      else if (ORBIT_LIMITED && (ORBIT_LEFT_LIMIT <= position && position <= ORBIT_RIGHT_LIMIT)) {
         turret.moveVelocity(0);
         // turretRotationAbsolute(0);
       }
@@ -761,6 +775,7 @@ void alignRobotTo(const short &color = COLOR){
     driveRight.moveVelocity(-SPEED);
     turretFollow(color);
   }
+  #undef TURRET_ANGLE
   driveLeft.moveVelocity(0);
   driveRight.moveVelocity(0);
   if(color == STAKE){
@@ -773,11 +788,10 @@ void alignRobotTo(const short &color = COLOR){
  * 
  * \note Setting `color` to `STAKE` makes the robot turn 180°
  */
-void grabRing(uint32_t color = COLOR){
+void grabRing(const short &color = COLOR){
   turretFollow(color);
   const int TOLERANCE = 10;
   const double FORWARD_SPEED = 100;
-  const double DISTANCE = 90;
   double difference;
   #define TURRET_ANGLE turretEncoder.get_angle() / 100
   while(abs((TURRET_ANGLE)) > TOLERANCE){
@@ -795,6 +809,7 @@ void grabRing(uint32_t color = COLOR){
     }
     driveFull.moveVelocity(0);
   }
+  #undef TURRET_ANGLE
 }
 
 /**
@@ -816,7 +831,6 @@ void dumbGetStake(const double &dist = 8){
  * \details turretEncoder.get_angle() is divided by 100 for scaling purposes.
  */
 inline void turretRotationAbsolute(double targetAngle) { 
-  // PID turretPID = PID(0.5, 0, 0); 
   while (true) {
     double currentAngle = turretEncoder.get_angle()/100.0; 
     double output = turretPID.Output(targetAngle, currentAngle); 
@@ -835,7 +849,6 @@ inline void turretRotationAbsolute(double targetAngle) {
  * \details `turretEncoder.get_angle()` is divided by 100 for scaling purposes.
  */
 inline void turretRotationRelative(double givenAngle) { 
-  // PID turretPID = PID(0.5, 0, 0); 
   double currentAngle = turretEncoder.get_angle() / 100.0; 
   double initialAngle = turretEncoder.get_angle() / 100.0; 
   double targetAngle = initialAngle + givenAngle; 
@@ -854,7 +867,6 @@ inline void turretRotationRelative(double givenAngle) {
  * \param TIMEOUT The max time the robot will be moving forward in \b seconds (default is 5 sec)
  */
 void driveTillPickUp(const double &TIMEOUT = 5){
-  const double DISTANCE = 90;
   const double startTime = pros::micros() / 1E6;
   #define time pros::micros() / 1E6 - startTime
   while(time  < TIMEOUT){
@@ -866,6 +878,7 @@ void driveTillPickUp(const double &TIMEOUT = 5){
       break;
     }
   }
+  #undef time
   driveFull.moveVelocity(0);
 }
 
@@ -896,7 +909,7 @@ void testGPS() {
 /**
  * \brief Speed calculation test using the distance sensor
  */
-void speedTest(double RPM = (double)driveFull.getGearing()){
+void testSpeed(double RPM = (double)driveFull.getGearing()){
   MovingAverage mav(50);
   while(true) {
     driveFull.moveVelocity(RPM);
@@ -912,8 +925,7 @@ void speedTest(double RPM = (double)driveFull.getGearing()){
   }
 }
 
-void 
-odomTest(){
+void testOdom(){
   // Motion Profile
   motionProfile(12 * 3);
   pros::delay(1000);
@@ -945,11 +957,80 @@ odomTest(){
 void testIndexer(){
   moveIndexer();
   motionProfile(40);
-  // MoveDrivePID(fastPID, 40, (int)driveFull.getGearing());
   move(-6);
   turn(180);
   move(-2);
   grabGoal();
+}
+
+/**
+ * \brief Test to ensure the concurrency is working fine, requires `intakeScanning` to be running in another thread
+ */
+void testConcurrency(){
+  intakeRunning = true;
+  int startTime = pros::micros() / 1E6;
+  #define time (pros::micros() / 1E6) - startTime
+  while(time < 5){
+    driveFull.moveVelocity(100);
+    pros::delay(20);
+  }
+  #undef time
+  driveFull.moveVelocity(0);
+  intakeRunning = false;
+}
+
+void testTurnProfile(double angle = 90){
+  const int sign = angle / abs(angle); // Getting the direction of the movement
+  angle = abs(angle); // Setting the magnitude to positive
+  gyroscope.tare(); // .tare() or .reset(true) depending on the time issue
+  
+  if(sign == -1) { angle = 360.0 - angle + CLOCKWISE_ROTATION_DEGREES_OFFSET; }
+  if(sign == 1) { angle -= CLOCKWISE_ROTATION_DEGREES_OFFSET; }
+  
+  const double MAX_VELOCITY = MAX_RPM;//(double)driveFull.getGearing(); // (RPM)
+  // const double MAX_ACCEL = MAX_VELOCITY * 3; // Try * 4 // (RPM/s)
+  // const double MAX_DECEL = 200; //100 has worked in the past // (RPM/s)
+  const double MAX_JERK = MAX_ACCEL; //300; // (RPM/s^2)
+  double dt = 0.02; // (s)
+  double currVelocity = 0;
+  double currAccel = 0;
+  double traveledAngle = 0;
+  double startAngle = gyroscope.get_heading();
+
+  double startTime = pros::micros() / 1E6;
+  #define time (pros::micros() / 1E6) - startTime
+
+  while(traveledAngle < angle){
+    traveledAngle = gyroscope.get_heading() - startAngle;
+    double remainingAngle = angle - traveledAngle;
+
+    // Debugging output to brain
+    pros::lcd::print(1, "Traveled: %.2f / %.2f", traveledAngle, angle);
+    pros::lcd::print(2, "RPM: %.2f, Accel: %.2f", currVelocity, currAccel);
+    pros::lcd::print(3, "Remaining: %.2f", remainingAngle);
+    pros::lcd::print(4, "Calculated Velocity: %.2f", getSpeed(currVelocity));
+    pros::lcd::print(5, "Max Velocity: %.2f", getSpeed(MAX_RPM));
+
+    // Acceleration
+    if(remainingAngle <= getSpeed(currVelocity) * getSpeed(currVelocity) / (2 * getSpeed(100))){
+      // currAccel = std::max(currAccel - (MAX_JERK * dt), 0);
+      currAccel = - 100 * 1.5;
+    } else {
+      currAccel = std::min(currAccel + (MAX_JERK * dt), 200.0);
+    }
+
+    currVelocity += currAccel * dt;
+    currVelocity = std::min(currVelocity,  MAX_VELOCITY);
+
+    driveLeft.moveVelocity(sign * currVelocity);
+    driveRight.moveVelocity(-sign * currVelocity);
+
+
+    pros::delay(dt * 1000);
+  }
+
+  driveFull.moveVelocity(0);
+  #undef time
 }
 
 void AlignRobotToStake(){//align back of robot to the steak
@@ -957,34 +1038,39 @@ void AlignRobotToStake(){//align back of robot to the steak
   turretFollow(); 
   const int TOLERANCE = 10;// Degrees of acceptable error for alignment
   #define TURRET_ANGLE turretEncoder.get_angle()/100 // Get turret angle in degrees
-  int difference = (TURRET_ANGLE +180)% 360;
+  int difference = (TURRET_ANGLE + 180) % 360;
 
-   // Calculate the angle difference needed to rotate the robot's back toward the target.
+  // Calculate the angle difference needed to rotate the robot's back toward the target.
   // This is done by adding 180° to the turret's angle and normalizing to [-180°, 180°]
-    if (difference >180){
-      difference-= 360;}
-    if (difference< -180){
-      difference +=360;}
+  if (difference > 180){
+    difference -= 360;
+  }
+  if (difference < -180){
+    difference += 360;
+  }
 
-    // Loop until the robot's back is aligned within the specified tolerance
-    while (abs(difference)>TOLERANCE) {
-        //process of aligning back of robot 
-        turretFollow(); 
-        double SPEED = turnPID.Output(0, difference) * 40;
-        driveLeft.moveVelocity(SPEED);
-        driveRight.moveVelocity(-SPEED);
-        pros::delay(10);
-        difference=(TURRET_ANGLE+180)% 360;  // Recalculate the angle difference after turning
-        if (difference>180){
-          difference-=360;}
-
-        if (difference<-180){
-          difference+=360;}
+  // Loop until the robot's back is aligned within the specified tolerance
+  while(abs(difference) > TOLERANCE){
+    //process of aligning back of robot 
+    turretFollow(); 
+    double SPEED = turnPID.Output(0, difference) * 40;
+    driveLeft.moveVelocity(SPEED);
+    driveRight.moveVelocity(-SPEED);
+    difference = (TURRET_ANGLE + 180) % 360;  // Recalculate the angle difference after turning
+    if(difference > 180){
+      difference -= 360;
     }
+      
+    if(difference < -180){
+      difference += 360;
+    }
+      pros::delay(10);
+  }
+  #undef TURRET_ANGLE
 
-    driveLeft.moveVelocity(0);
-    driveRight.moveVelocity(0);
-    //back of robot should be aligned 
+  driveLeft.moveVelocity(0);
+  driveRight.moveVelocity(0);
+  //back of robot should be aligned 
 }
 
 
@@ -1016,7 +1102,7 @@ void FollowWithTurret(u_int32_t color = COLOR) {
   const int TURRET_TOLERANCE = 5;
   const int BODY_ADJUST = 10;
   const double FORWARD_SPEED = 130;
-  const int DISTANCE = 90;
+  #define TURRET_ANGLE turretEncoder.get_angle()/100 // Get turret angle in degrees
 
   while (true) {
       // Single step turret adjustment (should be non-blocking)
@@ -1051,6 +1137,7 @@ void FollowWithTurret(u_int32_t color = COLOR) {
 
       pros::delay(10);
   }
+  #undef TURRET_ANGLE
 
   driveLeft.moveVelocity(0);
   driveRight.moveVelocity(0);
