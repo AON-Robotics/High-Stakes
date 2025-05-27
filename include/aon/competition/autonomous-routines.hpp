@@ -378,24 +378,27 @@ void goToTarget(double x, double y){
  * \param dist The distance to be moved
  */
 void motionProfile(double dist = TILE_WIDTH){
+  if(dist == 0) { return; }
   const int sign = dist / abs(dist); // Getting the direction of the movement
   dist = abs(dist); // Setting the magnitude to positive
 
-  const double MAX_VELOCITY = MAX_RPM;//(double)driveFull.getGearing(); // (RPM)
-  const double MAX_JERK = MAX_ACCEL; //300; // (RPM/s^2)
+  const double MAX_VELOCITY = MAX_RPM; // (RPM)
+  const double MAX_JERK = MAX_ACCEL; // (RPM/s^2)
   double dt = 0.02; // (s)
   double currVelocity = 0;
   double currAccel = 0;
   double traveledDist = 0;
   Vector startPos = aon::odometry::GetPosition();
 
+  double now;
   double lastTime = pros::micros() / 1E6;
 
   while(traveledDist < dist){
     traveledDist = (aon::odometry::GetPosition() - startPos).GetMagnitude();
     double remainingDist = dist - traveledDist;
-    dt = (pros::micros() / 1E6) - lastTime;
-    lastTime = pros::micros() / 1E6;
+    now = pros::micros() / 1E6;
+    dt =  now - lastTime;
+    lastTime = now;
 
     // Debugging output to brain
     pros::lcd::print(1, "Traveled: %.2f / %.2f", traveledDist, dist);
@@ -407,7 +410,7 @@ void motionProfile(double dist = TILE_WIDTH){
     // Acceleration
     // For the condition, consider half the deceleration for accuracy (there is an error of half an inch almost constant when not used, I have to investigate a bit further on that part but if works fine like this)
     if(remainingDist <= getSpeed(currVelocity) * getSpeed(currVelocity) / (2 * getSpeed(MAX_DECEL * .5))){
-      // currAccel = std::max(currAccel - (MAX_JERK * dt), 0);
+      // currAccel = std::max(currAccel - (MAX_JERK * dt), 0); // TODO: maybe do calculations to make this an option but it doesn't seem necessary
       currAccel = - MAX_DECEL;
     } else {
       currAccel = std::min(currAccel + (MAX_JERK * dt), MAX_ACCEL);
@@ -418,7 +421,7 @@ void motionProfile(double dist = TILE_WIDTH){
 
     driveFull.moveVelocity(sign * currVelocity);
 
-    // traveledDist += getSpeed(currVelocity) * dt; // TODO: Use Odometry
+    // traveledDist += getSpeed(currVelocity) * dt; // TODO: Have integral as backup for odom failure
     if(traveledDist >= dist) { break; } // Overshoot prevention
 
     pros::delay(20);
@@ -979,44 +982,43 @@ void testConcurrency(){
   intakeRunning = false;
 }
 
-void testTurnProfile(double angle = 90){
+void turnProfile(double angle = 90){
+  if(angle == 0) { return; }
   const int sign = angle / abs(angle); // Getting the direction of the movement
   angle = abs(angle); // Setting the magnitude to positive
-  gyroscope.tare(); // .tare() or .reset(true) depending on the time issue
   
-  if(sign == -1) { angle = 360.0 - angle + CLOCKWISE_ROTATION_DEGREES_OFFSET; }
-  if(sign == 1) { angle -= CLOCKWISE_ROTATION_DEGREES_OFFSET; }
-  
-  const double MAX_VELOCITY = MAX_RPM;//(double)driveFull.getGearing(); // (RPM)
-  // const double MAX_ACCEL = MAX_VELOCITY * 3; // Try * 4 // (RPM/s)
-  // const double MAX_DECEL = 200; //100 has worked in the past // (RPM/s)
-  const double MAX_JERK = MAX_ACCEL; //300; // (RPM/s^2)
+  const double circumference = DRIVE_LENGTH * M_PI; // Of the robot's rotation, used in the condition to calculate the length of arc remaining
+  const double MAX_VELOCITY = MAX_RPM; // (RPM)
+  const double MAX_JERK = MAX_ACCEL; // (RPM/s^2)
   double dt = 0.02; // (s)
   double currVelocity = 0;
   double currAccel = 0;
   double traveledAngle = 0;
-  double startAngle = gyroscope.get_heading();
+  double startAngle = aon::odometry::GetDegrees();
 
-  double startTime = pros::micros() / 1E6;
-  #define time (pros::micros() / 1E6) - startTime
+  double now;
+  double lastTime = pros::micros() / 1E6;
 
   while(traveledAngle < angle){
-    traveledAngle = gyroscope.get_heading() - startAngle;
+    traveledAngle = abs(aon::odometry::GetDegrees() - startAngle);
     double remainingAngle = angle - traveledAngle;
+    now = pros::micros() / 1E6;
+    dt =  now - lastTime;
+    lastTime = now;
 
     // Debugging output to brain
     pros::lcd::print(1, "Traveled: %.2f / %.2f", traveledAngle, angle);
     pros::lcd::print(2, "RPM: %.2f, Accel: %.2f", currVelocity, currAccel);
     pros::lcd::print(3, "Remaining: %.2f", remainingAngle);
     pros::lcd::print(4, "Calculated Velocity: %.2f", getSpeed(currVelocity));
-    pros::lcd::print(5, "Max Velocity: %.2f", getSpeed(MAX_RPM));
+    pros::lcd::print(5, "Max Velocity: %.2f", getSpeed(MAX_VELOCITY));
 
     // Acceleration
-    if(remainingAngle <= getSpeed(currVelocity) * getSpeed(currVelocity) / (2 * getSpeed(100))){
-      // currAccel = std::max(currAccel - (MAX_JERK * dt), 0);
-      currAccel = - 100 * 1.5;
+    // For the condition, consider half the deceleration for accuracy (there is an error of half an inch almost constant when not used, I have to investigate a bit further on that part but if works fine like this)
+    if(circumference * (remainingAngle / 360.0) <= getSpeed(currVelocity) * getSpeed(currVelocity) / (2.0 * getSpeed(MAX_DECEL * 0.5))){
+      currAccel = - MAX_DECEL;
     } else {
-      currAccel = std::min(currAccel + (MAX_JERK * dt), 200.0);
+      currAccel = std::min(currAccel + (MAX_JERK * dt), MAX_ACCEL);
     }
 
     currVelocity += currAccel * dt;
@@ -1025,12 +1027,13 @@ void testTurnProfile(double angle = 90){
     driveLeft.moveVelocity(sign * currVelocity);
     driveRight.moveVelocity(-sign * currVelocity);
 
+    // traveledAngle += getSpeed(currVelocity) * dt * 360 / circumference; // TODO: Have Integral for gyro failure
+    if(traveledAngle >= angle) { break; } // Overshoot prevention
 
-    pros::delay(dt * 1000);
+    pros::delay(20);
   }
 
   driveFull.moveVelocity(0);
-  #undef time
 }
 
 void AlignRobotToStake(){//align back of robot to the steak
