@@ -1386,7 +1386,7 @@ int BlueRingsRoutineJorgeLuna() {
  */
 int SkillsBlackBotJorge(){
   // grab skate in the middle bottom
-  raceToGoal(33.4066376232);
+  raceToGoal(TILE_DIAG_LENGTH);
   // grab 0, -1.2
   // grab 0.6, -1.2
   // turn to -1.4, 0
@@ -1423,7 +1423,7 @@ int SkillsBlackBotJorge(){
  */
 int SkillsBlackBotKevin(){
   // Grab bottom-most goal
-  raceToGoal(33.4066376232);
+  raceToGoal(TILE_DIAG_LENGTH);
   
   // Grab ring in (-1.2, -1.2)
   turnToTarget(-1.2, -1.2);
