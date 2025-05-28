@@ -829,7 +829,7 @@ void grabRing(const short &color = COLOR){
     double SPEED = turnPID.Output(0, difference) * 400;
     pros::lcd::print(3, "Speed: %.2f", SPEED);
     driveLeft.moveVelocity(FORWARD_SPEED + SPEED);
-    driveRight.moveVelocity(FORWARD_SPEED -SPEED);
+    driveRight.moveVelocity(FORWARD_SPEED - SPEED);
     turretFollow(color);
     // Stop and pick up if close
     if (distanceSensor.get() <= DISTANCE) {
@@ -1171,9 +1171,7 @@ void testConcurrency(){
 //                                                                             |
 // ============================================================================|
 
-/**
- * \brief This is a safety routine to at least grab one goal and score on it
- */
+/// @brief This is a safety routine to at least grab one goal and score on it
 void quickMiddleScore(){
   move(-3);
   grabGoal();
@@ -1251,9 +1249,6 @@ int BlueRingsRoutine(){
   return 1;
 }
 
-void scoreWithIndexer(){
-  
-}
 
 /**
   WILL CLEAR POSITIVE SIDE JUST TO BE SURE
