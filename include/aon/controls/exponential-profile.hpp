@@ -17,11 +17,11 @@ class ExponentialProfile {
   }
 
   void SetParams(double D_, double T_) {
-    if (std::isnormal(D_)) {
+    if (!std::isnormal(D_)) {
       aon::logging::Error("[❌] D_ is not normal.");
       return;
     }
-    if (std::isnormal(T_)) {
+    if (!std::isnormal(T_)) {
       aon::logging::Error("[❌] T_ is not normal.");
       return;
     }
