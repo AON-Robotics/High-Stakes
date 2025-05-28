@@ -373,9 +373,9 @@ void goToTarget(double x, double y){
 }
 
 /**
- * \brief S-graph motion profile
+ * \brief S-graph motion profile for linear movement
  * 
- * \param dist The distance to be moved
+ * \param dist The distance to be moved in \b inches, positive values will move forward and negative values backwards
  */
 void motionProfile(double dist = TILE_WIDTH){
   if(dist == 0) { return; }
@@ -423,6 +423,65 @@ void motionProfile(double dist = TILE_WIDTH){
 
     // traveledDist += getSpeed(currVelocity) * dt; // TODO: Have integral as backup for odom failure
     if(traveledDist >= dist) { break; } // Overshoot prevention
+
+    pros::delay(20);
+  }
+
+  driveFull.moveVelocity(0);
+}
+
+/**
+ * \brief S-graph motion profile for rotations
+ * 
+ * \param angle The angle in \b degrees we wish to rotate the robot, positive is clockwise and negative is counter-clockwise
+ */
+void turnProfile(double angle = 90){
+  if(angle == 0) { return; }
+  const int sign = angle / abs(angle); // Getting the direction of the movement
+  angle = abs(angle); // Setting the magnitude to positive
+  
+  const double circumference = DRIVE_LENGTH * M_PI; // Of the robot's rotation, used in the condition to calculate the length of arc remaining
+  const double MAX_VELOCITY = MAX_RPM; // (RPM)
+  const double MAX_JERK = MAX_ACCEL; // (RPM/s^2)
+  double dt = 0.02; // (s)
+  double currVelocity = 0;
+  double currAccel = 0;
+  double traveledAngle = 0;
+  double startAngle = aon::odometry::GetDegrees();
+
+  double now;
+  double lastTime = pros::micros() / 1E6;
+
+  while(traveledAngle < angle){
+    traveledAngle = abs(aon::odometry::GetDegrees() - startAngle);
+    double remainingAngle = angle - traveledAngle;
+    now = pros::micros() / 1E6;
+    dt =  now - lastTime;
+    lastTime = now;
+
+    // Debugging output to brain
+    pros::lcd::print(1, "Traveled: %.2f / %.2f", traveledAngle, angle);
+    pros::lcd::print(2, "RPM: %.2f, Accel: %.2f", currVelocity, currAccel);
+    pros::lcd::print(3, "Remaining: %.2f", remainingAngle);
+    pros::lcd::print(4, "Calculated Velocity: %.2f", getSpeed(currVelocity));
+    pros::lcd::print(5, "Max Velocity: %.2f", getSpeed(MAX_VELOCITY));
+
+    // Acceleration
+    // For the condition, consider half the deceleration for accuracy (there is an error of half an inch almost constant when not used, I have to investigate a bit further on that part but if works fine like this)
+    if(circumference * (remainingAngle / 360.0) <= getSpeed(currVelocity) * getSpeed(currVelocity) / (2.0 * getSpeed(MAX_DECEL * 0.5))){
+      currAccel = - MAX_DECEL;
+    } else {
+      currAccel = std::min(currAccel + (MAX_JERK * dt), MAX_ACCEL);
+    }
+
+    currVelocity += currAccel * dt;
+    currVelocity = std::min(currVelocity,  MAX_VELOCITY);
+
+    driveLeft.moveVelocity(sign * currVelocity);
+    driveRight.moveVelocity(-sign * currVelocity);
+
+    // traveledAngle += getSpeed(currVelocity) * dt * 360 / circumference; // TODO: Have Integral for gyro failure
+    if(traveledAngle >= angle) { break; } // Overshoot prevention
 
     pros::delay(20);
   }
@@ -980,60 +1039,6 @@ void testConcurrency(){
   #undef time
   driveFull.moveVelocity(0);
   intakeRunning = false;
-}
-
-void turnProfile(double angle = 90){
-  if(angle == 0) { return; }
-  const int sign = angle / abs(angle); // Getting the direction of the movement
-  angle = abs(angle); // Setting the magnitude to positive
-  
-  const double circumference = DRIVE_LENGTH * M_PI; // Of the robot's rotation, used in the condition to calculate the length of arc remaining
-  const double MAX_VELOCITY = MAX_RPM; // (RPM)
-  const double MAX_JERK = MAX_ACCEL; // (RPM/s^2)
-  double dt = 0.02; // (s)
-  double currVelocity = 0;
-  double currAccel = 0;
-  double traveledAngle = 0;
-  double startAngle = aon::odometry::GetDegrees();
-
-  double now;
-  double lastTime = pros::micros() / 1E6;
-
-  while(traveledAngle < angle){
-    traveledAngle = abs(aon::odometry::GetDegrees() - startAngle);
-    double remainingAngle = angle - traveledAngle;
-    now = pros::micros() / 1E6;
-    dt =  now - lastTime;
-    lastTime = now;
-
-    // Debugging output to brain
-    pros::lcd::print(1, "Traveled: %.2f / %.2f", traveledAngle, angle);
-    pros::lcd::print(2, "RPM: %.2f, Accel: %.2f", currVelocity, currAccel);
-    pros::lcd::print(3, "Remaining: %.2f", remainingAngle);
-    pros::lcd::print(4, "Calculated Velocity: %.2f", getSpeed(currVelocity));
-    pros::lcd::print(5, "Max Velocity: %.2f", getSpeed(MAX_VELOCITY));
-
-    // Acceleration
-    // For the condition, consider half the deceleration for accuracy (there is an error of half an inch almost constant when not used, I have to investigate a bit further on that part but if works fine like this)
-    if(circumference * (remainingAngle / 360.0) <= getSpeed(currVelocity) * getSpeed(currVelocity) / (2.0 * getSpeed(MAX_DECEL * 0.5))){
-      currAccel = - MAX_DECEL;
-    } else {
-      currAccel = std::min(currAccel + (MAX_JERK * dt), MAX_ACCEL);
-    }
-
-    currVelocity += currAccel * dt;
-    currVelocity = std::min(currVelocity,  MAX_VELOCITY);
-
-    driveLeft.moveVelocity(sign * currVelocity);
-    driveRight.moveVelocity(-sign * currVelocity);
-
-    // traveledAngle += getSpeed(currVelocity) * dt * 360 / circumference; // TODO: Have Integral for gyro failure
-    if(traveledAngle >= angle) { break; } // Overshoot prevention
-
-    pros::delay(20);
-  }
-
-  driveFull.moveVelocity(0);
 }
 
 void AlignRobotToStake(){//align back of robot to the steak
