@@ -470,7 +470,7 @@ int main(){
    * \endcode
    */
   Vector SetMagnitude(double magnitude) {
-    this->magnitude = magnitude;
+    this->magnitude = abs(magnitude);
     x = magnitude * std::cos(direction->GetRadians());
     y = magnitude * std::sin(direction->GetRadians());
 
