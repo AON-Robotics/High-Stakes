@@ -217,6 +217,7 @@ double getErrorPercentage(const double &expected, const double &actual) {
   return ((expected - actual) / expected) * 100;
 }
 
+
 // ============================================================================
 //   __  __  _____   _____ __  __ ___ _  _ _____
 //  |  \/  |/ _ \ \ / / __|  \/  | __| \| |_   _|
@@ -224,7 +225,6 @@ double getErrorPercentage(const double &expected, const double &actual) {
 //  |_|  |_|\___/ \_/ |___|_|  |_|___|_|\_| |_|  
 //
 // ============================================================================
-
 
 /**
  * \brief Moves the robot a given distance (default forward)
@@ -465,6 +465,7 @@ void turnProfile(double angle = 90){
   driveFull.moveVelocity(0);
 }
 
+
 // ============================================================================
 //   ___ ___ __  __ ___ _    ___   __  __  _____   _____ __  __ ___ _  _ _____
 //  / __|_ _|  \/  | _ \ |  | __| |  \/  |/ _ \ \ / / __|  \/  | __| \| |_   _|
@@ -472,7 +473,6 @@ void turnProfile(double angle = 90){
 //  |___/___|_|  |_|_| |____|___| |_|  |_|\___/ \_/ |___|_|  |_|___|_|\_| |_|  
 //
 // ============================================================================
-
 
 /**
  * \brief Moves the robot straight accross a given amount of tiles
@@ -1066,6 +1066,7 @@ void turretTrackRestricted(const short &color = COLOR) {
   }
 }
 
+
 // ============================================================================
 //   _____ ___ ___ _____ ___
 //  |_   _| __/ __|_   _/ __|
@@ -1162,6 +1163,7 @@ void testConcurrency(){
   driveFull.moveVelocity(0);
   intakeRunning = false;
 }
+
 
 // ============================================================================|
 //   ___  ___  _   _ _____ ___ _  _ ___ ___                                    |
