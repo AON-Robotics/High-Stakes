@@ -118,37 +118,6 @@ inline double getTimetoTurnRad(const double &radians, const double &RPM = MAX_RP
  */
 inline double getTimetoTurnDeg(const double &degrees) { return getTimetoTurnRad(degrees * M_PI / 180); }
 
-
-/**
- * \brief Determines the angle needed to turn
- *
- * \param target The point towards which we want to face
- *
- * \returns The angle needed to turn in order to face the target
- *
- * \warning The units must be meters because a mandatory conversion happens (this can be modified)
- *
- * \todo Complete calculations
- */
-inline double getAngleToTurn(Vector target){
-  target.SetX(metersToInches(target.GetX()));
-  target.SetY(metersToInches(target.GetY()));
-
-  double heading = gps.get_heading();
- 
-  // Vector current = getGPSPos();
-  Vector current = odometry::GetPosition(); // If this one is used the INITIAL_ODOMETRY_{COMPONENT} variables must be set and no reset can be done
-
-  double result = 0;
-
-  // Do corresponding calculations
-
-  double toTarget = (target - current).GetDegrees(); // This number is in reference to the common cartesian plane if odometry position is used
-
-
-  return result;
-}
-
 /**
  * \brief Conversion from \b meters to \b inches
  *
