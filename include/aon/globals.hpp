@@ -31,9 +31,9 @@ okapi::Motor gate = okapi::Motor(-16);
 // Misc
 
 okapi::Motor arm = okapi::Motor(11);
-okapi::Motor turret = okapi::Motor({-15});
+okapi::Motor turret = okapi::Motor(-15);
 
-//TriPort
+// TriPort
 
 pros::ADIDigitalOut indexer ('G');
 bool indexerOut = false;
@@ -52,7 +52,7 @@ bool clawOn = false;
 
 pros::Rotation encoderMid(5, true);
 pros::Rotation encoderBack(11, false);
-pros::Rotation turretEncoder(14, false);
+pros::Rotation turretEncoder(14, true);
 
 
 // Vision

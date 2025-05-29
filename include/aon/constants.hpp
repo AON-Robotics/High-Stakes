@@ -73,7 +73,7 @@
 
 // ORBIT Limiting to protect when it does not have 360° of freedom
 #define ORBIT_LIMITED true
-#define ORBIT_LEFT_LIMIT 155
-#define ORBIT_RIGHT_LIMIT 285
+#define ORBIT_LEFT_LIMIT 330
+#define ORBIT_RIGHT_LIMIT 20
 
 #endif  // AON_CONSTANTS_HPP_

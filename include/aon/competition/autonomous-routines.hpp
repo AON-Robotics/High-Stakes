@@ -767,9 +767,9 @@ void turretFollow(const short &color = COLOR){
         break;
       }
       // Limiting to protect hardware
-      else if (ORBIT_LIMITED && (ORBIT_LEFT_LIMIT <= position && position <= ORBIT_RIGHT_LIMIT)) {
+      else if (ORBIT_LIMITED && (ORBIT_LEFT_LIMIT >= position && position >= ORBIT_RIGHT_LIMIT)) {
         turret.moveVelocity(0);
-        // turretRotationAbsolute(0);
+        turretRotationAbsolute(0);
       }
       else { // Turn Towards Object
         pros::lcd::print(2, "Turning!");
@@ -861,8 +861,11 @@ void dumbGetStake(const double &dist = 8){
  * \details `turretEncoder.get_angle()` is divided by 100 for scaling purposes.
  */
 inline void turretRotationAbsolute(const double &targetAngle) { 
-  while (true) {
-    double currentAngle = turretEncoder.get_angle() / 100.0; 
+  double currentAngle = turretEncoder.get_angle() / 100.0; 
+  if(currentAngle > 180) currentAngle -= 360;
+  while(abs(currentAngle - targetAngle) > 0.2) {
+    currentAngle = turretEncoder.get_angle() / 100.0;
+    if(currentAngle > 180) currentAngle -= 360;
     double output = turretPID.Output(targetAngle, currentAngle); 
     turret.moveVelocity(output); 
     pros::delay(10);
@@ -879,11 +882,11 @@ inline void turretRotationAbsolute(const double &targetAngle) {
  * \details `turretEncoder.get_angle()` is divided by 100 for scaling purposes.
  */
 inline void turretRotationRelative(const double &givenAngle) { 
-  double currentAngle = turretEncoder.get_angle() / 100.0; 
-  double initialAngle = turretEncoder.get_angle() / 100.0; 
+  double currentAngle = turretEncoder.get_position() / 100.0; 
+  double initialAngle = turretEncoder.get_position() / 100.0; 
   double targetAngle = initialAngle + givenAngle; 
-  while (true) {
-    currentAngle = turretEncoder.get_angle() / 100.0;
+  while(abs(currentAngle - targetAngle) > 0.2) {
+    currentAngle = turretEncoder.get_position() / 100.0;
     double output = turretPID.Output(targetAngle, currentAngle); 
     turret.moveVelocity(output); 
     pros::delay(10);
@@ -1162,6 +1165,20 @@ void testConcurrency(){
   #undef time
   driveFull.moveVelocity(0);
   intakeRunning = false;
+}
+
+/// @brief Test function to see if the angle from the turret makes sense
+void testTurret(){
+  double position = turretEncoder.get_angle() / 100.0;
+  const double turretTurn = aon::operator_control::AnalogInputScaling(mainController.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X) / 127.0, SENSITIVITY);
+  if (ORBIT_LIMITED && (ORBIT_LEFT_LIMIT >= position && position >= ORBIT_RIGHT_LIMIT)) {
+    turret.moveVelocity(0);
+    turretRotationAbsolute(0);
+  }
+  else {
+    turret.moveVelocity(MAX_RPM * turretTurn * .1);
+  }
+  pros::lcd::print(1, "Turret Angle: %.2f", position);
 }
 
 
