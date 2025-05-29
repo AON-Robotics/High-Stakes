@@ -31,6 +31,15 @@ okapi::Motor gate = okapi::Motor(-16);
 // Misc
 
 okapi::Motor arm = okapi::Motor(11);
+
+pros::ADIDigitalOut indexer ('A');
+
+// odometry
+// pros::Rotation encoderMid(4, true);
+// pros::Rotation encoderBack(11, false);
+pros::Rotation encoderRight(4, true);
+pros::Rotation encoderLeft(-3, true);
+
 okapi::Motor turret = okapi::Motor({-15});
 
 //TriPort

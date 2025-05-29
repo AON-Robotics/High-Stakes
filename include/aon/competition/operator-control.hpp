@@ -168,5 +168,4 @@ inline void Run(const Drivers driver) {
 namespace test {
 
 }  // namespace test
-
 }  // namespace aon::operator_control
