@@ -1,14 +1,14 @@
 #include "main.hpp"
-#include "../include/aon/competition/state_machine.hpp"
-#include "../include/aon/competition/intake_engine.hpp"
 
 void initialize() {
-  // aon::logging::Initialize();
+  pros::Task guiTask(aon::gui::Initialize);
+  aon::logging::Initialize();
   pros::lcd::initialize();
   aon::ConfigureMotors(false);
   aon::ConfigureColors();
   aon::odometry::Initialize();
-  // pros::Task gui_task(aon::gui::Initialize);
+  pros::Task odomTask(aon::odometry::Odometry);
+  pros::Task safetyTask(aon::autonSafety);
 }
 
 void disabled() {}
@@ -16,16 +16,9 @@ void disabled() {}
 void competition_initialize() {}
 
 void autonomous() {
-
-  if(COLOR == RED){
-    aon::RedRingsRoutine();
-  }
-  else {
-    aon::BlueRingsRoutine();
-  }
+  aon::AutonomousReader->ExecuteFunction("autonomous");
   pros::delay(10);
-
- }
+}
 
 // During development
 // Program slot 1 with Pizza Icon is for opcontrol
@@ -37,17 +30,11 @@ void opcontrol() {
     #if TESTING_AUTONOMOUS
     aon::ConfigureMotors(false); // Set drivetrain to hold for auton testing
 
-    if(COLOR == RED){
-      aon::RedRingsRoutine();
-    }
-    else {
-      aon::BlueRingsRoutine();
-    }
+    aon::AutonomousReader->ExecuteFunction("autonomous");
 
-    // aon::testIndexer();
-    aon::odomTest();
+    pros::delay(3000);
     #else
-    aon::operator_control::Run(aon::operator_control::kManes);
+    aon::operator_control::Run(aon::operator_control::DEFAULT);
     #endif
     pros::delay(10);
   }

@@ -95,10 +95,6 @@ namespace aon::odometry {
   //> Conversion factor
   const double conversionFactor = M_PI * TRACKING_WHEEL_DIAMETER / DEGREES_PER_REVOLUTION;
     
-  //> Mutex for x position to prevent race condition when retrieving value
-  pros::Mutex x_mutex;
-  //> Mutex for y position to prevent race condition when retrieving value
-  pros::Mutex y_mutex;
   //> Mutex for absolute position
   pros::Mutex p_mutex;
   //> Mutex for orientation to prevent race condition when retrieving value
@@ -139,9 +135,9 @@ namespace aon::odometry {
    * \returns Returns current X position in \b inches
    */
   inline double GetX() {
-    x_mutex.take(1);
+    p_mutex.take(1);
     const double currentX = position.GetX();
-    x_mutex.give();
+    p_mutex.give();
     return currentX;
   }
   
@@ -151,9 +147,9 @@ namespace aon::odometry {
    * \returns Returns current Y position in \b inches
    */
   inline double GetY() {
-    y_mutex.take(1);
+    p_mutex.take(1);
     const double currentY = position.GetY();
-    y_mutex.give();
+    p_mutex.give();
     return currentY;
   }
   
@@ -211,7 +207,7 @@ namespace aon::odometry {
    * \param radians Input value to set the current angle to
    *
    * \warning Sets angles in units of \b radians. INPUT MUST BE IN \b RADIANS
-   * */
+   */
   inline void SetRadians(const double radians) {
     orientation_mutex.take(1);
     orientation.SetRadians(radians);
@@ -224,8 +220,12 @@ namespace aon::odometry {
    * 
    * \return Returns new vector with current position
    */
-  inline Vector GetPosition() { return Vector().SetPosition(GetX(), GetY()); }
-  
+  inline Vector GetPosition() {
+    p_mutex.take(1);
+    Vector pos = position;
+    p_mutex.give();
+    return pos;
+  }  
 
   // ============================================================================
 //    __  __      _        ___             _   _
@@ -356,6 +356,7 @@ inline void Initialize() {
   // INITIAL_ODOMETRY_X = gps.get_x_position();
   // INITIAL_ODOMETRY_Y = gps.get_y_position();
     
+  ResetInitial();
   ResetInitial();
 }
 
@@ -652,6 +653,16 @@ void Update() {
   encoderLeft_data.previousDistance = encoderLeft_data.currentDistance;
 
   gyro_data.prevDegrees = gyro_data.currentDegrees;
+}
+
+/**
+ * \brief Function for odometry thread
+ */
+inline void Odometry(){
+  while(true){
+    Update();
+    pros::delay(20);
+  }
 }
 
 // ============================================================================

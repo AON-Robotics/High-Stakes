@@ -3,7 +3,6 @@
 #include <cmath>
 #include "../constants.hpp"
 #include "../globals.hpp"
-#include "intake_engine.hpp"
 
 /**
  * \brief Encapsulates functions and state for operator control.
@@ -54,15 +53,6 @@ inline double AnalogInputScaling(const double x, const double t) {
   return (a + b * (1 - a)) * z / 127.0;
 }
 
-/**
- * \brief Makes the rail go slightly back
- */
-void kickBackRail(){
-  rail.moveVelocity(-100);
-  pros::delay(150);
-  rail.moveVelocity(0);
-}
-
 // ============================================================================
 //    ___      _
 //   |   \ _ _(_)_ _____ _ _ ___
@@ -71,103 +61,57 @@ void kickBackRail(){
 //
 // ============================================================================
 
-/// Enrique's Operator Control configuration
-inline void _OpControlEnrique() {
-#if USING_BLACK_ROBOT
-#endif
-}
 
-/// Manes's Operator Control configuration
-inline void _OpControlManes() {
-#if USING_BLACK_ROBOT
-
+/// Default Operator Control configuration
+inline void DriveDefault() { 
   //////////// DRIVE ////////////
-  const double vertical = AnalogInputScaling(main_controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y) / 127.0, SENSITIVITY);
-  const double turn = AnalogInputScaling(main_controller.get_analog(::pros::E_CONTROLLER_ANALOG_RIGHT_X) / 127.0, SENSITIVITY);
-
-  driveLeft.moveVelocity(static_cast<int>(driveLeft.getGearing()) * std::clamp(vertical + turn, -1.0, 1.0));
-  driveRight.moveVelocity(static_cast<int>(driveRight.getGearing()) * std::clamp(vertical - turn, -1.0, 1.0));
-
+  const double vertical = AnalogInputScaling(mainController.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y) / 127.0, SENSITIVITY);
+  const double turn = AnalogInputScaling(mainController.get_analog(::pros::E_CONTROLLER_ANALOG_RIGHT_X) / 127.0, SENSITIVITY) * .8;
+  
+  driveLeft.moveVelocity(MAX_RPM * std::clamp(vertical + turn, -1.0, 1.0) * .9);
+  driveRight.moveVelocity(MAX_RPM * std::clamp(vertical - turn, -1.0, 1.0) * .9);
+  
   //////////// INTAKE ////////////
   
-  if (main_controller.get_digital(DIGITAL_R1)) {
+  if (mainController.get_digital(DIGITAL_R1)) {
     intake.moveVelocity(INTAKE_VELOCITY);
-  } else if (main_controller.get_digital(DIGITAL_R2)) {
+  } else if (mainController.get_digital(DIGITAL_R2)) {
     intake.moveVelocity(-INTAKE_VELOCITY);
   } else {
     intake.moveVelocity(0);
   }
   
-  if (main_controller.get_digital_new_press(DIGITAL_A)) 
+  if (mainController.get_digital_new_press(DIGITAL_A)) 
   { 
-    piston.set_value(toggle(piston_on));
+    claw.set_value(toggle(clawOn));
   }
-
-  if (main_controller.get_digital_new_press(DIGITAL_B)) 
+  
+  if (mainController.get_digital_new_press(DIGITAL_B)) 
   { 
     kickBackRail();
   }
-
-  if(main_controller.get_digital(DIGITAL_Y)){
+  
+  if(mainController.get_digital(DIGITAL_Y)){
     indexer.set_value(true);
   } 
   else {
     indexer.set_value(false);
   }
-
-  if (main_controller.get_digital(DIGITAL_L1)) {
+  
+  if (mainController.get_digital(DIGITAL_L1)) {
     arm.moveVelocity(INTAKE_VELOCITY);
-  } else if (main_controller.get_digital(DIGITAL_L2)) {
+  } else if (mainController.get_digital(DIGITAL_L2)) {
     arm.moveVelocity(-INTAKE_VELOCITY);
   } else {
     arm.moveVelocity(0);
-  }
-
-#else
-  //////////// DRIVE ////////////
-  const double vertical = AnalogInputScaling(main_controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y) / 127.0, SENSITIVITY);
-  const double turn = AnalogInputScaling(main_controller.get_analog(::pros::E_CONTROLLER_ANALOG_RIGHT_X) / 127.0, SENSITIVITY);
-
-  driveLeft.moveVelocity(static_cast<int>(driveLeft.getGearing()) * std::clamp(vertical + turn, -1.0, 1.0));
-  driveRight.moveVelocity(static_cast<int>(driveRight.getGearing()) * std::clamp(vertical - turn, -1.0, 1.0));
-
-  //////////// INTAKE ////////////
-  
-  if (main_controller.get_digital(DIGITAL_R1)) {
-    intake.moveVelocity(INTAKE_VELOCITY);
-  } else if (main_controller.get_digital(DIGITAL_R2)) {
-    intake.moveVelocity(-INTAKE_VELOCITY);
-  } else {
-    intake.moveVelocity(0);
-  }
-  
-  if (main_controller.get_digital_new_press(DIGITAL_A)) 
-  { 
-    piston.set_value(toggle(piston_on));
-  }
-
-  if (main_controller.get_digital_new_press(DIGITAL_B)) 
-  { 
-    kickBackRail();
-  }
-
-  if(main_controller.get_digital_new_press(DIGITAL_Y)){
-    moveIndexer(toggle(indexerOut));
-  }
-
-  if (main_controller.get_digital(DIGITAL_L1)) {
-    arm.moveVelocity(INTAKE_VELOCITY);
-  } else if (main_controller.get_digital(DIGITAL_L2)) {
-    arm.moveVelocity(-INTAKE_VELOCITY);
-  } else {
-    arm.moveVelocity(0);
-  }
-
-#endif
+  }  
 }
 
-/// Default Operator Control configuration
-inline void _OpControlDefault() { _OpControlManes(); }
+/// Ian's Operator Control configuration
+inline void DriveIan() { DriveDefault(); }
+
+/// David's Operator Control configuration
+inline void DriveDavid() { DriveDefault(); }
 
 // ============================================================================
 //    __  __      _        ___             _   _
@@ -183,30 +127,25 @@ inline void _OpControlDefault() { _OpControlManes(); }
  * \details Control configurations for the different drivers are manipulated
  * here.
  *
- * \param driver Who is driving the robot?
+ * \param driver the name of the person driving the robot
  *
  * \see aon::operator_control::Drivers
  *
  */
 inline void Run(const Drivers driver) {
   switch (driver) {
-    case kEnrique:
-      _OpControlEnrique();
+    case IAN:
+      DriveIan();
       break;
 
-    case kManes:
-      _OpControlManes();
+    case DAVID:
+      DriveDavid();
       break;
 
     default:
-      _OpControlDefault();
+      DriveDefault();
       break;
   }
-}
-
-int runWrapper(const Drivers driver){
-  Run(driver);
-  return 0;
 }
 
 // ============================================================================
@@ -226,62 +165,7 @@ int runWrapper(const Drivers driver){
  *
  */
 
-//These tests are for SPIN-UP ROBOT SPECIFICALLY
 namespace test {
-inline bool TestAnalogInputScaling() {
-  // (-1, -1), (0, 0) and (1, 1) MUST be in the curve for all values of `t`
-  for (int t = 0; t < 1000; t++) {
-    if (AnalogInputScaling(1.0, t) != 1.0) return false;
-    if (AnalogInputScaling(0, t) != 0) return false;
-    if (AnalogInputScaling(-1.0, t) != -1.0) return false;
-  }
 
-  // For t = 0, function must be linear with a slope of 1 and Y intercept of 0
-  for (double x = -1.0; x <= 1.0; x += 1.0 / (1 << 10))
-    if (AnalogInputScaling(x, 0) != x) return false;
-
-  // Test a couple of values for t = 1, 2, 3, 4, and 5
-  const double values[5][16] = {
-      // t = 1
-      {-1.0, -0.7993598934745575, -0.665907684410978, -0.5432575923824988,
-       -0.4223082603458672, -0.3016191456359972, -0.18096821992325748,
-       -0.060322539673251165, 0.060322539673251165, 0.18096821992325748,
-       0.3016191456359972, 0.4223082603458672, 0.5432575923824988,
-       0.665907684410978, 0.7993598934745575, 1.0},
-      // t = 2
-      {-1.0, -0.7384582066030775, -0.6048984343306752, -0.4919149387807351,
-       -0.382171114502365, -0.2729229619248319, -0.16374755317798959,
-       -0.05458213618483686, 0.05458213618483686, 0.16374755317798959,
-       0.2729229619248319, 0.382171114502365, 0.4919149387807351,
-       0.6048984343306752, 0.7384582066030775, 1.0},
-      // t = 3
-      {-1.0, -0.6833520815002528, -0.5496949820117037, -0.44545818466060066,
-       -0.34585352308999784, -0.24695758114813546, -0.14816564954334369,
-       -0.04938800431389544, 0.04938800431389544, 0.14816564954334369,
-       0.24695758114813546, 0.34585352308999784, 0.44545818466060066,
-       0.5496949820117037, 0.6833520815002528, 1.0},
-      // t = 4
-      {-1.0, -0.6334899975442465, -0.49974483274873444, -0.4034223752122067,
-       -0.3129920074471465, -0.22346313304782897, -0.1340665600904855,
-       -0.044688159442854515, 0.044688159442854515, 0.1340665600904855,
-       0.22346313304782897, 0.3129920074471465, 0.4034223752122067,
-       0.49974483274873444, 0.6334899975442465, 1.0},
-      // t = 5
-      {-1.0, -0.5883729182396015, -0.4545480686591184, -0.3653868019258703,
-       -0.28325767848012057, -0.20220447729056773, -0.12130917639330331,
-       -0.04043556394457229, 0.04043556394457229, 0.12130917639330331,
-       0.20220447729056773, 0.28325767848012057, 0.3653868019258703,
-       0.4545480686591184, 0.5883729182396015, 1.0}};
-
-  // Output values are so accurate that != is enough.
-  for (int t = 0; t < 5; t++) {
-    for (int i = 0; i <= 15; i++) {
-      const double x = (2 * i - 15.0) / 15.0;
-      if (values[t][i] != AnalogInputScaling(x, t + 1)) return false;
-    }
-  }
-
-  return true;
-}
 }  // namespace test
 }  // namespace aon::operator_control
