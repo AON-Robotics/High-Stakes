@@ -299,6 +299,29 @@ inline void ResetCurrent(const double x, const double y, const double theta) {
   gyroscope.tare();
   pros::delay(3000);
   #endif
+
+  pros::lcd::print(1, "X: %0.3f", GetX());
+    pros::lcd::print(2, "Y: %0.3f", GetY());
+    pros::lcd::print(3, "Heading: %0.3f", GetDegrees());
+
+}
+
+Vector POSITIONodo(){
+  STOP();
+  pros::delay(2000);
+  pros::c::gps_status_s_t status = gps.get_status();
+  Vector current = Vector().SetPosition(status.x, status.y);
+
+  return current;
+}
+
+//> Update the position using the gps for accuracy
+inline void UpdatePositionGPS() {
+  Vector newPosition = POSITIONodo();
+  double newAngle = gps.get_heading();
+
+  SetPosition(newPosition.GetX(), newPosition.GetY());
+  SetDegrees(newAngle);
 }
 
 //> Resets the Odometry values with `INITIAL_ODOMETRY_X`,Y and T constants.
@@ -307,20 +330,12 @@ inline void ResetInitial() {
   // Get position from the encoder at the beggining of the match and assign it to the encoder
   // to be able to keep track of the position at all times
   UpdatePositionGPS();
-  ResetCurrent(GetX(), GetY(), INITIAL_ODOMETRY_THETA);
+  ResetCurrent(GetX(), GetY(), GetDegrees());
 
   // normal initial
   // ResetCurrent(INITIAL_ODOMETRY_X, INITIAL_ODOMETRY_Y, INITIAL_ODOMETRY_THETA);
 }
 
-//> Update the position using the gps for accuracy
-inline void UpdatePositionGPS() {
-  Vector newPosition = getGPSPos();
-  double newAngle = gps.get_heading();
-
-  SetPosition(newPosition.GetX(), newPosition.GetY());
-  SetDegrees(newAngle);
-}
 
 /**
  * \brief Initialization function to put everything to 0
@@ -637,11 +652,6 @@ void Update() {
   encoderLeft_data.previousDistance = encoderLeft_data.currentDistance;
 
   gyro_data.prevDegrees = gyro_data.currentDegrees;
-}
-
-void UpdateTurn(double angle) {
-  std::cout << "Angle to Update: " << angle << "\n";
-  SetDegrees(GetDegrees() + angle);
 }
 
 // ============================================================================
