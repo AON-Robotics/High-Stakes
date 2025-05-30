@@ -1156,7 +1156,7 @@ void testTurret(){
   }
 }
 
-/// @brief Tests the alignment of the robot to hte obect of `COLOR` using tasks
+/// @brief Tests the alignment of the robot to the object of `COLOR` using tasks
 void testAlignment(){
   pros::Task turretTask((pros::task_fn_t)turretFollow, (void*)(intptr_t)COLOR, "turretTask");
   while(true){
@@ -1174,9 +1174,17 @@ int test1(){
 
 /// @brief Test function wrapper for function that is to be executed by the GUI
 /// @return 1 for successful execution
-/// TODO: Test
-int test2(){
-  testAlignment();
+int testMultiple(){
+  int choice = potentiometer.get_value();
+  if(choice > 2550){
+    testEndpoint();
+  }
+  else if (choice > 1100){
+    testGPS();
+  }
+  else {
+    testAlignment();
+  }
   return 1;
 }
 

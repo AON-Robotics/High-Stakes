@@ -68,9 +68,14 @@ pros::Gps gps(13, GPS_INITIAL_X, GPS_INITIAL_Y, GPS_INITIAL_HEADING, GPS_X_OFFSE
 pros::Distance distanceSensor(3);
 
 // Gyro/Accelerometer
+
 #if GYRO_ENABLED
 pros::Imu gyroscope(6);
 #endif
+
+// Potentiometer
+
+pros::ADIPotentiometer potentiometer('F');
 
 /// PIDs
 
