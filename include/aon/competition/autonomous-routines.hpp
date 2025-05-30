@@ -1165,6 +1165,11 @@ void testAlignment(){
   }
 }
 
+/// @brief Checks the output of an optical shaft encoder
+void testADIEncoder(){
+  pros::lcd::print(1, "Encoder value: %d", opticalEncoder.get_value());
+}
+
 /// @brief Test function wrapper for function that is to be executed by the GUI
 /// @return 1 for successful execution
 int test1(){
@@ -1180,7 +1185,7 @@ int testMultiple(){
     testEndpoint();
   }
   else if (choice > 1100){
-    testGPS();
+    testADIEncoder();
   }
   else {
     testAlignment();

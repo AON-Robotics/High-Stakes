@@ -54,6 +54,7 @@ pros::Rotation encoderMid(5, true);
 pros::Rotation encoderBack(11, false);
 pros::Rotation turretEncoder(14, true);
 
+pros::ADIEncoder opticalEncoder('A', 'B');
 
 // Vision
 
