@@ -708,49 +708,51 @@ void enableGate(){
   gate.moveVelocity(0);
 }
 
+volatile bool turretRunning = true;
+
 /**
- * \brief Aligns TURRET only to the item with the set `color`
+ * \brief Async task to align TURRET only to the item with the set `colorParam` color signature
  * 
- * \param color The vision sensor signature id of the object to which we want to align, defaults to `COLOR`
+ * \param colorParam The vision sensor signature id of the object to which we want to align, defaults to `COLOR`
  */
-void turretFollow(const short &color = COLOR){
-  const int TOLERANCE = 10; // 20
+void turretFollow(void* colorParam){
+  const short color = (short)(intptr_t)colorParam;
+  const int TOLERANCE = 10;
   const int VISION_FIELD_CENTER = 315 / 2;
-  int OBJ_CENTER = 0;
-  double position, lastPos;
+  int OBJ_CENTER;
+  double position;
   
   while(true){
-    auto object = vision_sensor.get_by_sig(0, color);
-    OBJ_CENTER = object.x_middle_coord;
-    double SPEED = turretPID.Output(0, VISION_FIELD_CENTER - OBJ_CENTER);
-    position = turretEncoder.get_angle() / 100;
-    pros::lcd::print(1, "Position: %.2f", position);
-    pros::lcd::print(3, "Last Pos: %.2f, Curr Pos %.2f", lastPos, position);
-    pros::lcd::print(4, "Right Limit: %d, Left Limit %d", ORBIT_RIGHT_LIMIT, ORBIT_LEFT_LIMIT);
-    pros::lcd::print(5, "Right cond: %d, Left cond %d", lastPos > ORBIT_RIGHT_LIMIT && position <= ORBIT_RIGHT_LIMIT, lastPos < ORBIT_LEFT_LIMIT && position >= ORBIT_LEFT_LIMIT);
+    if(turretRunning){
+      auto object = vision_sensor.get_by_sig(0, color);
+      OBJ_CENTER = object.x_middle_coord;
+      double SPEED = turretPID.Output(0, VISION_FIELD_CENTER - OBJ_CENTER);
+      position = turretEncoder.get_angle() / 100;
+      pros::lcd::print(1, "Position: %.2f", position);
 
-    if(object.signature == color){
-      if(abs(OBJ_CENTER - VISION_FIELD_CENTER) <= TOLERANCE){
-        turret.moveVelocity(0);
-        pros::lcd::print(2, "Aligned!");
-        break;
+      if(object.signature == color){
+        if(abs(OBJ_CENTER - VISION_FIELD_CENTER) <= TOLERANCE){
+          turret.moveVelocity(0);
+          pros::lcd::print(2, "Aligned!");
+        }
+        // Limiting to protect hardware
+        else if (ORBIT_LIMITED && (ORBIT_LEFT_LIMIT >= position && position >= ORBIT_RIGHT_LIMIT)) {
+          turret.moveVelocity(0);
+          turretRotationAbsolute(0);
+        }
+        else { // Turn Towards Object
+          pros::lcd::print(2, "Turning!");
+          turret.moveVelocity(SPEED);
+        }
       }
-      // Limiting to protect hardware
-      else if (ORBIT_LIMITED && (ORBIT_LEFT_LIMIT >= position && position >= ORBIT_RIGHT_LIMIT)) {
+      // Dont move if nothing is there
+      else {
         turret.moveVelocity(0);
-        turretRotationAbsolute(0);
-      }
-      else { // Turn Towards Object
-        pros::lcd::print(2, "Turning!");
-        turret.moveVelocity(SPEED);
       }
     }
-    // Dont move if nothing is there
     else {
       turret.moveVelocity(0);
-      break;
     }
-    lastPos = position;
     pros::delay(10);
   }
   turret.moveVelocity(0);
@@ -762,20 +764,20 @@ void turretFollow(const short &color = COLOR){
  * \note Setting `color` to `STAKE` makes the robot turn 180° after alignment
  */
 void alignRobotTo(const short &color = COLOR){
-  turretFollow(color);
+  turretRunning = true;
+  pros::delay(500);
   const int TOLERANCE = 10;
   double difference;
   #define TURRET_ANGLE turretEncoder.get_angle() / 100
   while(abs((TURRET_ANGLE)) > TOLERANCE){
     difference = TURRET_ANGLE < 180 ? TURRET_ANGLE : TURRET_ANGLE - 360;
-    pros::lcd::print(2, "Moving!");
-    double SPEED = turnPID.Output(0, difference) * 400;
-    pros::lcd::print(3, "Speed: %.2f", SPEED);
+    double SPEED = turnPID.Output(0, -difference) * 400;
     driveLeft.moveVelocity(SPEED);
     driveRight.moveVelocity(-SPEED);
-    turretFollow(color);
+    pros::delay(20);
   }
   #undef TURRET_ANGLE
+  turretRunning = false;
   driveLeft.moveVelocity(0);
   driveRight.moveVelocity(0);
   if(color == STAKE){
@@ -787,7 +789,7 @@ void alignRobotTo(const short &color = COLOR){
  * \brief Aligns TURRET and DRIVETRAIN to the ring with the set `color` and picks it up
  */
 void grabRing(const short &color = COLOR){
-  turretFollow(color);
+  turretRunning = true;
   const int TOLERANCE = 10;
   const double FORWARD_SPEED = 100;
   double difference;
@@ -799,15 +801,16 @@ void grabRing(const short &color = COLOR){
     pros::lcd::print(3, "Speed: %.2f", SPEED);
     driveLeft.moveVelocity(FORWARD_SPEED + SPEED);
     driveRight.moveVelocity(FORWARD_SPEED - SPEED);
-    turretFollow(color);
     // Stop and pick up if close
     if (distanceSensor.get() <= DISTANCE) {
+      driveFull.moveVelocity(FORWARD_SPEED);
       pickUpRing(3000);
       break;
     }
     driveFull.moveVelocity(0);
   }
   #undef TURRET_ANGLE
+  turretRunning = false;
   driveFull.moveVelocity(0);
 }
 
@@ -832,7 +835,7 @@ void dumbGetStake(const double &dist = 8){
 inline void turretRotationAbsolute(const double &targetAngle) { 
   double currentAngle = turretEncoder.get_angle() / 100.0; 
   if(currentAngle > 180) currentAngle -= 360;
-  while(abs(currentAngle - targetAngle) > 0.2) {
+  while(abs(currentAngle - targetAngle) > 5) {
     currentAngle = turretEncoder.get_angle() / 100.0;
     if(currentAngle > 180) currentAngle -= 360;
     double output = turretPID.Output(targetAngle, currentAngle); 
@@ -887,7 +890,7 @@ void driveTillPickUp(const double &TIMEOUT = 5){
 /// TODO: add documentation
 void AlignRobotToStake(int hi = 0){//align back of robot to the steak
   // First, align turret to the new target (e.g., yellow stake)
-  turretFollow(); 
+  turretRunning = true;
   const int TOLERANCE = 10;// Degrees of acceptable error for alignment
   #define TURRET_ANGLE turretEncoder.get_angle()/100 // Get turret angle in degrees
   int difference = (TURRET_ANGLE + 180) % 360;
@@ -904,7 +907,6 @@ void AlignRobotToStake(int hi = 0){//align back of robot to the steak
   // Loop until the robot's back is aligned within the specified tolerance
   while(abs(difference) > TOLERANCE){
     //process of aligning back of robot 
-    turretFollow(); 
     double SPEED = turnPID.Output(0, difference) * 40;
     driveLeft.moveVelocity(SPEED);
     driveRight.moveVelocity(-SPEED);
@@ -919,6 +921,7 @@ void AlignRobotToStake(int hi = 0){//align back of robot to the steak
       pros::delay(10);
   }
   #undef TURRET_ANGLE
+  turretRunning = false;
 
   driveLeft.moveVelocity(0);
   driveRight.moveVelocity(0);
@@ -935,31 +938,30 @@ bool continuous_scan(){
     turretRotationRelative(90);
     pros::lcd::print(2, "turning 1");
     pros::delay(1000);
-    turretRotationRelative(-0);
+    turretRotationRelative(0);
     pros::lcd::print(2, "turning 2");
     pros::delay(1000);
 
-    auto object= vision_sensor.get_by_sig(0,COLOR);
+    auto object = vision_sensor.get_by_sig(0,COLOR);
     
     if(object.signature == COLOR){
       pros::lcd::print(2, "object found");
-      pros::delay(20);
       break;
     }
+    pros::delay(20);
   }
 }
 
 /// TODO: add documentation
 void FollowWithTurret(const short &color = COLOR) {
+  turretRunning = true;
   const int TURRET_TOLERANCE = 5;
   const int BODY_ADJUST = 10;
   const double FORWARD_SPEED = 130;
-  #define TURRET_ANGLE turretEncoder.get_angle()/100 // Get turret angle in degrees
+  #define TURRET_ANGLE turretEncoder.get_angle() / 100 // Get turret angle in degrees
 
   while (true) {
       // Single step turret adjustment (should be non-blocking)
-      // turretTrackRestricted(color);
-      turretFollow(color);
 
       int turret_angle = turretEncoder.get_angle() / 100;
       int difference = TURRET_ANGLE < 180 ? TURRET_ANGLE : TURRET_ANGLE - 360;
@@ -990,6 +992,7 @@ void FollowWithTurret(const short &color = COLOR) {
       pros::delay(10);
   }
   #undef TURRET_ANGLE
+  turretRunning = false;
 
   driveLeft.moveVelocity(0);
   driveRight.moveVelocity(0);
@@ -1138,18 +1141,44 @@ void testConcurrency(){
 
 /// @brief Test function to see if the angle from the turret makes sense
 void testTurret(){
-  double position = turretEncoder.get_angle() / 100.0;
-  const double turretTurn = aon::operator_control::AnalogInputScaling(mainController.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X) / 127.0, SENSITIVITY);
-  if (ORBIT_LIMITED && (ORBIT_LEFT_LIMIT >= position && position >= ORBIT_RIGHT_LIMIT)) {
-    turret.moveVelocity(0);
-    turretRotationAbsolute(0);
+  while(true){
+    double position = turretEncoder.get_angle() / 100.0;
+    const double turretTurn = aon::operator_control::AnalogInputScaling(mainController.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X) / 127.0, SENSITIVITY);
+    if (ORBIT_LIMITED && (ORBIT_LEFT_LIMIT >= position && position >= ORBIT_RIGHT_LIMIT)) {
+      turret.moveVelocity(0);
+      turretRotationAbsolute(0);
+    }
+    else {
+      turret.moveVelocity(MAX_RPM * turretTurn * .1);
+    }
+    pros::lcd::print(1, "Turret Angle: %.2f", position);
+    pros::delay(20);
   }
-  else {
-    turret.moveVelocity(MAX_RPM * turretTurn * .1);
-  }
-  pros::lcd::print(1, "Turret Angle: %.2f", position);
 }
 
+/// @brief Tests the alignment of the robot to hte obect of `COLOR` using tasks
+void testAlignment(){
+  pros::Task turretTask((pros::task_fn_t)turretFollow, (void*)(intptr_t)COLOR, "turretTask");
+  while(true){
+    alignRobotTo(RED);
+    pros::delay(20);
+  }
+}
+
+/// @brief Test function wrapper for function that is to be executed by the GUI
+/// @return 1 for successful execution
+int test1(){
+  testTurret();
+  return 1;
+}
+
+/// @brief Test function wrapper for function that is to be executed by the GUI
+/// @return 1 for successful execution
+/// TODO: Test
+int test2(){
+  testAlignment();
+  return 1;
+}
 
 // ============================================================================|
 //   ___  ___  _   _ _____ ___ _  _ ___ ___                                    |
