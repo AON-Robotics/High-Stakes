@@ -7,15 +7,9 @@
 #define TILE_WIDTH 23.6220472441
 #define TILE_DIAG_LENGTH 33.4066195836 // Calculated with the Pythagorean theorem
 
-// Colors
-#define RED 1
-#define BLUE 2
-#define STAKE 3
-
 // NOT using black robot = Using green robot
 #define USING_BLACK_ROBOT true
 #define TESTING_AUTONOMOUS false 
-#define COLOR RED
 
 #define SENSITIVITY 1 // 3-10 works good, currently undergoing testing // Higher is more sensitivity
 #define DRIVE_WHEEL_DIAMETER 3.25

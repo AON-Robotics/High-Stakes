@@ -58,15 +58,27 @@ pros::ADIEncoder opticalEncoder('A', 'B');
 
 // Vision
 
+// Colors
+enum Color {
+    RED = 1,
+    BLUE,
+    STAKE
+};
+
+short COLOR = RED;
+
 pros::Vision vision_sensor(12);
-pros::vision_signature_s_t RED_SIG = pros::Vision::signature_from_utility(1, 8973, 11143, 10058, -2119, -1053, -1586, 5.4, 0);
-pros::vision_signature_s_t BLUE_SIG = pros::Vision::signature_from_utility(2, -3050, -2000, -2500, 8000, 11000, 9500, 5.4, 0);
-pros::vision_signature_s_t STAKE_SIG = pros::Vision::signature_from_utility(3, -2247, -1833, -2040, -5427, -4727, -5077, 4.600, 0); // RGB 4.600
+volatile bool turretRunning = false;
+pros::vision_signature_s_t RED_SIG = pros::Vision::signature_from_utility(RED, 8973, 11143, 10058, -2119, -1053, -1586, 5.4, 0);
+pros::vision_signature_s_t BLUE_SIG = pros::Vision::signature_from_utility(BLUE, -3050, -2000, -2500, 8000, 11000, 9500, 5.4, 0);
+pros::vision_signature_s_t STAKE_SIG = pros::Vision::signature_from_utility(STAKE, -2247, -1833, -2040, -5427, -4727, -5077, 4.600, 0); // RGB 4.600
 pros::Gps gps(13, GPS_INITIAL_X, GPS_INITIAL_Y, GPS_INITIAL_HEADING, GPS_X_OFFSET, GPS_Y_OFFSET);
 
 // Distance
 
 pros::Distance distanceSensor(3);
+volatile bool intakeRunning = false;
+
 
 // Gyro/Accelerometer
 
@@ -148,9 +160,9 @@ inline void ConfigureMotors(const bool opcontrol = true) {
  * \brief Adds the colors to the vision sensor
 */
 inline void ConfigureColors(){
-  vision_sensor.set_signature(1, &RED_SIG);
-  vision_sensor.set_signature(2, &BLUE_SIG);
-  vision_sensor.set_signature(3, &STAKE_SIG);
+  vision_sensor.set_signature(RED, &RED_SIG);
+  vision_sensor.set_signature(BLUE, &BLUE_SIG);
+  vision_sensor.set_signature(STAKE, &STAKE_SIG);
 }
 
 /**
