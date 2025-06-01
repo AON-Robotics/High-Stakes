@@ -563,18 +563,15 @@ void scoreRing(const int &delay = 1500){
   rail.moveVelocity(0);
 }
 
-volatile bool intakeRunning = true;
-
 /**
  * \brief Asynchronous task for activating the intake when a ring is encountered
  */
 void intakeScanning(){
   while(true){
-    intake.moveVelocity(0);
     if (intakeRunning && distanceSensor.get() <= DISTANCE) {
       pickUpRing();
-      driveFull.moveVelocity(0); // may need a mutex
-      scoreRing();
+      driveFull.moveVelocity(0);
+      intake.moveVelocity(0);
     }
     pros::delay(20);
   }
@@ -708,15 +705,12 @@ void enableGate(){
   gate.moveVelocity(0);
 }
 
-volatile bool turretRunning = true;
-
 /**
  * \brief Async task to align TURRET only to the item with the set `colorParam` color signature
  * 
  * \param colorParam The vision sensor signature id of the object to which we want to align, defaults to `COLOR`
  */
-void turretFollow(void* colorParam){
-  const short color = (short)(intptr_t)colorParam;
+void turretFollow(){
   const int TOLERANCE = 10;
   const int VISION_FIELD_CENTER = 315 / 2;
   int OBJ_CENTER;
@@ -724,13 +718,13 @@ void turretFollow(void* colorParam){
   
   while(true){
     if(turretRunning){
-      auto object = vision_sensor.get_by_sig(0, color);
+      auto object = vision_sensor.get_by_sig(0, COLOR);
       OBJ_CENTER = object.x_middle_coord;
       double SPEED = turretPID.Output(0, VISION_FIELD_CENTER - OBJ_CENTER);
       position = turretEncoder.get_angle() / 100;
       pros::lcd::print(1, "Position: %.2f", position);
 
-      if(object.signature == color){
+      if(object.signature == COLOR){
         if(abs(OBJ_CENTER - VISION_FIELD_CENTER) <= TOLERANCE){
           turret.moveVelocity(0);
           pros::lcd::print(2, "Aligned!");
@@ -764,6 +758,7 @@ void turretFollow(void* colorParam){
  * \note Setting `color` to `STAKE` makes the robot turn 180° after alignment
  */
 void alignRobotTo(const short &color = COLOR){
+  COLOR = color;
   turretRunning = true;
   pros::delay(500);
   const int TOLERANCE = 10;
@@ -817,7 +812,7 @@ void grabRing(const short &color = COLOR){
 /**
  * \brief Aligns front of robot and turns around to grab de stake
  * 
- * \param dist The absolute value of the distance that the robot is from the stake when it begins alignment
+ * \param dist The absolute value of the distance that the robot is from the stake when it begins alignment in \b inches
  */
 void dumbGetStake(const double &dist = 8){
   alignRobotTo(STAKE);
@@ -871,20 +866,17 @@ inline void turretRotationRelative(const double &givenAngle) {
  * 
  * \param TIMEOUT The max time the robot will be moving forward in \b seconds (default is 5 sec)
  */
-void driveTillPickUp(const double &TIMEOUT = 5){
+void driveTillPickUp(const double &TIMEOUT = 5, const int &SPEED = 200){
+  intakeRunning = true;
   const double startTime = pros::micros() / 1E6;
-  #define time pros::micros() / 1E6 - startTime
-  while(time  < TIMEOUT){
-    driveFull.moveVelocity(200);
-    if (distanceSensor.get() <= DISTANCE) {
-      pickUpRing(1000);
-      driveFull.moveVelocity(0);
-      scoreRing();
-      break;
-    }
+  #define time (pros::micros() / 1E6) - startTime
+  while(time < TIMEOUT){
+    driveFull.moveVelocity(SPEED);
+    pros::delay(20);
   }
   #undef time
   driveFull.moveVelocity(0);
+  intakeRunning = false;
 }
 
 /// TODO: add documentation
@@ -1158,7 +1150,6 @@ void testTurret(){
 
 /// @brief Tests the alignment of the robot to the object of `COLOR` using tasks
 void testAlignment(){
-  pros::Task turretTask((pros::task_fn_t)turretFollow, (void*)(intptr_t)COLOR, "turretTask");
   while(true){
     alignRobotTo(RED);
     pros::delay(20);
@@ -1168,6 +1159,20 @@ void testAlignment(){
 /// @brief Checks the output of an optical shaft encoder
 void testADIEncoder(){
   pros::lcd::print(1, "Encoder value: %d", opticalEncoder.get_value());
+}
+
+/// @brief Get a stake and scores a preload
+void testGrabAndScore(){
+  dumbGetStake(10);
+  scoreRing();
+}
+
+void testAlignAndIntake(){
+  move(12);
+  alignRobotTo(RED);
+  move(12);
+  driveTillPickUp(2);
+  scoreRing();
 }
 
 /// @brief Test function wrapper for function that is to be executed by the GUI
@@ -1181,14 +1186,18 @@ int test1(){
 /// @return 1 for successful execution
 int testMultiple(){
   int choice = potentiometer.get_value();
+  // UP
   if(choice > 2550){
-    testEndpoint();
+    testGrabAndScore();
+    testAlignAndIntake();
   }
+  // MIDDLE
   else if (choice > 1100){
-    testADIEncoder();
+    testGrabAndScore();
   }
+  // DOWN
   else {
-    testAlignment();
+    testAlignAndIntake();
   }
   return 1;
 }
