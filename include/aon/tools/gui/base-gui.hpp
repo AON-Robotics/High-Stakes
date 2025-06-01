@@ -303,7 +303,7 @@ static void DrawCurrentScreen() {
           /*TEXT*/ COLOR_BLACK, TEXT_LARGE, lower_block_2_text_x,
           lower_block_text_y, "GUI...");
 
-      // LOWER RIGHT BUTTON [TEST 2]
+      // LOWER RIGHT BUTTON [MULTIPLE]
       DrawButtonBlock(/*BLOCK*/ COLOR_BLUE, blocks_x[2], blocks_y[3],
           blocks_x[3], blocks_y[4],
           /*TEXT*/ COLOR_BLACK, TEXT_MEDIUM, lower_block_3_text_x,
