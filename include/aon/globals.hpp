@@ -60,9 +60,9 @@ pros::ADIEncoder opticalEncoder('A', 'B');
 
 // Colors
 enum Color {
-    RED = 1,
-    BLUE,
-    STAKE
+  RED = 1,
+  BLUE,
+  STAKE
 };
 
 short COLOR = RED;
