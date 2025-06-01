@@ -59,7 +59,7 @@ pros::ADIEncoder opticalEncoder('A', 'B');
 // Vision
 
 // Colors
-enum Color {
+enum Colors {
   RED = 1,
   BLUE,
   STAKE
