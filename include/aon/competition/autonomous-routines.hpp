@@ -814,7 +814,7 @@ void grabRing(const short &color = COLOR){
  * 
  * \param dist The absolute value of the distance that the robot is from the stake when it begins alignment in \b inches
  */
-void dumbGetStake(const double &dist = 8){
+void findAndGrabGoal(const double &dist = 8){
   alignRobotTo(STAKE);
   move(-abs(dist));
   grabGoal();
@@ -1033,6 +1033,23 @@ void turretTrackRestricted(const short &color = COLOR) {
   }
 }
 
+/// @brief Get a stake and scores a preload
+void grabAndScore(){
+  findAndGrabGoal(10);
+  scoreRing();
+}
+
+/// @brief Aligns robot to the ring of the specified `color` and grabs it and scores it on the held stake
+/// @param color The color of the ring to be picked up
+void alignAndIntake(const short &color = COLOR){
+  COLOR = color;
+  move(12);
+  alignRobotTo(COLOR);
+  move(12);
+  driveTillPickUp(2);
+  scoreRing();
+}
+
 
 // ============================================================================
 //   _____ ___ ___ _____ ___
@@ -1161,20 +1178,6 @@ void testADIEncoder(){
   pros::lcd::print(1, "Encoder value: %d", opticalEncoder.get_value());
 }
 
-/// @brief Get a stake and scores a preload
-void testGrabAndScore(){
-  dumbGetStake(10);
-  scoreRing();
-}
-
-void testAlignAndIntake(){
-  move(12);
-  alignRobotTo(RED);
-  move(12);
-  driveTillPickUp(2);
-  scoreRing();
-}
-
 /// @brief Test function wrapper for function that is to be executed by the GUI
 /// @return 1 for successful execution
 int test1(){
@@ -1188,16 +1191,16 @@ int testMultiple(){
   int choice = potentiometer.get_value();
   // UP
   if(choice > 2550){
-    testGrabAndScore();
-    testAlignAndIntake();
+    grabAndScore();
+    alignAndIntake();
   }
   // MIDDLE
   else if (choice > 1100){
-    testGrabAndScore();
+    grabAndScore();
   }
   // DOWN
   else {
-    testAlignAndIntake();
+    alignAndIntake();
   }
   return 1;
 }
@@ -1319,7 +1322,7 @@ int BlueRingsRoutine_JorgeGuz(){
   RED-NEGATIVE SIDE
 */
 int safeRingRoutine() {
-  dumbGetStake(8); // 8 inches from stake
+  findAndGrabGoal(8); // 8 inches from stake
   turnToTarget(-1.2,-1.2);
   goToTarget(-1.2,-1.2);
   FollowWithTurret(RED);
@@ -1332,7 +1335,7 @@ int safeRingRoutine() {
 }
 
 int safeRingRoutine2() {
-  dumbGetStake(6); //6 inches from stake
+  findAndGrabGoal(6); //6 inches from stake
   turnToTarget(-1.2,-1.2);
   goToTarget(-1.2,-1.2);
   FollowWithTurret(RED);
@@ -1588,7 +1591,7 @@ int SkillsGreenBotJorge(){
   // release stake
   turnToTarget(0.6, 0.6);
   move(12); // measure
-  dumbGetStake(10); //measure
+  findAndGrabGoal(10); //measure
   // grab stake at (0.6, 0.6)
   turnToTarget(0, 1.5);
   goToTarget(0, 1.5);
