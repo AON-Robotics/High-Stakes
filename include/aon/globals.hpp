@@ -65,10 +65,12 @@ enum Colors {
   STAKE
 };
 
-short COLOR = RED;
+Colors COLOR = RED;
 
 pros::Vision vision_sensor(12);
-volatile bool turretRunning = false;
+volatile bool turretFollowing = false;
+volatile bool turretBraking = true;
+volatile bool turretScanning = false;
 pros::vision_signature_s_t RED_SIG = pros::Vision::signature_from_utility(RED, 8973, 11143, 10058, -2119, -1053, -1586, 5.4, 0);
 pros::vision_signature_s_t BLUE_SIG = pros::Vision::signature_from_utility(BLUE, -3050, -2000, -2500, 8000, 11000, 9500, 5.4, 0);
 pros::vision_signature_s_t STAKE_SIG = pros::Vision::signature_from_utility(STAKE, -2247, -1833, -2040, -5427, -4727, -5077, 4.600, 0); // RGB 4.600
@@ -77,7 +79,7 @@ pros::Gps gps(13, GPS_INITIAL_X, GPS_INITIAL_Y, GPS_INITIAL_HEADING, GPS_X_OFFSE
 // Distance
 
 pros::Distance distanceSensor(3);
-volatile bool intakeRunning = false;
+volatile bool intakeScanning = false;
 
 
 // Gyro/Accelerometer
@@ -236,6 +238,49 @@ void autonSafety(){
   }
 }
 
+/// @brief Begins ORBIT following cycle
+void activateORBITFollow(){
+  turretFollowing = true;
+  turretBraking = true;
+  turretScanning = false;
+}
+
+/// @brief Ends ORBIT following cycle
+void deactivateORBITFollow(){
+  turretFollowing = false;
+}
+
+/// @brief Begins ORBIT scanning cycle
+void activateORBITScan(){
+  turretFollowing = false;
+  turretBraking = false;
+  turretScanning = true;
+}
+
+/// @brief Ends ORBIT scanning cycle
+void deactivateORBITScan(){
+  turretScanning = false;
+}
+
+/// @brief Sets the ORBIT to brake if not scanning
+void brakeORBIT(){
+  turretBraking = true;
+}
+
+/// @brief Releases the ORBIT from braking to allow other functions to use it
+void releaseORBIT() {
+  turretBraking = false;
+}
+
+/// @brief Starts intake scanning cycle
+void activateIntakeScan(){
+  intakeScanning = true;
+}
+
+/// @brief Ends intake scanning cycle
+void deactivateIntakeScan(){
+  intakeScanning = false;
+}
 
 }  // namespace aon
 

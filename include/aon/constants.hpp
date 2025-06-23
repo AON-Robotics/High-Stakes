@@ -65,6 +65,7 @@
 
 #define DISTANCE 90 // This is the activation distance for the intake (the distance under which we know a ring is waiting in front of the intake)
 
+#define ORBIT_HEIGHT 12.5
 // ORBIT Limiting to protect when it does not have 360° of freedom
 #define ORBIT_LIMITED true
 #define ORBIT_LEFT_LIMIT 210
