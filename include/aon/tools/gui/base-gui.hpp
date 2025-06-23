@@ -294,7 +294,7 @@ static void DrawCurrentScreen() {
           /*BLOCK*/ COLOR_SKY_BLUE, blocks_x[0], blocks_y[3], blocks_x[1],
           blocks_y[4],
           /*TEXT*/ COLOR_BLACK, TEXT_LARGE, lower_block_1_text_x,
-          lower_block_text_y, "TEST 1");
+          lower_block_text_y, "ADJUSTABLE");
 
       // LOWER CENTER BUTTON [TEST]
       DrawButtonBlock(
@@ -484,7 +484,7 @@ static void HandleButtonPress() {
         if (TouchStatus.x < blocks_x[1]) {
           // TEST 1
           DrawPressedBlock(blocks_x[0], blocks_y[3], blocks_x[1], blocks_y[4]);
-          AutonomousReader->AddFunction("autonomous", aon::test1);
+          AutonomousReader->AddFunction("autonomous", aon::testAdjustable);
           pros::delay(200);
 
         } else if (TouchStatus.x < blocks_x[2]) {
