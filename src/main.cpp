@@ -10,7 +10,7 @@ void initialize() {
   pros::Task odomTask(aon::odometry::Odometry);
   pros::Task safetyTask(aon::autonSafety);
   pros::Task turretTask(aon::turretFollow);
-  pros::Task intakeTask(aon::intakeScanning);
+  pros::Task intakeTask(aon::intakeScan);
 }
 
 void disabled() {}
