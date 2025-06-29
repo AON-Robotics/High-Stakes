@@ -9,30 +9,12 @@
 #include "../controls/s-curve-profile.hpp"
 #include "../tools/logging.hpp"
 #include <queue>
+#include "../tools/moving-average.hpp"
 
+// TODO: for modularity we will have odometry, drivetrain, navigator, orbit, intake, and claw (the last two will most likely change with each game and modules may be added or removed as needed)
+//# Navigator will use odometry and drivetrain under the hood for auton, but drivers will use just drivetrain for driving
+// TODO: add support for a drive mode that is videogame-like (i think rocket league has it). Basically with reference to where the driver is standing on the field, the direction towards which you move the joystick is where the robot will turn to and drive to at the same time. This should greatly facilitate general directional movement if implemented correctly. Leave a toggle available for traditional driving in accordance to the chosen drivetrain for better fine grained control in tight spaces.
 
-// For speed testing but may prove useful otherwise
-class MovingAverage {
-  public:
-      MovingAverage(int period) : period(period), sum(0.0) {}
-  
-      double update(double new_value) {
-          window.push(new_value);
-          sum += new_value;
-  
-          if (window.size() > period) {
-              sum -= window.front();
-              window.pop();
-          }
-  
-          return window.size() == period ? sum / period : -1.0; // -1.0 means not enough data yet
-      }
-  
-  private:
-      int period;
-      double sum;
-      std::queue<double> window;
-};
 
 /**
  * For GPS coord system: https://pros.cs.purdue.edu/v5/tutorials/topical/gps.html
