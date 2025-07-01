@@ -562,55 +562,6 @@ void intakeScan(){
 }
 
 /**
- * \brief This subroutine follows an object (in our case a ring) with a given color signature and picks it up
- *
- * \param color The id number of the vision signature of the object to follow and pick up
- *
- * \deprecated 
- */
-void driveIntoRing(const Colors &color = COLOR){
-  const int TOLERANCE = 20;
-  const int VISION_FIELD_CENTER = 315 / 2;
-  const int SPEED = 150; // 200 is max
-  const int ADJUSTMENT = 30;
-  while(true){
-    auto object = vision_sensor.get_by_sig(0, color);
-    const int OBJ_CENTER = object.x_middle_coord;
-
-    if(object.signature == color){
-      if(abs(OBJ_CENTER - VISION_FIELD_CENTER) <= TOLERANCE){
-        driveFull.moveVelocity(SPEED);
-      }
-      else if(OBJ_CENTER < VISION_FIELD_CENTER){ // TURN LEFT
-        driveLeft.moveVelocity(SPEED - ADJUSTMENT);
-        driveRight.moveVelocity(SPEED + ADJUSTMENT);
-      }
-      else if(OBJ_CENTER > VISION_FIELD_CENTER){ // TURN RIGHT
-        driveLeft.moveVelocity(SPEED + ADJUSTMENT);
-        driveRight.moveVelocity(SPEED - ADJUSTMENT);
-      }
-
-      if(distanceSensor.get() <= DISTANCE){
-        driveFull.moveVelocity(100);
-        pickUpRing(1000);
-        break;
-      }
-    }
-    else {
-      driveFull.moveVelocity(SPEED);
-
-      if(distanceSensor.get() <= DISTANCE){
-        driveFull.moveVelocity(100);
-        pickUpRing(3000);
-        break;
-      }
-    }
-  }
-  driveFull.moveVelocity(0);
-  scoreRing(1500); // Remember to do this after to finish pickup
-}
-
-/**
  * \brief This small subroutine grabs a goal (stake)
  *
  * \param delay The amount of time in \b milliseconds you will be moving back (500-600 is quick and works)
@@ -846,191 +797,37 @@ inline void turretRotationRelative(const double &givenAngle) {
     double output = turretPID.Output(targetAngle, currentAngle); 
     turret.moveVelocity(output); 
     pros::delay(10);
-  }
+  } while(abs(currentAngle - targetAngle) > TOLERANCE);
   turret.moveVelocity(0);
 }
 
-/**
- * \brief Drives forward until a ring hits the distance sensor
- * 
- * \param TIMEOUT The max time the robot will be moving forward in \b seconds (default is 5 sec)
- * \param SPEED The speed of the drivetrain when going to pick up the ring in \b RPM
- * 
- * TODO: Add alternative to use distance to ring and move with a motion profile
- */
-void driveTillPickUp(const double &TIMEOUT = 5, const int &SPEED = 200){
+
+/// @brief Calculates the distance to a ring of the specified `color` using a EKF
+/// @param color The color of the ring we wish to track
+/// @return The filtered distance to that ring
+/// @note Takes half a second (0.5s) to complete
+double getDistanceToRing(const Colors &color = COLOR){
+  COLOR = color;
+  okapi::EKFFilter ekf;
+
+  double distance;
+
+  // Filter the distance for half a second using 100 measurements (1 every 5 milliseconds)
+  for(int i = 0; i < 100; i++){
+    distance = ekf.filter(groundDistanceToDisk(vision_sensor.get_by_sig(0, color).width));
+    pros::delay(5);
+  }
+
+  return distance;
+}
+
+/// @brief Drives forward until a ring hits the distance sensor
+/// @param distance The distance from the robot to a ring
+void driveTillPickUp(const double &distance = getDistanceToRing()){
+  const double additional_distance = 0; //? This is to give the robot some distance to actually grip the donut, determine this experimentally
   activateIntakeScan();
-  const double startTime = pros::micros() / 1E6;
-  #define time (pros::micros() / 1E6) - startTime
-  while(time < TIMEOUT){
-    driveFull.moveVelocity(SPEED);
-    pros::delay(20);
-  }
-  #undef time
-  driveFull.moveVelocity(0);
+  move(distance + additional_distance);
   deactivateIntakeScan();
-}
-
-// TODO: add documentation
-/// @brief Aligns robot to stake
-/// @deprecated Do Not Use
-void AlignRobotToStake(){//align back of robot to the steak
-  // First, align ORBIT to the new target (e.g., yellow stake)
-  activateORBITFollow();
-  const int TOLERANCE = 10;// Degrees of acceptable error for alignment
-  #define TURRET_ANGLE turretEncoder.get_angle() / 100 // Get ORBIT angle in degrees
-  int difference = (TURRET_ANGLE + 180) % 360;
-
-  // Calculate the angle difference needed to rotate the robot's back toward the target.
-  // This is done by adding 180° to the turret's angle and normalizing to [-180°, 180°]
-  if (difference > 180){
-    difference -= 360;
-  }
-  if (difference < -180){
-    difference += 360;
-  }
-
-  // Loop until the robot's back is aligned within the specified tolerance
-  while(abs(difference) > TOLERANCE){
-    //process of aligning back of robot 
-    double SPEED = turnPID.Output(0, difference) * 40;
-    driveLeft.moveVelocity(SPEED);
-    driveRight.moveVelocity(-SPEED);
-    difference = (TURRET_ANGLE + 180) % 360;  // Recalculate the angle difference after turning
-    if(difference > 180){
-      difference -= 360;
-    }
-      
-    if(difference < -180){
-      difference += 360;
-    }
-      pros::delay(10);
-  }
-  #undef TURRET_ANGLE
-  deactivateORBITFollow();
-
-  driveLeft.moveVelocity(0);
-  driveRight.moveVelocity(0);
-  //back of robot should be aligned 
-}
-
-/// @brief Scans with turet
-/// @return if something was found
-/// @deprecated Do Not Use
-bool continuous_scan(){
-  turretRotationAbsolute(180);
-  pros::lcd::print(1, "Aligned 180");
-  pros::delay(1000);
-  while(true){
-
-    turretRotationRelative(90);
-    pros::lcd::print(2, "turning 1");
-    pros::delay(1000);
-    turretRotationRelative(0);
-    pros::lcd::print(2, "turning 2");
-    pros::delay(1000);
-
-    auto object = vision_sensor.get_by_sig(0, COLOR);
-    
-    if(object.signature == COLOR){
-      pros::lcd::print(2, "object found");
-      break;
-    }
-    pros::delay(20);
-  }
-}
-
-/// @brief Follows with turret
-/// @param color the color to follow
-/// @deprecated Do Not Use
-void FollowWithTurret(const Colors &color = COLOR) {
-  activateORBITFollow();
-  const int TURRET_TOLERANCE = 5;
-  const int BODY_ADJUST = 10;
-  const double FORWARD_SPEED = 130;
-  #define TURRET_ANGLE turretEncoder.get_angle() / 100 // Get ORBIT angle in degrees
-
-  while (true) {
-      // Single step ORBIT adjustment (should be non-blocking)
-
-      int turret_angle = turretEncoder.get_angle() / 100;
-      int difference = TURRET_ANGLE < 180 ? TURRET_ANGLE : TURRET_ANGLE - 360;
-
-      // Adjust body if ORBIT deviates too much
-      if (abs(difference) > BODY_ADJUST) {
-          double turnSpeed = turnPID.Output(0, difference) * 400;
-          turnSpeed = std::clamp(turnSpeed, -FORWARD_SPEED, FORWARD_SPEED);
-          driveLeft.moveVelocity(FORWARD_SPEED + turnSpeed);
-          driveRight.moveVelocity(FORWARD_SPEED - turnSpeed);
-      } else {
-          driveFull.moveVelocity(FORWARD_SPEED);
-      }
-
-      // Stop and pick up if close
-      if (distanceSensor.get() <= DISTANCE) {
-        pickUpRing(1000);
-        driveFull.moveVelocity(0);
-        scoreRing();
-        break;
-      }
-      
-      // Stop if no objects detected
-      if (vision_sensor.get_object_count() == 0) {
-        break;
-      }
-
-      pros::delay(10);
-  }
-  #undef TURRET_ANGLE
-  deactivateORBITFollow();
-
-  driveLeft.moveVelocity(0);
-  driveRight.moveVelocity(0);
-}
-
-/// @brief Tracks with turret
-/// @param color the color to track
-/// @deprecated Do Not Use
-void turretTrackRestricted(const Colors &color = COLOR) {
-  const int TOLERANCE = 20;
-  const int VISION_FIELD_CENTER = 315 / 2;
-  const int BOUND_1 = 270; // max right
-  const int BOUND_2 = 120; // max left
-  static PID turretPID = PID(0.5, 0, 0);
-
-  auto object = vision_sensor.get_by_sig(0, color);
-
-  // If no valid object found
-  if (object.signature != color) {
-      turret.moveVelocity(0);
-      //pros::lcd::print(2, "No Object");
-      return;
-  }
-
-  int OBJ_CENTER = object.x_middle_coord;
-  int turret_angle = turretEncoder.get_angle() / 100;
-  double SPEED = turretPID.Output(0, VISION_FIELD_CENTER - OBJ_CENTER);
-
-  //pros::lcd::print(1, "ORBIT Pos: %d", turret_angle);
-  //pros::lcd::print(3, "Center Diff: %d", VISION_FIELD_CENTER - OBJ_CENTER);
-
-  // If already aligned
-  if (abs(OBJ_CENTER - VISION_FIELD_CENTER) <= TOLERANCE) {
-      turret.moveVelocity(0);
-      //pros::lcd::print(2, "ORBIT Aligned");
-      return;
-  }
-
-  // Predict next angle
-  int projected_angle = turret_angle + (SPEED > 0 ? 1 : -1) * 5;
-
-  if (projected_angle >= BOUND_2 && projected_angle <= BOUND_1) {
-      turret.moveVelocity(SPEED);
-      //pros::lcd::print(2, "ORBIT Turning");
-  } else {
-      turret.moveVelocity(0);
-      //pros::lcd::print(2, "ORBIT Out of Bounds");
-  }
 }
 
 /// @brief Get a stake and scores a preload
