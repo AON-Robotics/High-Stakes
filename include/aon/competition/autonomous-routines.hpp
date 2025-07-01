@@ -327,48 +327,29 @@ void motionProfile(double dist = TILE_WIDTH){
   const int sign = dist / abs(dist); // Getting the direction of the movement
   dist = abs(dist); // Setting the magnitude to positive
 
-  const double MAX_VELOCITY = MAX_RPM; // (RPM)
-  const double MAX_JERK = MAX_ACCEL; // (RPM/s^2)
   double dt = 0.02; // (s)
   double currVelocity = 0;
-  double currAccel = 0;
   double traveledDist = 0;
   Vector startPos = aon::odometry::GetPosition();
 
-  double now;
-  double lastTime = pros::micros() / 1E6;
+  double now = pros::micros() / 1E6;
+  double lastTime = now;
+
+  forwardProfile.setVelocity(driveFull.getActualVelocity());
 
   while(traveledDist < dist){
+    // TODO: Have integral as backup for odom failure
+    // if(odom.failing) { traveledDist += getSpeed(currVelocity) * dt; }
     traveledDist = (aon::odometry::GetPosition() - startPos).GetMagnitude();
     double remainingDist = dist - traveledDist;
     now = pros::micros() / 1E6;
     dt =  now - lastTime;
     lastTime = now;
 
-    // Debugging output to brain
-    pros::lcd::print(1, "Traveled: %.2f / %.2f", traveledDist, dist);
-    pros::lcd::print(2, "RPM: %.2f, Accel: %.2f", currVelocity, currAccel);
-    pros::lcd::print(3, "Remaining: %.2f", remainingDist);
-    pros::lcd::print(4, "Calculated Velocity: %.2f", getSpeed(currVelocity));
-    pros::lcd::print(5, "Max Velocity: %.2f", getSpeed(MAX_RPM));
-
-    // Acceleration
-    // For the condition, consider half the deceleration for accuracy (there is an error of half an inch almost constant when not used, I have to investigate a bit further on that part but it works fine like this)
-    if(remainingDist <= getSpeed(currVelocity) * getSpeed(currVelocity) / (2 * getSpeed(MAX_DECEL * .5))){
-      // TODO: maybe do calculations to make this an option but it doesn't seem necessary
-      // currAccel = std::max(currAccel - (MAX_JERK * dt), 0);
-      currAccel = - MAX_DECEL;
-    } else {
-      currAccel = std::min(currAccel + (MAX_JERK * dt), MAX_ACCEL);
-    }
-
-    currVelocity += currAccel * dt;
-    currVelocity = std::min(currVelocity,  MAX_VELOCITY);
+    currVelocity = forwardProfile.update(remainingDist, dt);
 
     driveFull.moveVelocity(sign * currVelocity);
 
-    // TODO: Have integral as backup for odom failure
-    // traveledDist += getSpeed(currVelocity) * dt;
     if(traveledDist >= dist) { break; } // Overshoot prevention
 
     pros::delay(20);

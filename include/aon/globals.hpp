@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef AON_GLOBALS_HPP_
 #define AON_GLOBALS_HPP_
 
@@ -14,13 +16,15 @@
 //  |_|  |_|\___/ |_| \___/|_|_\|___/
 //
 // ============================================================================
-                                   
+
 
 // Drivetrain
 
 okapi::MotorGroup driveLeft = okapi::MotorGroup({-20, 19, -18});
 okapi::MotorGroup driveRight = okapi::MotorGroup({9, -8, 7});
 okapi::MotorGroup driveFull = okapi::MotorGroup({-20, 19, -18, 9, -8, 7});
+#include "./controls/s-curve-profile.hpp" //! Change this, I dont like doing the include this far down and after ive done other stuff
+MotionProfile forwardProfile(MAX_RPM, MAX_ACCEL, MAX_DECEL, MAX_ACCEL);
 
 // Intake
 
