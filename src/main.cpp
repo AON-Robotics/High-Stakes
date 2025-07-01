@@ -9,8 +9,9 @@ void initialize() {
   aon::odometry::Initialize();
   pros::Task odomTask(aon::odometry::Odometry);
   pros::Task safetyTask(aon::autonSafety);
-  pros::Task turretTask(aon::turretFollow);
+  pros::Task turretFollowTask(aon::turretFollow);
   pros::Task intakeTask(aon::intakeScan);
+  pros::Task turretScanTask(aon::turretScan); // TODO: combine this with the follow task
 }
 
 void disabled() {}
