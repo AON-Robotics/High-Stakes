@@ -891,6 +891,8 @@ void driveTillPickUp(const double &TIMEOUT = 5, const int &SPEED = 200){
 }
 
 // TODO: add documentation
+/// @brief Aligns robot to stake
+/// @deprecated Do Not Use
 void AlignRobotToStake(){//align back of robot to the steak
   // First, align ORBIT to the new target (e.g., yellow stake)
   activateORBITFollow();
@@ -931,7 +933,9 @@ void AlignRobotToStake(){//align back of robot to the steak
   //back of robot should be aligned 
 }
 
-// TODO: add documentation
+/// @brief Scans with turet
+/// @return if something was found
+/// @deprecated Do Not Use
 bool continuous_scan(){
   turretRotationAbsolute(180);
   pros::lcd::print(1, "Aligned 180");
@@ -955,7 +959,9 @@ bool continuous_scan(){
   }
 }
 
-// TODO: add documentation
+/// @brief Follows with turret
+/// @param color the color to follow
+/// @deprecated Do Not Use
 void FollowWithTurret(const Colors &color = COLOR) {
   activateORBITFollow();
   const int TURRET_TOLERANCE = 5;
@@ -1001,7 +1007,9 @@ void FollowWithTurret(const Colors &color = COLOR) {
   driveRight.moveVelocity(0);
 }
 
-// TODO: add documentation
+/// @brief Tracks with turret
+/// @param color the color to track
+/// @deprecated Do Not Use
 void turretTrackRestricted(const Colors &color = COLOR) {
   const int TOLERANCE = 20;
   const int VISION_FIELD_CENTER = 315 / 2;
