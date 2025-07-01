@@ -9,8 +9,10 @@
 #pragma once
 
 #include <cmath>
-#include "constants.hpp"
-#include <globals.hpp>
+#include "../constants.hpp"
+#include "../globals.hpp"
+
+inline double getSpeed(const double &RPM);
 
 class MotionProfile {
 
@@ -33,7 +35,7 @@ class MotionProfile {
         /// @return The updated value for the velocity in \b RPM
         double update(const double &remainingDist, const double &dt = 0.02) {
 
-            // Acceleration
+            // Deceleration
             // For the condition, consider half the deceleration for accuracy (there is an error of half an inch almost constant when not used, I have to investigate a bit further on that part but it works fine like this)
             if(remainingDist <= getSpeed(this->currVelocity) * getSpeed(this->currVelocity) / (2 * getSpeed(this->MAX_DECELERATION * .5))){
                 this->currAccel = - this->MAX_DECELERATION;
@@ -42,15 +44,15 @@ class MotionProfile {
             else if (this->currVelocity == this->MAX_VELOCITY) {
                 this->currAccel = 0;
             }
-            // Deceleration
+            // Acceleration
             else {
                 this->currAccel = std::min(currAccel + (this->JERK * dt), this->MAX_ACCELERATION);
             }
 
             this->currVelocity += this->currAccel * dt;
-            this->currVelocity = std::min(this->currVelocity,  this->MAX_VELOCITY);
+            this->currVelocity = std::min(this->currVelocity,  this->MAX_VELOCITY); // Redundancy for safety
             return this->currVelocity;
-        }
+        } // TODO: add support for decelerating to `MAX_VELOCITY` if it is lower than `currVelocity`
 
         /// @brief Resets the velocity and acceleraton for reusability
         void reset(){
@@ -71,10 +73,10 @@ class MotionProfile {
         }
 };
 
-/// @brief Determines the speed of the robot given drivetrain motors' RPM
+/// @brief Determines the speed of the robot given drivetrain motors' `RPM`
 /// @param RPM The RPM for which to calculate the velocity (default current RPM)
 /// @return The speed in \b in/s at which the robot would move at the given RPM
-/// @note Test the accuracy precision of the `getActualVelocity()` method,
+/// @note Test the accuracy precision of the `getActualVelocity()` method which is used as a default value,
 /// @note it may be possible to need to use `get_velocity()` from `pros::Rotation` which uses \b centidegrees.
 /// @note The distance units depend on the units used for measuring `DRIVE_WHEEL_DIAMETER`.
 inline double getSpeed(const double &RPM = (int)driveFull.getActualVelocity()){
