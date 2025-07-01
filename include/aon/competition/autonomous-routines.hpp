@@ -929,6 +929,8 @@ void driveIntoRing(const Colors &color = COLOR){
 
   const double dt = 0.02;
 
+  forwardProfile.setMaxVelocity(MAX_RPM / 2);
+
   while(abs(TURRET_ANGLE) > TOLERANCE){
     auto object = vision_sensor.get_by_sig(0, color);
 
@@ -959,6 +961,7 @@ void driveIntoRing(const Colors &color = COLOR){
   deactivateORBITFollow();
   deactivateORBITScan();
   deactivateIntakeScan();
+  forwardProfile.setMaxVelocity(MAX_RPM);
   driveTillPickUp();
 }
 
