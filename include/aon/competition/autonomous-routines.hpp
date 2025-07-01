@@ -1084,13 +1084,13 @@ void turretScan(){
 /// @param radius The radius of the arc of the motion in \b inches measured from the center of rotation of the robot to the right
 /// @note A positive `radius` will cause a clockwise rotation, while a negative `radius` will cause a counter-clockwise rotation
 /// @see https://www.desmos.com/calculator/otyntapx2x 
-// TODO: Add an angle paramter to know how long the arc is to be
+// TODO: Add an angle parameter to know how long the arc is to be
 // void driveInArc(const double &radius, const double &angle) {
 void driveInArc(const double &radius) {
   const bool clockwise = radius >= 0;
   double leftSpeed = 0, rightSpeed = 0;
   // TODO: make the center of rotation speed be 200 and then use two ratios to obtain the left and right drivetrain speeds
-  // TODO: motion profile the speed of the center of rotation of the robot and from there, apply the ratios. Use integration to calculate distance traveled (𝚫x = ∫v*dt).
+  // TODO: motion profile the speed of the center of rotation of the robot and from there, apply the ratios. Use integration to calculate distance traveled (𝚫x = ∫v*dt) for now while odometer is in process.
   const double ratio = (std::abs(radius) - (DRIVE_WIDTH / 2)) / (std::abs(radius) + (DRIVE_WIDTH / 2));
   
   // Clockwise, more speed on the left
@@ -1114,19 +1114,18 @@ void driveInArc(const double &radius) {
 /// @note Odometry must be working for global positioning on the field
 /// @see https://www.desmos.com/calculator/87npdbeol5 
 void testDriveInArcTo(const double &x, const double &y){
-  // TODO: Refine and clean
+  // TODO: Refine, clean and add safety for zero division (which is unlikely but possible)
   // Get the current pose
-  // Vector position = odometry::GetPosition(); // hard code for now
-  // double heading = odometry::GetRadians();
-  Vector position = Vector().SetPosition(0, 0);
-  double heading = 89.9; // this will come in the same format as the GPS heading
+  Vector position = odometry::GetPosition();
+  double heading = odometry::GetRadians(); //! this will come in the same format as the GPS heading
 
   // Convert the heading to traditional math coordinates
   heading = (90 - heading) * M_PI / 180;
 
   // Calculate slopes of tangent to circular path and secant that cuts through current points and desired point
   double m_t = std::tan(heading);
-  double m_s = (position.GetY() - y) / (position.GetX() - x);
+  double m_s = (position.GetY() - y) / (position.GetX() - x); //! Check for 0 division first which is highly unlikely but possible and add smal offset to denominator if it is 0
+  // TODO: add small offset if `m_t` or `m_s` is 0 to have valid calculations and avoid errors
 
   // Get midpoint of the secant
   Vector midpoint = Vector().SetPosition((position.GetX() + x) / 2, (position.GetY() + y) / 2);
