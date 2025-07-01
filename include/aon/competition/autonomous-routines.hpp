@@ -1081,27 +1081,36 @@ void turretScan(){
 }
 
 /// @brief Makes the robot drive in an arc motion based on a given `radius`
-/// @param radius The radius of the arc of the motion in \b inches measured from the center of rotation of the robot to the right
+/// @param radius The radius of the arc of the motion in \b inches measured from the center of rotation of the robot to the reference point in the right when positive and in the left when negative
 /// @note A positive `radius` will cause a clockwise rotation, while a negative `radius` will cause a counter-clockwise rotation
-/// @see https://www.desmos.com/calculator/otyntapx2x 
+/// @see https://www.desmos.com/calculator/91cbd82e8b
 // TODO: Add an angle parameter to know how long the arc is to be
 // void driveInArc(const double &radius, const double &angle) {
-void driveInArc(const double &radius) {
-  const bool clockwise = radius >= 0;
-  double leftSpeed = 0, rightSpeed = 0;
-  // TODO: make the center of rotation speed be 200 and then use two ratios to obtain the left and right drivetrain speeds
+void driveInArc(double radius) {
+  if(radius == 0) return;
+  const bool clockwise = radius > 0.0;
+  radius = std::abs(radius);
+
+  const double midSpeed = 200;
+
   // TODO: motion profile the speed of the center of rotation of the robot and from there, apply the ratios. Use integration to calculate distance traveled (𝚫x = ∫v*dt) for now while odometer is in process.
-  const double ratio = (std::abs(radius) - (DRIVE_WIDTH / 2)) / (std::abs(radius) + (DRIVE_WIDTH / 2));
+  // Calculate wheel speeds based on center speed and arc geometry
+  const double outerRatio =  (radius + (DRIVE_WIDTH / 2)) / radius;
+  const double innerRatio = (radius - (DRIVE_WIDTH / 2)) / radius;
+  const double outerSpeed = midSpeed * outerRatio;
+  const double innerSpeed = midSpeed * innerRatio;
+
+  double leftSpeed, rightSpeed;
   
   // Clockwise, more speed on the left
   if(clockwise) {
-    leftSpeed = 200;
-    rightSpeed = leftSpeed * ratio;
+    leftSpeed = outerSpeed;
+    rightSpeed = innerSpeed;
   }
   // Counter-clockwise, more speed on the right
   else {
-    rightSpeed = 200;
-    leftSpeed = rightSpeed * ratio;
+    rightSpeed = outerSpeed;
+    leftSpeed = innerSpeed;
   }
 
   driveLeft.moveVelocity(leftSpeed); 
