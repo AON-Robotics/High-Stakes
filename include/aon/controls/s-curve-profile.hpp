@@ -29,45 +29,62 @@ class MotionProfile {
             this->JERK = std::abs(JERK); // RPM/(s^2)
         }
 
-        /// @brief The core of the class functionality: calculates the current velocity to send to the motors to get an optimal acceleration and deceleration curve for smooth and precise movements
-        /// @param remainingDist The remaining distance in \b inches towards the objective
-        /// @param dt The time that passed since the last funcion call in \b seconds
-        /// @return The updated value for the velocity in \b RPM
+        /// @brief Calculates the target velocity to send to the motors for smooth and precise movements using an S-curve profile.
+        /// @param remainingDist The remaining distance to the target in \b inches.
+        /// @param dt The time elapsed since the last function call in \b seconds.
+        /// @return The updated velocity in \b RPM.
         double update(const double &remainingDist, const double &dt = 0.02) {
 
             // Deceleration
-            // For the condition, consider half the deceleration for accuracy (there is an error of half an inch almost constant when not used, I have to investigate a bit further on that part but it works fine like this)
+            // Decelerate early using half the deceleration for better accuracy.
+            // Note: Without this, the system consistently overshoots by about half an inch. Needs further investigation.
             if(remainingDist <= getSpeed(this->currVelocity) * getSpeed(this->currVelocity) / (2 * getSpeed(this->MAX_DECELERATION * .5))){
                 this->currAccel = - this->MAX_DECELERATION;
             }
-            // Constant velocity
+            // Decelerate if the current velocity exceeds the updated `MAX_VELOCITY`.
+            else if (this->currVelocity > this->MAX_VELOCITY){
+                this->currAccel = std::min(this->currAccel - (this->JERK * dt), this->MAX_DECELERATION);
+            }
+            // Maintain constant velocity (no acceleration needed).
             else if (this->currVelocity == this->MAX_VELOCITY) {
                 this->currAccel = 0;
             }
-            // Acceleration
+            // Stop the profile when the target is reached.
+            else if(remainingDist <= 0) {
+                this->currAccel = 0;
+                this->currVelocity = 0;
+            }
+            // Increase acceleration up to the maximum allowed value.
             else {
-                this->currAccel = std::min(currAccel + (this->JERK * dt), this->MAX_ACCELERATION);
+                this->currAccel = std::min(this->currAccel + (this->JERK * dt), this->MAX_ACCELERATION);
             }
 
             this->currVelocity += this->currAccel * dt;
             this->currVelocity = std::min(this->currVelocity,  this->MAX_VELOCITY); // Redundancy for safety
             return this->currVelocity;
-        } // TODO: add support for decelerating to `MAX_VELOCITY` if it is lower than `currVelocity`
+        }
 
         /// @brief Resets the velocity and acceleraton for reusability
         void reset(){
             this->currVelocity = 0;
+            this->MAX_VELOCITY = MAX_RPM;
             this->currAccel = 0;
         }
 
         /// @brief Sets the velocity in case profile is not started from rest
-        /// @param velocity The current velocity of the robot
+        /// @param velocity The current velocity of the profile
         void setVelocity(const double &velocity = 0) {
             this->currVelocity = velocity;
         }
 
+        /// @brief Sets the max velocity for the profile
+        /// @param max_velocity The new max velocity for the profile
+        void setMaxVelocity(const double &max_velocity = MAX_RPM) {
+            this->MAX_VELOCITY = max_velocity;
+        }
+
         /// @brief Sets the acceleration in case profile is not started from rest
-        /// @param accel The current acceleration of the robot
+        /// @param accel The current acceleration of the profile
         void setAccel(const double &accel = 0) {
             this->currAccel = accel;
         }
