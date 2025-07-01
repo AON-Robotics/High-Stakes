@@ -8,8 +8,8 @@
 #include "../controls/pid/pid.hpp"
 #include "../controls/s-curve-profile.hpp"
 #include "../tools/logging.hpp"
-#include <queue>
 #include "../tools/moving-average.hpp"
+#include "../tools/general.hpp"
 
 // TODO: for modularity we will have odometry, drivetrain, navigator, orbit, intake, and claw (the last two will most likely change with each game and modules may be added or removed as needed)
 //# Navigator will use odometry and drivetrain under the hood for auton, but drivers will use just drivetrain for driving
@@ -26,7 +26,6 @@ int move(const double &dist);
 int turn(const double &angle);
 void grabGoal(const int &delay);
 void raceToGoal(const double &dist);
-void driveIntoRing(const Colors &color);
 void pickUpRing(const int &delay);
 void scoreRing(const int &delay);
 inline double metersToInches(const double &meters);
@@ -34,8 +33,7 @@ void discardDisk();
 void dropGoal();
 void moveIndexer(const bool &extend);
 void enableGate();
-void turretRotationAbsolute(const double &targetAngle);
-void turretTrackRestricted(const Colors &color);
+void turretRotationAbsolute(double targetAngle);
 double widthToDistance(const double &width);
 double groundDistanceToDisk(const double &pixels);
 
@@ -379,8 +377,10 @@ void turnProfile(double angle = 90){
 
   double now;
   double lastTime = pros::micros() / 1E6;
-
+  
   while(traveledAngle < angle){
+    // TODO: Have Integral for gyro failure
+    // if(gyro.failing) { traveledAngle += getSpeed(currVelocity) * dt * 360 / circumference; }
     traveledAngle = abs(aon::odometry::GetDegrees() - startAngle);
     double remainingAngle = angle - traveledAngle;
     now = pros::micros() / 1E6;
@@ -408,8 +408,6 @@ void turnProfile(double angle = 90){
     driveLeft.moveVelocity(sign * currVelocity);
     driveRight.moveVelocity(-sign * currVelocity);
 
-    // TODO: Have Integral for gyro failure
-    // traveledAngle += getSpeed(currVelocity) * dt * 360 / circumference;
     if(traveledAngle >= angle) { break; } // Overshoot prevention
 
     pros::delay(20);
@@ -547,9 +545,7 @@ void scoreRing(const int &delay = 1500){
   rail.moveVelocity(0);
 }
 
-/**
- * \brief Asynchronous task for activating the intake when a ring is encountered
- */
+/// @brief Asynchronous task for activating the intake when a ring is encountered
 void intakeScan(){
   while(true){
     if (intakeScanning && distanceSensor.get() <= DISTANCE) {
@@ -604,45 +600,32 @@ void raceToGoal(const double &dist = 47){
   grabGoal(300);
 }
 
-/**
- * \brief Drops the goal by releasing the claw
- */
+/// @brief Drops the goal by releasing the claw
 void dropGoal(){
   claw.set_value(false);
 }
 
-/**
- * \brief Extends or retracts indexer to later knock down rings
- *
- * \param extend If true, indexer will extend, if false, it will retract
- */
+/// @brief Extends or retracts indexer to later knock down rings
+/// @param extend If true, indexer will extend, if false, it will retract
 void moveIndexer(const bool &extend = true){
   indexer.set_value((extend ? 1 : 0) );
 }
 
-/**
- *
- * \brief This small subroutine removes the top ring of a stack of two and scores the ring at top. use ONLY when the indexer is at the right side of stack.
- *
- */
+/// @brief This small subroutine removes the top ring of a stack of two and scores the ring at top. use ONLY when the indexer is at the right side of stack.
 void RemoveTop(){
   moveIndexer();
   turn(-45);
   moveIndexer(false);
 }
 
-/**
- * \brief Drops the gate from starting position so the robot can grab stuff
- */
+/// @brief Drops the gate from starting position so the robot can grab stuff
 void enableGate(){
   gate.moveVelocity(-100);
   pros::delay(250);
   gate.moveVelocity(0);
 }
 
-/**
- * \brief Async task to align ORBIT only to the item with the globally set `COLOR` signature
- */
+/// @brief Async task to align ORBIT only to the item with the globally set `COLOR` signature
 void turretFollow(){
   const int TOLERANCE = 10;
   const int VISION_FIELD_CENTER = 315 / 2;
@@ -655,29 +638,24 @@ void turretFollow(){
       OBJ_CENTER = object.x_middle_coord;
       double SPEED = turretPID.Output(0, VISION_FIELD_CENTER - OBJ_CENTER);
       position = turretEncoder.get_angle() / 100;
-      // pros::lcd::print(1, "Position: %.2f", position);
 
       if(object.signature == COLOR){
         if(abs(OBJ_CENTER - VISION_FIELD_CENTER) <= TOLERANCE){
           turret.moveVelocity(0);
-          // pros::lcd::print(2, "Aligned!");
         }
         // Limiting to protect hardware
         else if (ORBIT_LIMITED && (ORBIT_LEFT_LIMIT >= position && position >= ORBIT_RIGHT_LIMIT)) {
-          turret.moveVelocity(0);
-          turretRotationAbsolute(0);
+          turretRotationAbsolute(nearest(position, std::make_pair(ORBIT_LEFT_LIMIT + 10, ORBIT_RIGHT_LIMIT - 10)));
         }
         else { // Turn Towards Object
-          // pros::lcd::print(2, "Turning!");
           turret.moveVelocity(SPEED);
         }
       }
       // Dont move if nothing is there
       else {
-        turret.moveVelocity(0);
+        activateORBITScan();
       }
     }
-    // else {
     else if(turretBraking) {
       turret.moveVelocity(0);
     }
@@ -697,7 +675,7 @@ void alignRobotTo(const Colors &color = COLOR){
   COLOR = color;
   activateORBITFollow();
   pros::delay(500);
-  const int TOLERANCE = 10;
+  const int TOLERANCE = 5;
   double difference;
   #define TURRET_ANGLE turretEncoder.get_angle() / 100
   while(abs(TURRET_ANGLE) > TOLERANCE){
@@ -716,67 +694,28 @@ void alignRobotTo(const Colors &color = COLOR){
   }
 }
 
-/**
- * \brief Aligns ORBIT and DRIVETRAIN to the ring with the set `color` and picks it up
- * 
- * \param color The color of the ring we wish to grab
- * 
- * \deprecated
- */
-void grabRing(const Colors &color = COLOR){
-  activateORBITFollow();
-  const int TOLERANCE = 10;
-  const double FORWARD_SPEED = 100;
-  double difference;
-  #define TURRET_ANGLE turretEncoder.get_angle() / 100
-  while(abs((TURRET_ANGLE)) > TOLERANCE){
-    difference = TURRET_ANGLE < 180 ? TURRET_ANGLE : TURRET_ANGLE - 360;
-    pros::lcd::print(2, "Moving!");
-    double SPEED = turnPID.Output(0, difference) * 400;
-    pros::lcd::print(3, "Speed: %.2f", SPEED);
-    driveLeft.moveVelocity(FORWARD_SPEED + SPEED);
-    driveRight.moveVelocity(FORWARD_SPEED - SPEED);
-    // Stop and pick up if close
-    if (distanceSensor.get() <= DISTANCE) {
-      driveFull.moveVelocity(FORWARD_SPEED);
-      pickUpRing(3000);
-      break;
-    }
-    driveFull.moveVelocity(0);
-  }
-  #undef TURRET_ANGLE
-  deactivateORBITFollow();
-  driveFull.moveVelocity(0);
-}
-
-/**
- * \brief Aligns front of robot and turns around to grab the stake
- * 
- * \param dist The absolute value of the distance that the robot is from the stake when it begins alignment in \b inches
- */
+/// @brief Aligns front of robot and turns around to grab the stake
+/// @param dist The absolute value of the distance that the robot is from the stake when it begins alignment in \b inches
 void findAndGrabGoal(const double &dist = 8){
   alignRobotTo(STAKE);
   move(-abs(dist));
   grabGoal();
 }
 
-/**
- * \brief Rotates the ORBIT to a given angle, with respect to 0 degrees facing forward. (Absolute Rotation)
- * 
- * \param targetAngle Angle in degrees we wish to rotate ORBIT. within [-180, 180]
- *
- * \details `turretEncoder.get_angle()` is divided by 100 for scaling purposes.
- */
-inline void turretRotationAbsolute(const double &targetAngle) { 
-  double currentAngle = turretEncoder.get_angle() / 100.0; 
-  if(currentAngle > 180) currentAngle -= 360;
-  while(abs(currentAngle - targetAngle) > 5) {
+/// @brief Rotates the ORBIT to a given angle, with respect to 0 degrees facing forward. (Absolute Rotation)
+/// @param targetAngle Angle in degrees we wish to rotate ORBIT. within [-180, 180] or [0, 360]
+/// @details `turretEncoder.get_angle()` is divided by 100 for scaling purposes.
+inline void turretRotationAbsolute(double targetAngle) { 
+  const double TOLERANCE = 5;
+  if(targetAngle > 180) targetAngle -= 360;
+  double currentAngle;
+  do {
     currentAngle = turretEncoder.get_angle() / 100.0;
     if(currentAngle > 180) currentAngle -= 360;
     double output = turretPID.Output(targetAngle, currentAngle); 
     turret.moveVelocity(output); 
     pros::delay(10);
-  }
+  } while(abs(currentAngle - targetAngle) > TOLERANCE);
   turret.moveVelocity(0);
 }
 
@@ -789,10 +728,11 @@ inline void turretRotationAbsolute(const double &targetAngle) {
  * \details `turretEncoder.get_angle()` is divided by 100 for scaling purposes.
  */
 inline void turretRotationRelative(const double &givenAngle) { 
-  double currentAngle = turretEncoder.get_position() / 100.0; 
+  const double TOLERANCE = 5;
+  double currentAngle;
   double initialAngle = turretEncoder.get_position() / 100.0; 
   double targetAngle = initialAngle + givenAngle; 
-  while(abs(currentAngle - targetAngle) > 0.2) {
+  do {
     currentAngle = turretEncoder.get_position() / 100.0;
     double output = turretPID.Output(targetAngle, currentAngle); 
     turret.moveVelocity(output); 
@@ -843,7 +783,7 @@ void alignAndIntake(const Colors &color = COLOR){
   move(12);
   alignRobotTo(COLOR);
   move(12);
-  driveTillPickUp(2);
+  driveTillPickUp();
   scoreRing();
 }
 
@@ -977,7 +917,7 @@ void testADIEncoder(){
 
 /// @brief Uses the ORBIT to adjust the path going toward a ring to intake it accurately
 /// @param color The color of the ring we wish to intake
-void testDriveIntoRing(const Colors &color = COLOR){
+void driveIntoRing(const Colors &color = COLOR){
   COLOR = color;
   activateORBITFollow();
   activateIntakeScan();
@@ -986,19 +926,12 @@ void testDriveIntoRing(const Colors &color = COLOR){
   const int TOLERANCE = 5; //? Probably adjust this
   double difference;
   #define TURRET_ANGLE turretEncoder.get_angle() / 100
-  const double TIMEOUT = 100; // basically will never time out for testing
-  const double startTime = pros::micros() / 1E6;
-  #define TIME (pros::micros() / 1E6) - startTime
 
-  MotionProfile forwardProfile(MAX_RPM, MAX_ACCEL, MAX_DECEL, MAX_ACCEL);
-  const double dt = 0.02; //! untested
+  const double dt = 0.02;
 
-  // TODO: change condition
-  while(TIME < TIMEOUT){
-  // while(abs(TURRET_ANGLE) > TOLERANCE){ // # Will probably use this condition so I can then just `driveTillPickup()`
+  while(abs(TURRET_ANGLE) > TOLERANCE){
     auto object = vision_sensor.get_by_sig(0, color);
 
-    // TODO: Test this if else
     // Safety to scan when object is lost
     if(object.signature != color) { 
       activateORBITScan();
@@ -1010,14 +943,12 @@ void testDriveIntoRing(const Colors &color = COLOR){
     }
 
     difference = TURRET_ANGLE < 180 ? TURRET_ANGLE : TURRET_ANGLE - 360;
-    // TODO: maybe motion profile this variable
+    //? maybe motion profile this variable
     double TURN = turnPID.Output(0, -difference) * 500;
     
     const double distance = ekf.filter(groundDistanceToDisk(object.width));
 
-    double FORWARD = forwardProfile.update(distance, dt); //! untested
-    // double FORWARD = std::min(distance * 5, 400.0);
-    pros::lcd::print(1, "Ground distance = %.2f", distance);
+    double FORWARD = forwardProfile.update(distance, dt);
 
     driveLeft.moveVelocity(FORWARD + TURN);
     driveRight.moveVelocity(FORWARD - TURN);
@@ -1028,8 +959,7 @@ void testDriveIntoRing(const Colors &color = COLOR){
   deactivateORBITFollow();
   deactivateORBITScan();
   deactivateIntakeScan();
-  driveLeft.moveVelocity(0);
-  driveRight.moveVelocity(0);
+  driveTillPickUp();
 }
 
 /// @brief Calculates the distance the robot would have to travel to get to an object
@@ -1056,7 +986,7 @@ double pixelsToInches(const double &pixels){
 /// @return The distance from the vision sensor to the object in \b inches
 /// @note This function assumes the entire object is in view, this may be changed later
 /// @details The funcion uses `pixelsToInches()` as a crucial part of the calculations
-/// @details The math is explained inside
+/// @details The math is explained inside and the formulas are from optical geometry
 double widthToDistance(const double &width){
   // m = -i/d
   // m = w_i / w_o
@@ -1116,11 +1046,10 @@ void testEKFWithGyro(){
 }
 
 /// @brief ORBIT async task scanning test function
-void testORBITScanning(){
+void turretScan(){
   // To scan, make the ORBIT go from one side of its maximum FOV to the other,
   // if the ORBIT is not limited, make it go from 175° to 185° (going the long way)
   // if at any point the ORBIT detects an object, start following it and stop scanning
-  activateORBITScan();
   bool goingLeft = true;
   while(true) {
     if(turretScanning && !turretFollowing){
@@ -1135,15 +1064,15 @@ void testORBITScanning(){
       else {
         double position = turretEncoder.get_angle() / 100;
         // scan if we find nothing
-        // Limiting to protect hardware (even if the rotation is 360°, we dont want to twist the vable)
+        // Limiting to protect hardware (even if the rotation is 360°, we dont want to twist the cable)
         if (ORBIT_LEFT_LIMIT >= position && position >= ORBIT_RIGHT_LIMIT) {
           goingLeft = !goingLeft;
-          turret.moveVelocity(40 * (goingLeft ? -1 : 1));
-          pros::delay(500);
-        } 
+          // Make the ORBIT go to the nearest limit and keep rotating from there
+          turretRotationAbsolute(nearest(position, std::make_pair(ORBIT_LEFT_LIMIT + 20, ORBIT_RIGHT_LIMIT - 20)));
+        }
         turret.moveVelocity(40 * (goingLeft ? -1 : 1));
       }
-    } 
+    }
     else if(turretFollowing) {
       deactivateORBITScan(); // dont scan if the ORBIT following was activated elsewhere for some reason
     } // an else would be redundant for our purposes
@@ -1227,7 +1156,7 @@ void testDriveInArcTo(const double &x, const double &y){
 /// @return 1 for successful execution
 /// @note Usually the tests in here use `potentiometer.get_value()` to tune a parameter in a function as well as testing the function itself
 int testAdjustable(){
-  testDriveIntoRing(RED);
+  driveIntoRing(RED);
   return 1;
 }
 
@@ -1238,7 +1167,7 @@ int testMultiple(){
   int choice = potentiometer.get_value();
   // UP
   if(choice > 2550){
-    testORBITScanning();
+    activateORBITScan();
   }
   // MIDDLE
   else if (choice > 1100){
@@ -1371,26 +1300,26 @@ int safeRingRoutine() {
   findAndGrabGoal(8); // 8 inches from stake
   turnToTarget(-1.2,-1.2);
   goToTarget(-1.2,-1.2);
-  FollowWithTurret(RED);
+  driveIntoRing(RED);
   turnToTarget(-1.5,0);
   goToTarget(-1.5,0);
-  FollowWithTurret(RED);
+  driveIntoRing(RED);
   turnToTarget(1.2,-1.2);
   goToTarget(1.2,-1.2);
-  FollowWithTurret(RED);
+  driveIntoRing(RED);
 }
 
 int safeRingRoutine2() {
   findAndGrabGoal(6); //6 inches from stake
   turnToTarget(-1.2,-1.2);
   goToTarget(-1.2,-1.2);
-  FollowWithTurret(RED);
+  driveIntoRing(RED);
   turnToTarget(-1.5,0);
   goToTarget(-1.5,0);
-  FollowWithTurret(RED);
+  driveIntoRing(RED);
   turnToTarget(-1.2,1.2);
   goToTarget(-1.2,1.2);
-  FollowWithTurret(RED);
+  driveIntoRing(RED);
 }
 
 
@@ -1480,18 +1409,18 @@ int SkillsBlackBotKevin(){
   
   // Grab ring in (-1.2, -1.2)
   turnToTarget(-1.2, -1.2);
-  FollowWithTurret();
+  driveIntoRing();
   move(-12);
 
   // Grab ring in (-1.8, -1.8)
   turnToTarget(-1.8, -1.8);
   move(6);
-  FollowWithTurret();
+  driveIntoRing();
   move(-12);
 
   // Grab ring in (-.6, -.6)
   goToTarget(-.9, -.9);
-  FollowWithTurret();
+  driveIntoRing();
   move(-24);
 
   // Grab ring in (0, -1.2)
