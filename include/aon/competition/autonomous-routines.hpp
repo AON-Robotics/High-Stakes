@@ -14,6 +14,7 @@
 // TODO: for modularity we will have odometry, drivetrain, navigator, orbit, intake, and claw (the last two will most likely change with each game and modules may be added or removed as needed)
 //# Navigator will use odometry and drivetrain under the hood for auton, but drivers will use just drivetrain for driving
 // TODO: add support for a drive mode that is videogame-like (i think rocket league has it). Basically with reference to where the driver is standing on the field, the direction towards which you move the joystick is where the robot will turn to and drive to at the same time. This should greatly facilitate general directional movement if implemented correctly. Leave a toggle available for traditional driving in accordance to the chosen drivetrain for better fine grained control in tight spaces.
+// TODO: odometry should also have an traditional odometer functionality to track how much distance the robot has traveled and also use integration for all measurements as a fallbakc if sensors fail
 
 
 /**
@@ -336,8 +337,6 @@ void motionProfile(double dist = TILE_WIDTH){
   forwardProfile.setVelocity(driveFull.getActualVelocity());
 
   while(traveledDist < dist){
-    // TODO: Have integral as backup for odom failure
-    // if(odom.failing) { traveledDist += getSpeed(currVelocity) * dt; }
     traveledDist = (aon::odometry::GetPosition() - startPos).GetMagnitude();
     double remainingDist = dist - traveledDist;
     now = pros::micros() / 1E6;
@@ -379,8 +378,6 @@ void turnProfile(double angle = 90){
   double lastTime = pros::micros() / 1E6;
   
   while(traveledAngle < angle){
-    // TODO: Have Integral for gyro failure
-    // if(gyro.failing) { traveledAngle += getSpeed(currVelocity) * dt * 360 / circumference; }
     traveledAngle = abs(aon::odometry::GetDegrees() - startAngle);
     double remainingAngle = angle - traveledAngle;
     now = pros::micros() / 1E6;
@@ -1085,18 +1082,14 @@ void turretScan(){
 
 /// @brief Makes the robot drive in an arc motion based on a given `radius`
 /// @param radius The radius of the arc of the motion in \b inches measured from the center of rotation of the robot to the reference point in the right when positive and in the left when negative
+/// @param midSpeed The speed with which to drive in \b RPM (positive speed will go forward and negative speed will go backwards)
 /// @note A positive `radius` will cause a clockwise rotation, while a negative `radius` will cause a counter-clockwise rotation
 /// @see https://www.desmos.com/calculator/91cbd82e8b
-// TODO: Add an angle parameter to know how long the arc is to be
-// void driveInArc(const double &radius, const double &angle) {
-void driveInArc(double radius) {
+void driveInArc(double radius, const double &midSpeed = 200) {
   if(radius == 0) return;
   const bool clockwise = radius > 0.0;
   radius = std::abs(radius);
 
-  const double midSpeed = 200;
-
-  // TODO: motion profile the speed of the center of rotation of the robot and from there, apply the ratios. Use integration to calculate distance traveled (𝚫x = ∫v*dt) for now while odometer is in process.
   // Calculate wheel speeds based on center speed and arc geometry
   const double outerRatio =  (radius + (DRIVE_WIDTH / 2)) / radius;
   const double innerRatio = (radius - (DRIVE_WIDTH / 2)) / radius;
@@ -1118,6 +1111,45 @@ void driveInArc(double radius) {
 
   driveLeft.moveVelocity(leftSpeed); 
   driveRight.moveVelocity(rightSpeed);
+}
+
+/// @brief Makes the robot drive in an arc motion based on a given `radius` for a given `angle`
+/// @param radius The radius of the arc of the motion in \b inches measured from the center of rotation of the robot to the reference point in the right when positive and in the left when negative
+/// @param angle The angle of the arc we want to cover in \b degrees, a negative angle will cause the robot to go in reverse
+/// @note A positive `radius` will cause a rotation with reference to a point to the right, while a negative `radius` will cause a rotation with reference to a point to the left
+/// @note A positive `angle` will cause a forward movement, while a negative `angle` will cause a backwards movement
+/// @see https://www.desmos.com/calculator/91cbd82e8b
+void driveAngleOfArc(const double &radius = DRIVE_WIDTH, const double &angle = 90) {
+  // TODO: test this function out
+  if(angle == 0) { return; }
+  if(radius == 0) {
+    turn(angle);
+    return;
+  }
+  const short sign = angle / std::abs(angle);
+  const double distance = std::abs((2 * radius * M_PI) * (angle / 360));
+  double midSpeed;
+  double traveledDist = 0, remainingDist = distance;
+  double dt = 0.02;
+  double now = pros::micros() / 1E6;
+  double lastTime = now;
+  // const double startDist = odometry::getTraveledDistance();
+  // TODO: uncomment the two lines that use odometry to track the distance after the method is implemented and remove integral fallback in the loop
+  while(traveledDist < distance){
+    // traveledDist = odometry::getTraveledDistance() - startDist;
+    remainingDist = distance - traveledDist;
+    now = pros::micros() / 1E6;
+    dt = now - lastTime;
+    midSpeed = forwardProfile.update(remainingDist, dt);
+    lastTime = now;
+    traveledDist += getSpeed(midSpeed) * dt; //! Integral fallback, use only as backup for odom failure, REMOVE THIS LINE AFTER ODOMETER WORKS
+  
+    driveInArc(radius, sign * midSpeed);
+      
+    pros::delay(20);
+  }
+
+  driveFull.moveVelocity(0);
 }
 
 /// @brief Makes the robot drive in an arc motion to a specified point in the field
@@ -1178,11 +1210,11 @@ int testMultiple(){
   int choice = potentiometer.get_value();
   // UP
   if(choice > 2550){
-    activateORBITScan();
+    driveAngleOfArc(TILE_WIDTH / 2, 270);
   }
   // MIDDLE
   else if (choice > 1100){
-    driveInArc(-TILE_WIDTH/2);
+    driveAngleOfArc(DRIVE_WIDTH / 2, -180);
   }
   // DOWN
   else {
