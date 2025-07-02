@@ -1120,7 +1120,6 @@ void driveInArc(double radius, const double &midSpeed = 200) {
 /// @note A positive `angle` will cause a forward movement, while a negative `angle` will cause a backwards movement
 /// @see https://www.desmos.com/calculator/91cbd82e8b
 void driveAngleOfArc(const double &radius = DRIVE_WIDTH, const double &angle = 90) {
-  // TODO: test this function out
   if(angle == 0) { return; }
   if(radius == 0) {
     turn(angle);
@@ -1133,19 +1132,23 @@ void driveAngleOfArc(const double &radius = DRIVE_WIDTH, const double &angle = 9
   double dt = 0.02;
   double now = pros::micros() / 1E6;
   double lastTime = now;
+  const double rightEncStartPos = std::abs(encoderRight.get_position()); //! Temporary
+  const double leftEncStartPos = std::abs(encoderLeft.get_position()); //! Temporary
+  // TODO: uncomment the two lines that use `odometry::getTraveledDistance()` to track the distance after that method is implemented and remove "//! Temporary" lines
   // const double startDist = odometry::getTraveledDistance();
-  // TODO: uncomment the two lines that use odometry to track the distance after the method is implemented and remove integral fallback in the loop
   while(traveledDist < distance){
     // traveledDist = odometry::getTraveledDistance() - startDist;
+    const double rightEncDist = ((std::abs(encoderRight.get_position()) - rightEncStartPos) / 100 ) * M_PI * TRACKING_WHEEL_DIAMETER / DEGREES_PER_REVOLUTION; //! Temporary
+    const double leftEncDist = ((std::abs(encoderLeft.get_position()) - leftEncStartPos) / 100 ) * M_PI * TRACKING_WHEEL_DIAMETER / DEGREES_PER_REVOLUTION; //! Temporary
+    traveledDist = (rightEncDist + leftEncDist) / 2; //! Temporary
     remainingDist = distance - traveledDist;
     now = pros::micros() / 1E6;
     dt = now - lastTime;
     midSpeed = forwardProfile.update(remainingDist, dt);
     lastTime = now;
-    traveledDist += getSpeed(midSpeed) * dt; //! Integral fallback, use only as backup for odom failure, REMOVE THIS LINE AFTER ODOMETER WORKS
-  
+
     driveInArc(radius, sign * midSpeed);
-      
+
     pros::delay(20);
   }
 

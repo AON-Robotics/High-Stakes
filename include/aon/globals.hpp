@@ -54,7 +54,8 @@ bool clawOn = false;
 
 // Encoders
 
-pros::Rotation encoderMid(5, true);
+pros::Rotation encoderRight(5, true);
+pros::Rotation encoderLeft(4, false);
 pros::Rotation encoderBack(11, false);
 pros::Rotation turretEncoder(14, true);
 

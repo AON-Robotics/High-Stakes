@@ -229,7 +229,7 @@ namespace aon::odometry {
  * \param theta Angular position in \b degrees
  */
 inline void ResetCurrent(const double x, const double y, const double theta) {
-  const double currentAngleMid = encoderMid.get_position() / 100.0;
+  const double currentAngleMid = encoderRight.get_position() / 100.0;
   const double currentAngleBack = encoderBack.get_position() / 100.0;
   const double currentAngleGyro = gyroscope.get_heading();
   
@@ -275,10 +275,10 @@ inline void ResetInitial() {
  * \brief Initialization function to put everything to 0
  */
 inline void Initialize() {
-  encoderMid.set_position(0);
+  encoderRight.set_position(0);
   encoderBack.set_position(0);
     
-  encoderMid.reset();
+  encoderRight.reset();
   encoderBack.reset();
 
   // Set initial position with gps
@@ -296,7 +296,7 @@ inline void Initialize() {
  */
 inline void Update() {
   // Read encoder values, divided by 100 to convert centidegrees to degrees
-  encoderMid_data.currentValue = encoderMid.get_position() / 100.0; 
+  encoderMid_data.currentValue = encoderRight.get_position() / 100.0; 
   encoderBack_data.currentValue = -encoderBack.get_position() / 100.0; 
 
   // Convert to distances
@@ -400,7 +400,7 @@ inline void Debug() {
     // pros::lcd::print(3, "Back Degrees: %.2f degrees",
     //                  backTracker * (180/M_PI));
     pros::lcd::print(4, "Encoder Mid: %.2f inches",
-                     (encoderMid.get_position() / 100.0) * conversionFactor);
+                     (encoderRight.get_position() / 100.0) * conversionFactor);
 
     odometry::Update();
     pros::delay(10);
