@@ -1,9 +1,12 @@
 /**
  * @file s-curve-profile.hpp
- * @author Kevin Gomez
- * @brief S-Curve motion profiling class for smooth and precise robot movements based on odometry
+ * @author Kevin Javier Gomez Guzman @kevgom018
+ * @brief S-Curve motion profiling class for smooth and precise robot movements based on odometry.
  * @version 1.0
  * @date 2025-06-19
+ * 
+ * This class calculates target velocities using an S-curve motion profile to ensure smooth acceleration and deceleration.
+ * It improves movement accuracy and reduces overshoot by carefully controlling jerk and acceleration phases.
  */
 
 #pragma once

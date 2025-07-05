@@ -1,9 +1,10 @@
 /**
  * @file moving-average.hpp
+ * @author Kevin Javier Gomez Guzman @kevgom018
  * @brief Provides a simple MovingAverage class to calculate the moving average over a fixed period.
+ * @version 1.0
+ * @date 2025-06-29
  * 
- * @author Kevin Javier Gomez Guzman
- *
  * This class maintains a sliding window of the most recent values and computes their average.
  * If the number of values is less than the specified period, the average is not reported (returns -1.0).
  */
