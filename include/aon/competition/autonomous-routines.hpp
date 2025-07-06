@@ -1155,24 +1155,103 @@ void driveAngleOfArc(const double &radius = DRIVE_WIDTH, const double &angle = 9
   driveFull.moveVelocity(0);
 }
 
+/// @brief Calculates the angle of a `point` with respect to a circle with a given `center` in the range [0, 360)
+/// @param point The point whose angle in the circle we want to calculate
+/// @param center The center of the circle in which the point resides
+/// @return The angle of that `point` in the circle in \b degrees
+double getAngleInCircle(Vector point, Vector center)
+{
+  if (point == center) { return 0; } // Should never happen
+
+  // Avoid 0 division
+  if (point.GetX() == center.GetX() && point.GetY() > center.GetY())
+  {
+    return 90;
+  }
+  else if (point.GetX() == center.GetX() && point.GetY() < center.GetY())
+  {
+    return 270;
+  }
+  // Check edge cases
+  else if (point.GetY() == center.GetY() && point.GetX() > center.GetX())
+  {
+    return 0;
+  }
+  else if (point.GetY() == center.GetY() && point.GetX() < center.GetX())
+  {
+    return 180;
+  }
+
+  // Get the angle
+  const double theta = std::atan((point.GetY() - center.GetY()) / (point.GetX() - center.GetX())) * 180 / M_PI;
+
+  // Normalize the angle depending on the quadrant its on
+  double normalizer = 0;
+
+  // First quadrant
+  if (point.GetX() - center.GetX() > 0 && point.GetY() - center.GetY() > 0)
+  {
+    normalizer = 0;
+  }
+  // Second quadrant
+  else if (point.GetX() - center.GetX() < 0 && point.GetY() - center.GetY() > 0)
+  {
+    normalizer = 180;
+  }
+  // Third quadrant
+  else if (point.GetX() - center.GetX() < 0 && point.GetY() - center.GetY() < 0)
+  {
+    normalizer = 180;
+  }
+  // Fourth quadrant
+  else if (point.GetX() - center.GetX() > 0 && point.GetY() - center.GetY() < 0)
+  {
+    normalizer = 360;
+  }
+  return std::fmod(theta + normalizer, 360);
+}
+
+/// @brief Calculates the angle of the arc between two points given the center of the circle and the two points
+/// @param a The first point in the arc
+/// @param b The other point in the arc
+/// @param center The center of the circle
+/// @return The angle of the arc from one point to another in \b degrees
+/// @details The arc whose angle we are measuring starts from whichever point is closest to the 0º mark (positive x-axis going counter-clockwise)
+double getAngleOfArc(const Vector &a, const Vector &b, const Vector &center)
+{
+  const double theta_a = getAngleInCircle(a, center);
+  const double theta_b = getAngleInCircle(b, center);
+
+  return std::max(theta_a, theta_b) - std::min(theta_a, theta_b);
+}
+
 /// @brief Makes the robot drive in an arc motion to a specified point in the field
 /// @param x The x coordinate of the point we want to go to in \b meters
 /// @param y The y coordinate of the point we want to go to in \b meters
 /// @note Odometry must be working for global positioning on the field
-/// @see https://www.desmos.com/calculator/87npdbeol5 
+/// @see https://www.desmos.com/calculator/5abb373276
 void testDriveInArcTo(const double &x, const double &y){
-  // TODO: Refine, clean and add safety for zero division (which is unlikely but possible)
   // Get the current pose
   Vector position = odometry::GetPosition();
-  double heading = odometry::GetRadians(); //! this will come in the same format as the GPS heading
+  position.SetPosition(inchesToMeters(position.GetX()), inchesToMeters(position.GetY()));
+  double heading = odometry::GetDegrees(); //? should this come in the same format as the GPS heading?
+  Vector target = Vector().SetPosition(x, y);
 
   // Convert the heading to traditional math coordinates
-  heading = (90 - heading) * M_PI / 180;
+  heading = (90 - heading); //? only do the `(90 - heading)` part if the heading comes in gps coordinates
+  if (heading < 0) { heading += 360; }
+  heading *=  M_PI / 180;
 
-  // Calculate slopes of tangent to circular path and secant that cuts through current points and desired point
-  double m_t = std::tan(heading);
-  double m_s = (position.GetY() - y) / (position.GetX() - x); //! Check for 0 division first which is highly unlikely but possible and add smal offset to denominator if it is 0
-  // TODO: add small offset if `m_t` or `m_s` is 0 to have valid calculations and avoid errors
+  // (heading - π/2) % π cannot be 0 because tan(heading) would not be defined
+  const bool isTanHeadingDefined = std::fmod(heading - M_PI_2, M_PI) != 0;
+
+  // Calculate slopes of tangent to circular path and secant that cuts through current point and desired point
+  double m_t = isTanHeadingDefined ? std::tan(heading) : DBL_MAX;
+  double m_s = (position.GetX() != x) ? (position.GetY() - y) / (position.GetX() - x) : DBL_MAX;
+
+  // Avoid 0 division later by switching to a very small value if a 0 slope arises
+  m_t = m_t == 0 ? DBL_MIN : m_t;
+  m_s = m_s == 0 ? DBL_MIN : m_s;
 
   // Get midpoint of the secant
   Vector midpoint = Vector().SetPosition((position.GetX() + x) / 2, (position.GetY() + y) / 2);
@@ -1185,24 +1264,35 @@ void testDriveInArcTo(const double &x, const double &y){
   // Get the radius using the pythagorean theorem
   double radius = std::hypot(position.GetX() - center.GetX(), position.GetY() - center.GetY());
 
-  /**
-   * TODO: add conversion to a negative radius when necessary,
-   * I'm unsure of how to check for this other than a series of conditions which may be incomplete, 
-   * I suspect there is a mathematical pattern that I have yet to notice.
-   */
-  driveInArc(metersToInches(radius));
-  /**
-   * TODO: modify `driveInArc()` to use a motion profile to move only a certain portion of the circular path.
-   * For this, a traditional, car-like odometer is also necessary. This implies an addition into the 
-   * odometry system of a `distanceTraveled` variable to keep track of that total.
-   */
+  // Determine the angle with some geometry and trigonometry
+  double angle = getAngleOfArc(position, target, center);
+
+  // Use a projection to determine which way we are turning
+  const double projectionStep = 0.001;
+  const Vector projection = Vector().SetPosition(position.GetX() + (projectionStep * std::cos(heading)),
+                                                  position.GetY() + (projectionStep * std::sin(heading)));
+  const double projectionAngle = getAngleInCircle(projection, center);
+  
+  const double positionAngle = getAngleInCircle(position, center);
+  const double targetAngle = getAngleInCircle(target, center);
+  
+  // If going clockwise, the center is to the right (positive radius) and to the left in a counter-clockwise movement (negative radius)
+  const bool clockwise = (targetAngle < projectionAngle && projectionAngle < positionAngle) || (projectionAngle < positionAngle && positionAngle < targetAngle) || (positionAngle < targetAngle && targetAngle < projectionAngle);
+  if (!clockwise) { radius *= -1; }
+  
+  // Check if we have to go the long way around
+  const bool longWay = (getAngleOfArc(projection, target, center) > angle) || (positionAngle < targetAngle && targetAngle < projectionAngle);
+  if (longWay) { angle = 360 - angle; }
+
+  // driveAngleOfArc(metersToInches(radius), angle);
+  pros::lcd::print(1, "RADIUS: %.2f ANGLE: %.2f", metersToInches(radius), angle);
 }
 
 /// @brief Function wrapper for test function that is to be executed through the GUI
 /// @return 1 for successful execution
 /// @note Usually the tests in here use `potentiometer.get_value()` to tune a parameter in a function as well as testing the function itself
 int testAdjustable(){
-  driveIntoRing(RED);
+    testDriveInArcTo(inchesToMeters(TILE_WIDTH / 2), inchesToMeters(TILE_WIDTH / 2));
   return 1;
 }
 
@@ -1213,15 +1303,15 @@ int testMultiple(){
   int choice = potentiometer.get_value();
   // UP
   if(choice > 2550){
-    driveAngleOfArc(TILE_WIDTH / 2, 270);
+    testDriveInArcTo(-inchesToMeters(TILE_WIDTH / 2), inchesToMeters(TILE_WIDTH / 2));
   }
   // MIDDLE
   else if (choice > 1100){
-    driveAngleOfArc(DRIVE_WIDTH / 2, -180);
+    testDriveInArcTo(-inchesToMeters(TILE_WIDTH / 2), -inchesToMeters(TILE_WIDTH / 2));
   }
   // DOWN
   else {
-    testDriveInArcTo(0, -inchesToMeters(TILE_WIDTH));
+    testDriveInArcTo(inchesToMeters(TILE_WIDTH / 2), -inchesToMeters(TILE_WIDTH / 2));
   }
   return 1;
 }
