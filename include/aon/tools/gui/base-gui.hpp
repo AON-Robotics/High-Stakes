@@ -289,14 +289,14 @@ static void DrawCurrentScreen() {
                       menu_block_x, menu_block_y,
                       /*TEXT*/ COLOR_BLACK, TEXT_LARGE, menu_text_x,
                       menu_text_y, "MENU");
-      // LOWER LEFT BUTTON [TEST 1]
+      // LOWER LEFT BUTTON [ADJUSTABLE]
       DrawButtonBlock(
           /*BLOCK*/ COLOR_SKY_BLUE, blocks_x[0], blocks_y[3], blocks_x[1],
           blocks_y[4],
           /*TEXT*/ COLOR_BLACK, TEXT_LARGE, lower_block_1_text_x,
           lower_block_text_y, "ADJUSTABLE");
 
-      // LOWER CENTER BUTTON [TEST]
+      // LOWER CENTER BUTTON [GUI...]
       DrawButtonBlock(
           /*BLOCK*/ COLOR_LIGHT_STEEL_BLUE, blocks_x[1], blocks_y[3],
           blocks_x[2], blocks_y[4],
@@ -482,13 +482,13 @@ static void HandleButtonPress() {
         pros::delay(200);
       } else if (TouchStatus.y > blocks_y[3]) {
         if (TouchStatus.x < blocks_x[1]) {
-          // TEST 1
+          // ADJUSTABLE
           DrawPressedBlock(blocks_x[0], blocks_y[3], blocks_x[1], blocks_y[4]);
           AutonomousReader->AddFunction("autonomous", aon::testAdjustable);
           pros::delay(200);
 
         } else if (TouchStatus.x < blocks_x[2]) {
-          // TEST SEQUENCE
+          // GUI...
           DrawPressedBlock(blocks_x[1], blocks_y[3], blocks_x[2], blocks_y[4]);
           // Change screen to waiting
           CurrentScreen = kWaiting;
@@ -508,7 +508,7 @@ static void HandleButtonPress() {
           pros::delay(200);
 
         } else {
-          // TEST 2
+          // MULTIPLE
           DrawPressedBlock(blocks_x[2], blocks_y[3], blocks_x[3], blocks_y[4]);
           AutonomousReader->AddFunction("autonomous", aon::testMultiple);
           pros::delay(200);
