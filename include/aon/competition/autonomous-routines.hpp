@@ -1284,8 +1284,7 @@ void testDriveInArcTo(const double &x, const double &y){
   const bool longWay = (getAngleOfArc(projection, target, center) > angle) || (positionAngle < targetAngle && targetAngle < projectionAngle);
   if (longWay) { angle = 360 - angle; }
 
-  // driveAngleOfArc(metersToInches(radius), angle);
-  pros::lcd::print(1, "RADIUS: %.2f ANGLE: %.2f", metersToInches(radius), angle);
+  driveAngleOfArc(metersToInches(radius), angle);
 }
 
 /// @brief Function wrapper for test function that is to be executed through the GUI
