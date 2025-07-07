@@ -1230,7 +1230,7 @@ double getAngleOfArc(const Vector &a, const Vector &b, const Vector &center)
 /// @param y The y coordinate of the point we want to go to in \b meters
 /// @note Odometry must be working for global positioning on the field
 /// @see https://www.desmos.com/calculator/5abb373276
-void testDriveInArcTo(const double &x, const double &y){
+void driveInArcTo(const double &x, const double &y){
   // Get the current pose
   Vector position = odometry::GetPosition();
   position.SetPosition(inchesToMeters(position.GetX()), inchesToMeters(position.GetY()));
@@ -1291,7 +1291,7 @@ void testDriveInArcTo(const double &x, const double &y){
 /// @return 1 for successful execution
 /// @note Usually the tests in here use `potentiometer.get_value()` to tune a parameter in a function as well as testing the function itself
 int testAdjustable(){
-    testDriveInArcTo(inchesToMeters(TILE_WIDTH / 2), inchesToMeters(TILE_WIDTH / 2));
+    driveInArcTo(inchesToMeters(TILE_WIDTH / 2), inchesToMeters(TILE_WIDTH / 2));
   return 1;
 }
 
@@ -1302,15 +1302,15 @@ int testMultiple(){
   int choice = potentiometer.get_value();
   // UP
   if(choice > 2550){
-    testDriveInArcTo(-inchesToMeters(TILE_WIDTH / 2), inchesToMeters(TILE_WIDTH / 2));
+    driveInArcTo(-inchesToMeters(TILE_WIDTH / 2), inchesToMeters(TILE_WIDTH / 2));
   }
   // MIDDLE
   else if (choice > 1100){
-    testDriveInArcTo(-inchesToMeters(TILE_WIDTH / 2), -inchesToMeters(TILE_WIDTH / 2));
+    driveInArcTo(-inchesToMeters(TILE_WIDTH / 2), -inchesToMeters(TILE_WIDTH / 2));
   }
   // DOWN
   else {
-    testDriveInArcTo(inchesToMeters(TILE_WIDTH / 2), -inchesToMeters(TILE_WIDTH / 2));
+    driveInArcTo(inchesToMeters(TILE_WIDTH / 2), -inchesToMeters(TILE_WIDTH / 2));
   }
   return 1;
 }
