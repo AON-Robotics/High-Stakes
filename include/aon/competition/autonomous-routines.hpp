@@ -1270,7 +1270,7 @@ void driveInArcTo(const double &x, const double &y){
   // Use a projection to determine which way we are turning
   const double projectionStep = 0.001;
   const Vector projection = Vector().SetPosition(position.GetX() + (projectionStep * std::cos(heading)),
-                                                  position.GetY() + (projectionStep * std::sin(heading)));
+                                                 position.GetY() + (projectionStep * std::sin(heading)));
   const double projectionAngle = getAngleInCircle(projection, center);
   
   const double positionAngle = getAngleInCircle(position, center);
@@ -1291,7 +1291,7 @@ void driveInArcTo(const double &x, const double &y){
 /// @return 1 for successful execution
 /// @note Usually the tests in here use `potentiometer.get_value()` to tune a parameter in a function as well as testing the function itself
 int testAdjustable(){
-    driveInArcTo(inchesToMeters(TILE_WIDTH / 2), inchesToMeters(TILE_WIDTH / 2));
+  driveInArcTo(inchesToMeters(TILE_WIDTH / 2), inchesToMeters(TILE_WIDTH / 2));
   return 1;
 }
 
