@@ -7,11 +7,6 @@
 #define TILE_WIDTH 23.6220472441
 #define TILE_DIAG_LENGTH 33.4066195836 // Calculated with the Pythagorean theorem
 
-// Colors
-#define RED 1
-#define BLUE 2
-#define STAKE 3
-
 // NOT using black robot = Using green robot
 #define USING_BLACK_ROBOT true
 #define TESTING_AUTONOMOUS true 
@@ -71,9 +66,10 @@
 
 #define DISTANCE 90 // This is the activation distance for the intake (the distance under which we know a ring is waiting in front of the intake)
 
+#define ORBIT_HEIGHT 12.5
 // ORBIT Limiting to protect when it does not have 360° of freedom
 #define ORBIT_LIMITED true
-#define ORBIT_LEFT_LIMIT 155
-#define ORBIT_RIGHT_LIMIT 285
+#define ORBIT_LEFT_LIMIT 210
+#define ORBIT_RIGHT_LIMIT 90
 
 #endif  // AON_CONSTANTS_HPP_

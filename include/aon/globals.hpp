@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef AON_GLOBALS_HPP_
 #define AON_GLOBALS_HPP_
 
@@ -14,13 +16,15 @@
 //  |_|  |_|\___/ |_| \___/|_|_\|___/
 //
 // ============================================================================
-                                   
+
 
 // Drivetrain
 
 okapi::MotorGroup driveLeft = okapi::MotorGroup({-20, 19, -18});
 okapi::MotorGroup driveRight = okapi::MotorGroup({9, -8, 7});
 okapi::MotorGroup driveFull = okapi::MotorGroup({-20, 19, -18, 9, -8, 7});
+#include "./controls/s-curve-profile.hpp" //! Change this, I dont like doing the include this far down and after ive done other stuff
+MotionProfile forwardProfile(MAX_RPM, MAX_ACCEL, MAX_DECEL, MAX_ACCEL);
 
 // Intake
 
@@ -36,7 +40,7 @@ pros::ADIDigitalOut indexer ('A');
 
 okapi::Motor turret = okapi::Motor({-15});
 
-//TriPort
+// TriPort
 
 // pros::ADIDigitalOut indexer ('G');
 bool indexerOut = false;
@@ -53,7 +57,8 @@ bool clawOn = false;
 
 // Encoders
 
-pros::Rotation encoderMid(5, true);
+pros::Rotation encoderRight(5, true);
+pros::Rotation encoderLeft(4, false);
 pros::Rotation encoderBack(11, false);
 pros::Rotation turretEncoder(14, false);
 
@@ -63,23 +68,43 @@ pros::Rotation turretEncoder(14, false);
 pros::Rotation encoderRight(5, true);
 pros::Rotation encoderLeft(4, false);
 
+pros::ADIEncoder opticalEncoder('A', 'B');
 
 // Vision
 
+// Colors
+enum Colors {
+  RED = 1,
+  BLUE,
+  STAKE
+};
+
+Colors COLOR = RED;
+
 pros::Vision vision_sensor(12);
-pros::vision_signature_s_t RED_SIG = pros::Vision::signature_from_utility(1, 8973, 11143, 10058, -2119, -1053, -1586, 5.4, 0);
-pros::vision_signature_s_t BLUE_SIG = pros::Vision::signature_from_utility(2, -3050, -2000, -2500, 8000, 11000, 9500, 5.4, 0);
-pros::vision_signature_s_t STAKE_SIG = pros::Vision::signature_from_utility(3, -2247, -1833, -2040, -5427, -4727, -5077, 4.600, 0); // RGB 4.600
+volatile bool turretFollowing = false;
+volatile bool turretBraking = true;
+volatile bool turretScanning = false;
+pros::vision_signature_s_t RED_SIG = pros::Vision::signature_from_utility(RED, 8973, 11143, 10058, -2119, -1053, -1586, 5.4, 0);
+pros::vision_signature_s_t BLUE_SIG = pros::Vision::signature_from_utility(BLUE, -3050, -2000, -2500, 8000, 11000, 9500, 5.4, 0);
+pros::vision_signature_s_t STAKE_SIG = pros::Vision::signature_from_utility(STAKE, -2247, -1833, -2040, -5427, -4727, -5077, 4.600, 0); // RGB 4.600
 pros::Gps gps(13, GPS_INITIAL_X, GPS_INITIAL_Y, GPS_INITIAL_HEADING, GPS_X_OFFSET, GPS_Y_OFFSET);
 
 // Distance
 
 pros::Distance distanceSensor(3);
+volatile bool intakeScanning = false;
+
 
 // Gyro/Accelerometer
+
 #if GYRO_ENABLED
 pros::Imu gyroscope(6);
 #endif
+
+// Potentiometer
+
+pros::ADIPotentiometer potentiometer('F');
 
 /// PIDs
 
@@ -151,9 +176,9 @@ inline void ConfigureMotors(const bool opcontrol = true) {
  * \brief Adds the colors to the vision sensor
 */
 inline void ConfigureColors(){
-  vision_sensor.set_signature(1, &RED_SIG);
-  vision_sensor.set_signature(2, &BLUE_SIG);
-  vision_sensor.set_signature(3, &STAKE_SIG);
+  vision_sensor.set_signature(RED, &RED_SIG);
+  vision_sensor.set_signature(BLUE, &BLUE_SIG);
+  vision_sensor.set_signature(STAKE, &STAKE_SIG);
 }
 
 /**
@@ -227,6 +252,49 @@ void autonSafety(){
   }
 }
 
+/// @brief Begins ORBIT following cycle
+void activateORBITFollow(){
+  turretFollowing = true;
+  turretBraking = true;
+  turretScanning = false;
+}
+
+/// @brief Ends ORBIT following cycle
+void deactivateORBITFollow(){
+  turretFollowing = false;
+}
+
+/// @brief Begins ORBIT scanning cycle
+void activateORBITScan(){
+  turretFollowing = false;
+  turretBraking = false;
+  turretScanning = true;
+}
+
+/// @brief Ends ORBIT scanning cycle
+void deactivateORBITScan(){
+  turretScanning = false;
+}
+
+/// @brief Sets the ORBIT to brake if not scanning
+void brakeORBIT(){
+  turretBraking = true;
+}
+
+/// @brief Releases the ORBIT from braking to allow other functions to use it
+void releaseORBIT() {
+  turretBraking = false;
+}
+
+/// @brief Starts intake scanning cycle
+void activateIntakeScan(){
+  intakeScanning = true;
+}
+
+/// @brief Ends intake scanning cycle
+void deactivateIntakeScan(){
+  intakeScanning = false;
+}
 
 }  // namespace aon
 

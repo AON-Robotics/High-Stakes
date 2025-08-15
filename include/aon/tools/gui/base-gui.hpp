@@ -263,6 +263,13 @@ static void DrawCurrentScreen() {
                       menu_block_x, menu_block_y,
                       /*TEXT*/ COLOR_BLACK, TEXT_LARGE, menu_text_x,
                       menu_text_y, "MENU");
+      
+      // LOWER LEFT BUTTON [SKILL]
+      DrawButtonBlock(
+          /*BLOCK*/ COLOR_SKY_BLUE, blocks_x[0], blocks_y[3], blocks_x[1],
+          blocks_y[4],
+          /*TEXT*/ COLOR_BLACK, TEXT_LARGE, lower_block_1_text_x,
+          lower_block_text_y, "SKILL");
       break;
 
       //    ___  ___ ___ _   _  ___  ___ ___ _  _  ___
@@ -282,13 +289,25 @@ static void DrawCurrentScreen() {
                       menu_block_x, menu_block_y,
                       /*TEXT*/ COLOR_BLACK, TEXT_LARGE, menu_text_x,
                       menu_text_y, "MENU");
+      // LOWER LEFT BUTTON [ADJUSTABLE]
+      DrawButtonBlock(
+          /*BLOCK*/ COLOR_SKY_BLUE, blocks_x[0], blocks_y[3], blocks_x[1],
+          blocks_y[4],
+          /*TEXT*/ COLOR_BLACK, TEXT_LARGE, lower_block_1_text_x,
+          lower_block_text_y, "ADJUSTABLE");
 
-      // LOWER CENTER BUTTON [TEST]
+      // LOWER CENTER BUTTON [GUI...]
       DrawButtonBlock(
           /*BLOCK*/ COLOR_LIGHT_STEEL_BLUE, blocks_x[1], blocks_y[3],
           blocks_x[2], blocks_y[4],
           /*TEXT*/ COLOR_BLACK, TEXT_LARGE, lower_block_2_text_x,
-          lower_block_text_y, "TEST");
+          lower_block_text_y, "GUI...");
+
+      // LOWER RIGHT BUTTON [MULTIPLE]
+      DrawButtonBlock(/*BLOCK*/ COLOR_BLUE, blocks_x[2], blocks_y[3],
+          blocks_x[3], blocks_y[4],
+          /*TEXT*/ COLOR_BLACK, TEXT_MEDIUM, lower_block_3_text_x,
+          lower_block_text_y, "MULTIPLE");
 
       break;
 
@@ -371,22 +390,19 @@ static void HandleButtonPress() {
       } else if (TouchStatus.y > blocks_y[3]) {
         if (TouchStatus.x < blocks_x[1]) {
           // AUT1
-          DrawNABlock(blocks_x[0], blocks_y[3], blocks_x[1], blocks_y[4],
-                      lower_block_1_text_x, lower_block_text_y);
+          DrawPressedBlock(blocks_x[0], blocks_y[3], blocks_x[1], blocks_y[4]);
           AutonomousReader->AddFunction("autonomous", aon::RedRingsRoutine);
           pros::delay(200);
 
         } else if (TouchStatus.x < blocks_x[2]) {
           // AUT2
-          DrawNABlock(blocks_x[1], blocks_y[3], blocks_x[2], blocks_y[4],
-                      lower_block_2_text_x, lower_block_text_y);
+          DrawPressedBlock(blocks_x[1], blocks_y[3], blocks_x[2], blocks_y[4]);
           AutonomousReader->AddFunction("autonomous", aon::RedRingsRoutine);
           pros::delay(200);
 
         } else {
           // AUT3
-          DrawNABlock(blocks_x[2], blocks_y[3], blocks_x[3], blocks_y[4],
-                      lower_block_3_text_x, lower_block_text_y);
+          DrawPressedBlock(blocks_x[2], blocks_y[3], blocks_x[3], blocks_y[4]);
           AutonomousReader->AddFunction("autonomous", aon::RedRingsRoutine);
           pros::delay(200);
         }
@@ -411,22 +427,19 @@ static void HandleButtonPress() {
       } else if (TouchStatus.y > blocks_y[3]) {
         if (TouchStatus.x < blocks_x[1]) {
           // AUT1
-          DrawNABlock(blocks_x[0], blocks_y[3], blocks_x[1], blocks_y[4],
-                      lower_block_1_text_x, lower_block_text_y);
+          DrawPressedBlock(blocks_x[0], blocks_y[3], blocks_x[1], blocks_y[4]);
           AutonomousReader->AddFunction("autonomous", aon::BlueRingsRoutine);
           pros::delay(200);
 
         } else if (TouchStatus.x < blocks_x[2]) {
           // AUT2
-          DrawNABlock(blocks_x[1], blocks_y[3], blocks_x[2], blocks_y[4],
-                      lower_block_2_text_x, lower_block_text_y);
+          DrawPressedBlock(blocks_x[1], blocks_y[3], blocks_x[2], blocks_y[4]);
           AutonomousReader->AddFunction("autonomous", aon::BlueRingsRoutine);
           pros::delay(200);
 
         } else {
           // AUT3
-          DrawNABlock(blocks_x[2], blocks_y[3], blocks_x[3], blocks_y[4],
-                      lower_block_3_text_x, lower_block_text_y);
+          DrawPressedBlock(blocks_x[2], blocks_y[3], blocks_x[3], blocks_y[4]);
           AutonomousReader->AddFunction("autonomous", aon::BlueRingsRoutine);
           pros::delay(200);
         }
@@ -448,11 +461,9 @@ static void HandleButtonPress() {
       } else if (TouchStatus.y > blocks_y[3]) {
         if (TouchStatus.x < blocks_x[1]) {
           // AUT1
-          DrawNABlock(blocks_x[0], blocks_y[3], blocks_x[1], blocks_y[4],
-                      lower_block_1_text_x, lower_block_text_y);
+          DrawPressedBlock(blocks_x[0], blocks_y[3], blocks_x[1], blocks_y[4]);
           aon::operator_control::Run(aon::operator_control::DEFAULT);
           pros::delay(200);
-
         }
       }
       break;
@@ -469,26 +480,39 @@ static void HandleButtonPress() {
         DrawPressedBlock(blocks_x[0], blocks_y[0], menu_block_x, menu_block_y);
         CurrentScreen = kMainMenu;
         pros::delay(200);
-      } else if (TouchStatus.x > blocks_x[1] && TouchStatus.x < blocks_x[2] &&
-                 TouchStatus.y > blocks_y[3]) {
-        // TEST SEQUENCE
-        DrawPressedBlock(blocks_x[1], blocks_y[3], blocks_x[2], blocks_y[4]);
-        // Change screen to waiting
-        CurrentScreen = kWaiting;
-        is_waiting = true;
-        pros::Task test_task([=] {
-          for (int i = 0; i < 10; i++) {
-            std::cout << "I'm HERE " << i << std::endl;
-            DrawButtonBlock(COLOR_BLACK, blocks_x[0], blocks_y[1],
-                            blocks_x[1] - 20, blocks_y[2], COLOR_WHITE_SMOKE,
-                            TEXT_LARGE, blocks_x[1] / 2,
-                            blocks_y[1] + blocks_y[2] / 6, std::to_string(i));
+      } else if (TouchStatus.y > blocks_y[3]) {
+        if (TouchStatus.x < blocks_x[1]) {
+          // ADJUSTABLE
+          DrawPressedBlock(blocks_x[0], blocks_y[3], blocks_x[1], blocks_y[4]);
+          AutonomousReader->AddFunction("autonomous", aon::testAdjustable);
+          pros::delay(200);
 
-            pros::delay(1000);
-          }
-          is_waiting = false;
-        });
-        pros::delay(200);
+        } else if (TouchStatus.x < blocks_x[2]) {
+          // GUI...
+          DrawPressedBlock(blocks_x[1], blocks_y[3], blocks_x[2], blocks_y[4]);
+          // Change screen to waiting
+          CurrentScreen = kWaiting;
+          is_waiting = true;
+          pros::Task test_task([=] {
+            for (int i = 0; i < 10; i++) {
+              std::cout << "I'm HERE " << i << std::endl;
+              DrawButtonBlock(COLOR_BLACK, blocks_x[0], blocks_y[1],
+                              blocks_x[1] - 20, blocks_y[2], COLOR_WHITE_SMOKE,
+                              TEXT_LARGE, blocks_x[1] / 2,
+                              blocks_y[1] + blocks_y[2] / 6, std::to_string(i));
+
+              pros::delay(1000);
+            }
+            is_waiting = false;
+          });
+          pros::delay(200);
+
+        } else {
+          // MULTIPLE
+          DrawPressedBlock(blocks_x[2], blocks_y[3], blocks_x[3], blocks_y[4]);
+          AutonomousReader->AddFunction("autonomous", aon::testMultiple);
+          pros::delay(200);
+        }
       }
       break;
 

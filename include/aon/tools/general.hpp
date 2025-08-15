@@ -40,6 +40,14 @@ inline U threshold(U value, U min, U max) {
  */
 inline bool is_close(double x, double y) { return abs(x - y) <= FLT_EPSILON; }
 
+/// @brief Returns the nearest of two `values` with respect to a given `num`
+/// @param num The reference number.
+/// @param values The pair of values to compare
+/// @return The value of the pair that is closest to `num`
+inline double nearest(const double &num, const std::pair<double, double> &values){
+  return std::abs(values.first - num) < std::abs(values.second - num) ? values.first : values.second;
+}
+
 };  // namespace aon
 
 #endif  // AON_TOOLS_GENERAL_HPP_
