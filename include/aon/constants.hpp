@@ -14,7 +14,7 @@
 
 // NOT using black robot = Using green robot
 #define USING_BLACK_ROBOT true
-#define TESTING_AUTONOMOUS false 
+#define TESTING_AUTONOMOUS true 
 #define COLOR RED
 
 #define SENSITIVITY 1 // 3-10 works good, currently undergoing testing // Higher is more sensitivity

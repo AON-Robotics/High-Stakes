@@ -99,15 +99,30 @@ namespace aon::odometry {
   pros::Mutex p_mutex;
   //> Mutex for orientation to prevent race condition when retrieving value
   pros::Mutex orientation_mutex;
+
+  
+  // Test different odometry
+  // mine 
+  // deltaDlocal
+  // odometry united kingdom team
+  Vector changeUnited;
+  // from the web
+  Vector changeWeb;
+  // from the video
+  Vector changeVideo;
+  // modification of myself
+  Vector changeMine;
     
   // //> Encoder left struct instance
   // STRUCT_encoder encoderMid_data;
+
   // //> Encoder back struct instance
-  // STRUCT_encoder encoderBack_data;
-  //> Encoder left struct instance
+  STRUCT_encoder encoderBack_data;
+  //> Encoder right struct instance
   STRUCT_encoder encoderRight_data;
-  //> Encoder back struct instance
+  //> Encoder left struct instance
   STRUCT_encoder encoderLeft_data;
+  
   //> Gyro struct instance
   STRUCT_gyro gyro_data;
 
@@ -118,7 +133,8 @@ namespace aon::odometry {
   // //> Updates done by seconds
   // const int timeLimit = 1; 
   //> Accumulate values during this time
-  double accumulatedTheta = 0;
+  double accumulatedThetaGyro = 0;
+  double accumulatedThetaEncoder = 0;
   double accumulatedMid = 0;
 
   // ============================================================================
@@ -291,7 +307,14 @@ inline void ResetCurrent(const double x, const double y, const double theta) {
   // Preset odometry values
   deltaTheta = 0.0;
   deltaDlocal.SetPosition(0.0, 0.0);
-  accumulatedTheta = 0;
+
+  // Debugging
+  changeUnited.SetPosition(0.0, 0.0);
+  changeWeb.SetPosition(0.0, 0.0);
+  changeVideo.SetPosition(0.0, 0.0);
+  changeMine.SetPosition(0.0, 0.0);
+  accumulatedThetaGyro = 0;
+  accumulatedThetaEncoder = 0;
   
   SetDegrees(theta);
   SetPosition(x, y);
@@ -306,34 +329,16 @@ inline void ResetCurrent(const double x, const double y, const double theta) {
 
 }
 
-Vector POSITIONodo(){
-  STOP();
-  pros::delay(2000);
-  pros::c::gps_status_s_t status = gps.get_status();
-  Vector current = Vector().SetPosition(status.x, status.y);
-
-  return current;
-}
-
-//> Update the position using the gps for accuracy
-inline void UpdatePositionGPS() {
-  Vector newPosition = POSITIONodo();
-  double newAngle = gps.get_heading();
-
-  SetPosition(newPosition.GetX(), newPosition.GetY());
-  SetDegrees(newAngle);
-}
-
 //> Resets the Odometry values with `INITIAL_ODOMETRY_X`,Y and T constants.
 inline void ResetInitial() {
   // Test if we are going to use the odometry more
   // Get position from the encoder at the beggining of the match and assign it to the encoder
   // to be able to keep track of the position at all times
-  UpdatePositionGPS();
-  ResetCurrent(GetX(), GetY(), GetDegrees());
+  // UpdatePositionGPS();
+  // ResetCurrent(GetX(), GetY(), GetDegrees());
 
   // normal initial
-  // ResetCurrent(INITIAL_ODOMETRY_X, INITIAL_ODOMETRY_Y, INITIAL_ODOMETRY_THETA);
+  ResetCurrent(INITIAL_ODOMETRY_X, INITIAL_ODOMETRY_Y, INITIAL_ODOMETRY_THETA);
 }
 
 
@@ -350,22 +355,19 @@ inline void Initialize() {
   encoderLeft.set_position(0);
   encoderRight.set_position(0);
 
+  // encoderBack.set_position(0);
+
   encoderLeft.reset();
   encoderRight.reset();
+
+  // encoderBack.reset();
+  
   // Set initial position with gps
   // INITIAL_ODOMETRY_X = gps.get_x_position();
   // INITIAL_ODOMETRY_Y = gps.get_y_position();
     
   ResetInitial();
-  ResetInitial();
 }
-
-/**
- * \brief Fundamental function for Odometry.
- *
- * \details Uses changes in encoder (middle and back) and gyro to calculate position
- * 
- * */
 
 // for debbuging
 double backTracker = 0;
@@ -375,6 +377,13 @@ double maxAngle = 0.000001;
 
 bool turning = false;
 bool arcMovementxd = false;
+
+/**
+ * \brief Fundamental function for Odometry.
+ *
+ * \details Uses changes in encoder (middle and back) and gyro to calculate position
+ * 
+ * */
 
 // inline void Update() {
 //   // Read encoder values, divided by 100 to convert centidegrees to degrees
@@ -423,7 +432,6 @@ bool arcMovementxd = false;
   
   
 //   // Test, maybe only for test robot, make sure to update this for actual robots
-//   // Take away fake reading in base on offset
 //   // Calculations
 //   time++;
 //   std::cout << "\nTime: " << time << "\n";
@@ -538,31 +546,42 @@ bool arcMovementxd = false;
 //   // pros::delay(5000);
 // }
 
+/**
+ * \brief Fundamental function for Odometry.
+ *
+ * \details Uses changes in encoder (right and left) and gyro to calculate position
+ * 
+ * */
+
+
 void Update() {
-  pros::lcd::print(1, "Updating odometry");
   
   /// Read encoder values, divided by 100 to convert centidegrees to degrees
-  encoderRight_data.currentValue = -encoderRight.get_position() / 100.0; 
-  encoderLeft_data.currentValue = -encoderLeft.get_position() / 100.0; 
+  encoderRight_data.currentValue = encoderRight.get_position() / 100.0; 
+  encoderLeft_data.currentValue = encoderLeft.get_position() / 100.0; 
+  // encoderBack_data.currentValue = encoderBack.get_position() / 100.0;
 
   // Convert to distances
   encoderRight_data.currentDistance = encoderRight_data.currentValue * conversionFactor;
   encoderLeft_data.currentDistance = encoderLeft_data.currentValue * conversionFactor;
+  // encoderBack_data.currentDistance = encoderBack_data.currentValue * conversionFactor;
 
   // Calculate deltas
   encoderRight_data.delta = encoderRight_data.currentValue - encoderRight_data.prevValue;
   encoderLeft_data.delta = encoderLeft_data.currentValue - encoderLeft_data.prevValue;
+  // encoderBack_data.delta = encoderBack_data.currentValue - encoderBack_data.prevValue;
 
   encoderRight_data.deltaDistance = encoderRight_data.currentDistance - encoderRight_data.previousDistance;
   encoderLeft_data.deltaDistance = encoderLeft_data.currentDistance - encoderLeft_data.previousDistance;
+  // encoderBack_data.deltaDistance = encoderBack_data.currentDistance - encoderBack_data.previousDistance;
 
   // Calculate delta theta if we dont have gyro
   double deltaThetaA = (encoderLeft_data.deltaDistance - encoderRight_data.deltaDistance) / (DISTANCE_RIGHT_TRACKING_WHEEL_CENTER + DISTANCE_LEFT_TRACKING_WHEEL_CENTER);
-  
+
   // if you want that when turn left is positive
   // double deltaThetaA = (encoderRight_data.deltaDistance - encoderLeft_data.deltaDistance) / (DISTANCE_RIGHT_TRACKING_WHEEL_CENTER + DISTANCE_LEFT_TRACKING_WHEEL_CENTER);
 
-  backTracker += deltaThetaA;
+  backTracker += deltaThetaA; // debug purpose
 
   // If we have gyro, get value and calculate delta
   #if GYRO_ENABLED 
@@ -588,12 +607,19 @@ void Update() {
   // Save current data for future calculations
   gyro_data.prevDegrees = gyro_data.currentDegrees;
 
+  accumulatedThetaGyro += gyro_data.deltaDegrees; // debug purpose
+  
   // Right now, confidence gyro 1.0, encoder confidence 0 (must sum 1) 
   deltaTheta = (1 - GYRO_CONFIDENCE) * deltaThetaA + GYRO_CONFIDENCE * gyro_data.deltaRadians;
   std::cout << "Delta Theta: " << deltaTheta * (180/M_PI) << "\n";
   std::cout << "\n";
   #endif
 
+  // Updating angle
+  double previousTheta = GetRadians();
+  SetRadians(GetRadians() + deltaTheta);
+
+  // Calculations simple trigonometry, i.e., mine :)
   // If we are rotating
   if (std::abs(deltaTheta) > 0.01) {
     if ((encoderLeft_data.deltaDistance * encoderRight_data.deltaDistance) <= 0) {
@@ -603,15 +629,23 @@ void Update() {
     else {
       double radiusLeft;
       double radiusRight;
+
       // Calculate the radius of rotation for each wheel
-  
-      double sign = (deltaTheta > 0) ? 1 : -1;
+      double sign = (deltaTheta > 0) ? 1 : -1; 
       radiusLeft  = (encoderLeft_data.deltaDistance / deltaTheta)  - sign * DISTANCE_LEFT_TRACKING_WHEEL_CENTER;
       radiusRight = (encoderRight_data.deltaDistance / deltaTheta) + sign * DISTANCE_RIGHT_TRACKING_WHEEL_CENTER;
 
-      double averageR = (encoderLeft_data.deltaDistance + encoderRight_data.deltaDistance) / (2.0 * deltaTheta);
+      double averageR = (encoderLeft_data.deltaDistance + encoderRight_data.deltaDistance) / 2;
   
       deltaDlocal.SetPosition(averageR * std::sin(deltaTheta), averageR * (1 - std::cos(deltaTheta)));
+      
+      // alteration with back encoder
+      changeMine.SetPosition(changeMine.GetX() + (2 * std::sin(deltaTheta/2) * ((encoderBack_data.deltaDistance / deltaTheta) + DISTANCE_BACK_TRACKING_WHEEL_CENTER)),
+                             changeMine.GetY() + (2 * std::sin(deltaTheta/2) * (averageR)));
+
+      // FROM THE VIDEO OF THE KID
+      changeVideo.SetPosition(changeVideo.GetX() + (2 * std::sin(deltaTheta/2) * ((encoderBack_data.deltaDistance / deltaTheta) + DISTANCE_BACK_TRACKING_WHEEL_CENTER)),
+                              changeVideo.GetY() + (2 * std::sin(deltaTheta/2) * ((encoderRight_data.deltaDistance / deltaTheta) + DISTANCE_RIGHT_TRACKING_WHEEL_CENTER)));
     }
   }
   else {
@@ -619,31 +653,57 @@ void Update() {
     double deltaD = (encoderLeft_data.deltaDistance + encoderRight_data.deltaDistance) / 2.0;
     deltaDlocal.SetPosition(deltaD, 0);
   } 
+  
 
-  // Updating angle
-  SetRadians(GetRadians() + deltaTheta);
+  // Odometry of team of United Kingdom
+  double deltaD = (encoderLeft_data.deltaDistance + encoderRight_data.deltaDistance) / 2.0;
+  // If going straight
+  if (deltaTheta < 0.01) { // No change in angle
+    // Update position
+    changeUnited.SetPosition(changeUnited.GetX() + (deltaD * std::cos(GetDegrees())), 
+                             changeUnited.GetY() + (deltaD * std::sin(GetDegrees())));
+  }
+  else {
+    double radius = deltaD / deltaTheta;
+    // deltaDlocal.SetPosition(radius * (std::sin(GetDegrees()) - std::sin(GetDegrees() - deltaTheta)),
+    //                         radius * (std::cos(GetDegrees() - deltaTheta) - std::cos(GetDegrees())));
+    // Update position
+    changeUnited.SetPosition(changeUnited.GetX() + (radius * (std::sin(previousTheta) - std::sin(previousTheta - deltaTheta))),
+                             changeUnited.GetY() + (radius * (std::cos(previousTheta - deltaTheta) - std::cos(previousTheta))));
+  }
 
-  // Updating global position
-  SetPosition(GetX() + deltaDlocal.GetX() * std::cos(GetRadians()) - deltaDlocal.GetY() * std::sin(GetRadians()), 
-              GetY() + deltaDlocal.GetX() * std::sin(GetRadians()) + deltaDlocal.GetY() * std::cos(GetRadians()));  
+
+  
+  // Odometry full base in https://medium.com/%40nahmed3536/wheel-odometry-model-for-differential-drive-robotics-91b85a012299
+  // NO UPDATING THE DEGREES BEFORE
+  deltaD = (encoderLeft_data.deltaDistance + encoderRight_data.deltaDistance) / 2.0;
+  changeWeb.SetPosition(changeWeb.GetX() + (deltaD * cos(previousTheta + deltaTheta / 2)),
+                        changeWeb.GetY() + (deltaD * sin(previousTheta + deltaTheta / 2)));
+
+
+  // Updating global position using 2D matrix transformation (previous way to update to global coordinates)
+  // SetPosition(GetX() + deltaDlocal.GetX() * std::cos(GetRadians()) - deltaDlocal.GetY() * std::sin(GetRadians()), 
+  //             GetY() + deltaDlocal.GetX() * std::sin(GetRadians()) + deltaDlocal.GetY() * std::cos(GetRadians()));  
+
+  SetPosition(GetX() + deltaDlocal.GetX(), GetY() + deltaDlocal.GetY());
 
  std::cout << "X: " << GetX() << ", Y: " << GetY() << ", Angle: " << GetDegrees() << "\n\n";
- pros::lcd::print(1, "X: ", GetX());
- pros::lcd::print(2, "Y: ", GetY());
- pros::lcd::print(3, "Angle: ", GetDegrees());
+//  pros::lcd::print(1, "X: ", GetX());
+//  pros::lcd::print(2, "Y: ", GetY());
+//  pros::lcd::print(3, "Angle: ", GetDegrees());
 
 
  // It works only if we set the initial position with GPS
- if (COLOR == BLUE) {
-  if (GetY() > -10) {
-    pros::lcd::print(4, "IT SUPER CLOSE TO SURPASS THE AUTONOMOUS LINE");
-  }
- }
- else if (COLOR == RED) {
-  if (GetY() < 10) {
-    pros::lcd::print(4, "IT SUPER CLOSE TO SURPASS THE AUTONOMOUS LINE");
-  }
- }
+//  if (COLOR == BLUE) {
+//   if (GetY() > -10) {
+//     pros::lcd::print(7, "IT SUPER CLOSE TO SURPASS THE AUTONOMOUS LINE");
+//   }
+//  }
+//  else if (COLOR == RED) {
+//   if (GetY() < 10) {
+//     pros::lcd::print(7, "IT SUPER CLOSE TO SURPASS THE AUTONOMOUS LINE");
+//   }
+//  }
 
   // Save current values as previous for future updates
   encoderLeft_data.prevValue = encoderLeft_data.currentValue;
@@ -684,13 +744,22 @@ inline void Odometry(){
  * */
 inline void Debug() {
   while (true) {
-    pros::lcd::print(1, "X: %0.3f", GetX());
-    pros::lcd::print(2, "Y: %0.3f", GetY());
-    pros::lcd::print(3, "Heading: %0.3f", GetDegrees());
-    // pros::lcd::print(2, "Gyro: %.2f degrees", gyro_data.currentDegrees);
+    // pros::lcd::print(1, "X: %0.3f", GetX());
+    // pros::lcd::print(2, "Y: %0.3f", GetY());
+    // pros::lcd::print(1, "X: %0.3f, Y: %0.3f", GetX(), GetY());
+    pros::lcd::print(0, "Left : %0.3f, %0.3f, %0.3f", encoderLeft_data.currentDistance, encoderLeft_data.previousDistance, encoderLeft_data.deltaDistance);
+    pros::lcd::print(1, "Right: %0.3f, %0.3f, %0.3f", encoderRight_data.currentDistance, encoderRight_data.previousDistance, encoderRight_data.deltaDistance);
+    // pros::lcd::print(4, "Heading: %0.3f", GetDegrees());
+    // pros::lcd::print(5, "Gyro: %.2f degrees", gyro_data.currentDegrees);
+
     // pros::lcd::print(3, "Back Degrees: %.2f degrees", backTracker * (180/M_PI));
     // pros::lcd::print(5, "Accumulate Theta: ", accumulatedTheta);
-                     
+    pros::lcd::print(2, "Gyro: %0.3f", accumulatedThetaGyro);
+    pros::lcd::print(3, "Mine:   X: %0.3f | Y: %0.3f", GetX(), GetY());
+    pros::lcd::print(4, "United: X: %0.3f | Y: %0.3f", changeUnited.GetX(), changeUnited.GetY());
+    pros::lcd::print(5, "Web:    X: %0.3f | Y: %0.3f", changeWeb.GetX(), changeWeb.GetY());     
+    // pros::lcd::print(5, "Video:  X: %0.3f | Y: %0.3f", changeVideo.GetX(), changeVideo.GetY());     
+    // pros::lcd::print(6, "Mine 2: X: %0.3f | Y: %0.3f", changeMine.GetX(), changeMine.GetY());     
 
     odometry::Update();
     pros::delay(20);
