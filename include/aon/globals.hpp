@@ -62,11 +62,6 @@ pros::Rotation encoderLeft(4, false);
 pros::Rotation encoderBack(11, false);
 pros::Rotation turretEncoder(14, false);
 
-// odometry
-// pros::Rotation encoderMid(4, true);
-// pros::Rotation encoderBack(11, false);
-pros::Rotation encoderRight(5, true);
-pros::Rotation encoderLeft(4, false);
 
 pros::ADIEncoder opticalEncoder('A', 'B');
 
