@@ -1,8 +1,8 @@
 #include "main.hpp"
 
 void initialize() {
-  pros::Task guiTask(aon::gui::Initialize);
-  aon::logging::Initialize();
+  // pros::Task guiTask(aon::gui::Initialize);
+  // aon::logging::Initialize();
   pros::lcd::initialize();
   aon::ConfigureMotors(false);
   aon::ConfigureColors();
@@ -27,13 +27,22 @@ void autonomous() {
 // Program slot 1 with Pizza Icon is for opcontrol
 // Program slot 2 with Planet Icon is for autonomous routine
 // Program slot 3 with Alien Icon is for tests or miscellaneous components
+
 void opcontrol() {
   aon::ConfigureMotors();
   while (true) {
     #if TESTING_AUTONOMOUS
-    aon::ConfigureMotors(false); // Set drivetrain to hold for auton testing
+    // aon::ConfigureMotors(false); // Set drivetrain to hold for auton testing
 
-    aon::AutonomousReader->ExecuteFunction("autonomous");
+    // aon::AutonomousReader->ExecuteFunction("autonomous");
+  // for (int i = 0; i < 4; i++) {
+  //   aon::move(12);
+  //  aon::turn(90);
+  // }
+    aon::turn(90);
+  
+
+   aon::odometry::Debug();
 
     pros::delay(3000);
     #else
